@@ -31,6 +31,7 @@ namespace utils {
 
   struct Colony {
     Cell* cells;
+    Cell* old;
     int width;
     int height;
     int generation;
@@ -70,8 +71,16 @@ namespace utils {
   void
   initializeEvents(Input& events);
 
+  bool
+  createColony(Colony& colony,
+               int width,
+               int height);
+
   void
   initializeColony(Colony& colony);
+
+  void
+  randomizeColony(Colony& colony);
 
   bool
   loadTextures(Picture* textures,
