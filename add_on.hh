@@ -84,10 +84,14 @@ namespace utils {
 
   bool
   loadTextures(Picture* textures,
+               int sizeX,
+               int sizeY,
                SDL_Renderer* renderer);
 
   bool
   initializeSights(Target& sights,
+                   int sizeX,
+                   int sizeY,
                    int displayedCellsHorizontally,
                    int displayedCellsVertically,
                    SDL_Renderer* renderer);

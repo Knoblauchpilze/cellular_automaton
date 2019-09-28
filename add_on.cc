@@ -28,6 +28,37 @@ namespace {
     return tex;
   }
 
+  SDL_Texture*
+  createTex(int width,
+            int height,
+            SDL_Color color,
+            SDL_Renderer* renderer)
+  {
+    SDL_Texture* tex = SDL_CreateTexture(
+      renderer,
+      SDL_PIXELFORMAT_RGBA8888,
+      SDL_TEXTUREACCESS_TARGET,
+      width,
+      height
+    );
+
+    if (tex == nullptr) {
+      std::cerr << "Could not create texture with dimensions " << width << "x" << height
+                << " and color (r: " << color.r << ", g: " << color.g << ", b: " << color.b
+                << ", a: " << color.a << ")"
+                << std::endl;
+
+      return nullptr;
+    }
+
+    SDL_SetRenderTarget(renderer, tex);
+    SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
+
+    SDL_RenderClear(renderer);
+
+    return tex;
+  }
+
 }
 
 namespace utils {
@@ -234,11 +265,13 @@ namespace utils {
 
   bool
   loadTextures(Picture* textures,
+               int sizeX,
+               int sizeY,
                SDL_Renderer* renderer)
   {
-    textures[0].pic = loadToTex("data/img/cell_newborn.bmp", renderer);
-    textures[1].pic = loadToTex("data/img/cell_alive.bmp", renderer);
-    textures[2].pic = loadToTex("data/img/cell_dying.bmp", renderer);
+    textures[0].pic = createTex(sizeX, sizeY, SDL_Color{0, 255, 0, SDL_ALPHA_OPAQUE}, renderer);
+    textures[1].pic = createTex(sizeX, sizeY, SDL_Color{0, 0, 255, SDL_ALPHA_OPAQUE}, renderer);
+    textures[2].pic = createTex(sizeX, sizeY, SDL_Color{255, 0, 0, SDL_ALPHA_OPAQUE}, renderer);
 
     if (textures[0].pic != nullptr) {
       SDL_QueryTexture(textures[0].pic, nullptr, nullptr, &textures[0].pos.w, &textures[0].pos.h);
@@ -255,22 +288,18 @@ namespace utils {
 
   bool
   initializeSights(Target& sights,
+                   int sizeX,
+                   int sizeY,
                    int displayedCellsHorizontally,
                    int displayedCellsVertically,
                    SDL_Renderer* renderer)
   {
-    sights.display.pic = loadToTex("data/img/sights.bmp", renderer);
+    sights.display.pic = createTex(sizeX, sizeY, SDL_Color{255, 255, 255, SDL_ALPHA_OPAQUE}, renderer);
 
     sights.x = displayedCellsHorizontally / 2;
     sights.y = displayedCellsVertically / 2;
 
-    SDL_QueryTexture(
-      sights.display.pic,
-      nullptr,
-      nullptr,
-      &sights.display.pos.w,
-      &sights.display.pos.h
-    );
+    SDL_QueryTexture(sights.display.pic, nullptr, nullptr, &sights.display.pos.w, &sights.display.pos.h);
 
     return sights.display.pic != nullptr;
   }
