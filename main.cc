@@ -13,7 +13,7 @@ int main (int argc, char** argv) {
   const int appWidth = 800;
   const int appHeight = 600;
 
-  const int cellSize = 10;
+  const int cellSize = 5;
 
   const int hVisibleCells = appWidth / cellSize;
   const int vVisibleCells = appHeight / cellSize;
@@ -34,8 +34,8 @@ int main (int argc, char** argv) {
   utils::Picture textures[3];
   utils::Target sights;
 
-  bool validT = utils::loadTextures(textures, app.renderer);
-  bool validS = utils::initializeSights(sights, app.hVisibleCellsCount, app.vVisibleCellsCount, app.renderer);
+  bool validT = utils::loadTextures(textures, cellSize, cellSize, app.renderer);
+  bool validS = utils::initializeSights(sights, cellSize, cellSize, app.hVisibleCellsCount, app.vVisibleCellsCount, app.renderer);
 
   if (!validT || !validS) {
     std::cerr << "[main] Could not allocate one or more textures, aborting" << std::endl;
