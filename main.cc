@@ -38,16 +38,15 @@ int main (int argc, char** argv) {
   bool validS = utils::initializeSights(sights, app.hVisibleCellsCount, app.vVisibleCellsCount, app.renderer);
 
   if (!validT || !validS) {
-    std::cerr << "Could not allocate one or more textures, aborting" << std::endl;
+    std::cerr << "[main] Could not allocate one or more textures, aborting" << std::endl;
     return EXIT_FAILURE;
   }
 
   // Load a colony.
-  utils::Colony colony{nullptr, hVisibleCells, vVisibleCells, 0};
-
-  colony.cells = new utils::Cell[hVisibleCells * vVisibleCells];
-  if (colony.cells == nullptr) {
-    std::cerr << "Could not allocate colony with dimensions 60x60" << std::endl;
+  utils::Colony colony;
+  bool valid = utils::createColony(colony, hVisibleCells, vVisibleCells);
+  if (!valid) {
+    std::cerr << "[main] Could not create colony with dimensions " << hVisibleCells << "x" << vVisibleCells << std::endl;
     return EXIT_FAILURE;
   }
 
@@ -84,6 +83,12 @@ int main (int argc, char** argv) {
 
       std::cout << "[main] Evolving colony to generation " << colony.generation + 1 << std::endl;
       utils::updateColony(colony);
+    }
+    if (events[SDLK_r]) {
+      events.reset(SDLK_r);
+
+      std::cout << "[main] Generating new random colony" << std::endl;
+      randomizeColony(colony);
     }
     if (events[SDLK_RIGHT]) {
       events.reset(SDLK_RIGHT);
@@ -179,6 +184,9 @@ int main (int argc, char** argv) {
       SDL_Delay(expectedFrameDuration - duration);
     }
   }
+
+  delete[] colony.cells;
+  delete[] colony.old;
 
   SDL_DestroyTexture(sights.display.pic);
 

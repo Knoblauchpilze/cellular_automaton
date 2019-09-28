@@ -4,6 +4,7 @@
 # include <stdexcept>
 # include <SDL2/SDL.h>
 # include <time.h>
+# include <cstdlib>
 # include "add_on.hh"
 
 namespace {
@@ -168,6 +169,32 @@ namespace utils {
     events.clickPos.y = -1;
   }
 
+  bool
+  createColony(Colony& colony,
+               int width,
+               int height)
+  {
+    colony = Colony{
+      nullptr,
+      nullptr,
+      width,
+      height,
+      0
+    };
+
+    colony.cells = new Cell[width * height];
+    colony.old = new Cell[width * height];
+
+    if (colony.cells == nullptr || colony.cells == nullptr) {
+      std::cerr << "Could not create colony with dimensions " << width << "x" << height << std::endl;
+      return false;
+    }
+
+    initializeColony(colony);
+
+    return true;
+  }
+
   void
   initializeColony(Colony& colony) {
     for (int i = 0 ; i < colony.height ; i++) {
@@ -177,6 +204,32 @@ namespace utils {
     }
 
     colony.generation = 0;
+  }
+
+  void
+  randomizeColony(Colony& colony) {
+    const int probNewborn = 10;
+    const int probAlive = 25;
+    const int probDying = 5;
+
+    for (int i = 0 ; i < colony.height ; i++) {
+      for (int j = 0 ; j < colony.width ; j++) {
+        int rnd = std::rand() % 100;
+
+        if (rnd < probNewborn) {
+          colony.cells[i * colony.width + j] = Cell::Newborn;
+        }
+        else if (rnd < probNewborn + probAlive) {
+          colony.cells[i * colony.width + j] = Cell::Alive;
+        }
+        else if (rnd < probNewborn + probAlive + probDying) {
+          colony.cells[i * colony.width + j] = Cell::Dying;
+        }
+        else {
+          colony.cells[i * colony.width + j] = Cell::Dead;
+        }
+      }
+    }
   }
 
   bool
@@ -343,11 +396,9 @@ namespace utils {
   void
   updateColony(Colony& colony) {
     // Copy old version of the colony in order not to alias the update process.
-    Cell* old = new Cell[colony.width * colony.height];
-
     for (int i = 0 ; i < colony.height ; i++) {
       for (int j = 0 ; j < colony.width ; j++) {
-        old[i * colony.width + j] = colony.cells[i * colony.width + j];
+        colony.old[i * colony.width + j] = colony.cells[i * colony.width + j];
       }
     }
 
@@ -383,10 +434,10 @@ namespace utils {
         }
 
         // Count the number of cells still alive in the neighbourhood.
-        int aliveCount = countCellsAliveAround(old, colony.width, colony.height, imin, imax, jmin, jmax, j, i);
+        int aliveCount = countCellsAliveAround(colony.old, colony.width, colony.height, imin, imax, jmin, jmax, j, i);
 
         // Update the state of the current cell.
-        if (old[i * colony.width + j] == Cell::Newborn) {
+        if (colony.old[i * colony.width + j] == Cell::Newborn) {
           if (aliveCount > 1 && aliveCount < 4) {
             colony.cells[i * colony.width + j] = Cell::Alive;
           }
@@ -394,7 +445,7 @@ namespace utils {
             colony.cells[i * colony.width + j] = Cell::Dying;
           }
         }
-        else if (old[i * colony.width + j] == Cell::Alive) {
+        else if (colony.old[i * colony.width + j] == Cell::Alive) {
           if (aliveCount < 2) {
             colony.cells[i * colony.width + j] = Cell::Dying;
           }
@@ -402,7 +453,7 @@ namespace utils {
             colony.cells[i * colony.width + j] = Cell::Dying;
           }
         }
-        else if (old[i * colony.width + j] == Cell::Dying) {
+        else if (colony.old[i * colony.width + j] == Cell::Dying) {
           if (aliveCount == 3) {
             colony.cells[i * colony.width + j] = Cell::Newborn;
           }
@@ -417,8 +468,6 @@ namespace utils {
         }
       }
     }
-
-    delete[] old;
 
     // One more generation has been computed.
     ++colony.generation;
