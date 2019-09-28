@@ -10,15 +10,15 @@
 
 int main (int argc, char** argv) {
   // Define constants.
-  const int appWidth = 800;
-  const int appHeight = 600;
+  const int appWidth = 1920;
+  const int appHeight = 1080;
 
-  const int cellSize = 5;
+  const int cellSize = 2;
 
   const int hVisibleCells = appWidth / cellSize;
   const int vVisibleCells = appHeight / cellSize;
 
-  const std::uint32_t fps = 50u;
+  const std::uint32_t fps = 20u;
   const std::uint32_t expectedFrameDuration = 1000u / fps;
 
   const std::string colonyFile = "data/colony.txt";
