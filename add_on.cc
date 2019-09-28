@@ -107,7 +107,7 @@ namespace utils {
       SDL_WINDOWPOS_CENTERED,
       width,
       height,
-      SDL_WINDOW_SHOWN
+      SDL_WINDOW_SHOWN | SDL_WINDOW_FULLSCREEN_DESKTOP
     );
 
     // Initialize the icon of this application.
