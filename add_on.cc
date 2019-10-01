@@ -373,7 +373,7 @@ namespace utils {
         else {
           colony.cells[i * colony.width + j] = Cell::Dead;
         }
-        
+
         ++readCells;
       }
 
