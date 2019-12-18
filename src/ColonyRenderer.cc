@@ -21,6 +21,30 @@ namespace cellulator {
   }
 
   void
+  ColonyRenderer::start(const std::string& dummy) {
+    // TODO: Should start the simulation of the colony.
+    log("Should start the similation from " + dummy, utils::Level::Warning);
+  }
+
+  void
+  ColonyRenderer::stop(const std::string& dummy) {
+    // TODO: Should stop the simulation of the colony.
+    log("Should stop the similation from " + dummy, utils::Level::Warning);
+  }
+
+  void
+  ColonyRenderer::nextStep(const std::string& dummy) {
+    // TODO: Should simulate the next step of the simulation.
+    log("Should simulate the next step of the similation from " + dummy, utils::Level::Warning);
+  }
+
+  void
+  ColonyRenderer::generate(const std::string& dummy) {
+    // TODO: Should try to generate a new colony.
+    log("Should generate a new colony from " + dummy, utils::Level::Warning);
+  }
+
+  void
   ColonyRenderer::drawContentPrivate(const utils::Uuid& /*uuid*/,
                                      const utils::Boxf& /*area*/)
   {
