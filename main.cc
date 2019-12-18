@@ -56,6 +56,24 @@ int main(int /*argc*/, char** /*argv*/) {
     cellulator::StatusBar* bar = new cellulator::StatusBar();
     app->setStatusBar(bar);
 
+    // Connect the render button to the options panel slots.
+    status->getStartSimilationButton().onClick.connect_member<cellulator::ColonyRenderer>(
+      renderer,
+      &cellulator::ColonyRenderer::start
+    );
+    status->getStopSimilationButton().onClick.connect_member<cellulator::ColonyRenderer>(
+      renderer,
+      &cellulator::ColonyRenderer::stop
+    );
+    status->getNextStepButton().onClick.connect_member<cellulator::ColonyRenderer>(
+      renderer,
+      &cellulator::ColonyRenderer::nextStep
+    );
+    status->getGenerateColonyButton().onClick.connect_member<cellulator::ColonyRenderer>(
+      renderer,
+      &cellulator::ColonyRenderer::generate
+    );
+
     // Run it.
     app->run();
   }

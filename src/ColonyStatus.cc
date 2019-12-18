@@ -54,7 +54,7 @@ namespace cellulator {
 
     sdl::graphic::Button* start = new sdl::graphic::Button(
       getStartSimulationButtonName(),
-      std::string("Simulate"),
+      std::string(),
       std::string("data/img/start.bmp"),
       getButtonFontName(),
       15u,
@@ -69,9 +69,26 @@ namespace cellulator {
       );
     }
 
+    sdl::graphic::Button* next = new sdl::graphic::Button(
+      getNextStepButtonName(),
+      std::string(),
+      std::string("data/img/next.bmp"),
+      getButtonFontName(),
+      15u,
+      this,
+      utils::Sizef(),
+      sdl::core::engine::Color::NamedColor::White
+    );
+    if (next == nullptr) {
+      error(
+        std::string("Could not create colony status"),
+        std::string("Next step button not allocated")
+      );
+    }
+
     sdl::graphic::Button* stop = new sdl::graphic::Button(
       getStopSimulationButtonName(),
-      std::string("Abort"),
+      std::string(),
       std::string("data/img/stop.bmp"),
       getButtonFontName(),
       15u,
@@ -86,9 +103,15 @@ namespace cellulator {
       );
     }
 
+    // Assign maximum size to component(s) if needed.
+    start->setMaxSize(getSimulationButtonMaxSize());
+    stop->setMaxSize(getSimulationButtonMaxSize());
+    next->setMaxSize(getSimulationButtonMaxSize());
+
     // Add each element to the layout.
     layout->addItem(generate);
     layout->addItem(start);
+    layout->addItem(next);
     layout->addItem(stop);
   }
 

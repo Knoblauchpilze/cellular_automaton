@@ -24,6 +24,42 @@ namespace cellulator {
 
       ~ColonyStatus() = default;
 
+      /**
+       * @brief - Used to retrive the start simulation button associated to this
+       *          status. This method is only meant as a way to connect elements
+       *          to the `onClick` signal of this button, lacking of a better way.
+       *          The method may raise an error in case the start simulation
+       *          button is not defined.
+       * @return - a reference to the start simulation button associated to this
+       *           status.
+       */
+      sdl::graphic::Button&
+      getStartSimilationButton();
+
+      /**
+       * @brief - Similar to the `getStartSimulationButton` but used to retrieve
+       *          the stop simulation button.
+       * @return - a reference to the stop simulation button.
+       */
+      sdl::graphic::Button&
+      getStopSimilationButton();
+
+      /**
+       * @brief - Similar to the `getStartSimulationButton` but used to retrieve
+       *          the next step button.
+       * @return - a reference to the next step button.
+       */
+      sdl::graphic::Button&
+      getNextStepButton();
+
+      /**
+       * @brief - Similar to the `getStartSimulationButton` but used to retrieve
+       *          the generate random colony button.
+       * @return - a reference to the generate colony button.
+       */
+      sdl::graphic::Button&
+      getGenerateColonyButton();
+
     protected:
 
       /**
@@ -74,6 +110,17 @@ namespace cellulator {
       getStopSimulationButtonName() noexcept;
 
       /**
+       * @brief - Used to retrieve a button allowing to simulate a single step of the
+       *          colony. This name can be used for consistent naming of this button
+       *          across the API.
+       * @return - a string that should be used to provide consistent naming for the
+       *           next step button.
+       */
+      static
+      const char*
+      getNextStepButtonName() noexcept;
+
+      /**
        * @brief - Used to retrieve the default name for the random generation
        *          button.
        * @return - a string that should be used to provide consistent naming
@@ -91,6 +138,16 @@ namespace cellulator {
       static
       const char*
       getButtonFontName() noexcept;
+
+      /**
+       * @brief - Retrieves the maximum size for the simulation control buttons. As we
+       *          only want the buttons to be large enough in order for the icon to be
+       *          visible. Growing them more would not bring anything.
+       * @return - a value describing the maximum size for the simulation button.
+       */
+      static
+      utils::Sizef
+      getSimulationButtonMaxSize() noexcept;
 
       /**
        * @brief - Used to build the content of this widget so that it can be
