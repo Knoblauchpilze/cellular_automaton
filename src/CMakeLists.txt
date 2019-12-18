@@ -9,6 +9,8 @@ set (SOURCES
   StatusBar.cc
   ColonyRenderer.cc
   ColonyStatus.cc
+  Cell.cc
+  Colony.cc
   )
 
 add_library (cellular_automaton_lib SHARED
