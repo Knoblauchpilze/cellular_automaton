@@ -3,7 +3,9 @@
 
 namespace cellulator {
 
-  Cell::Cell() {}
+  Cell::Cell(const State& state):
+    m_state(state)
+  {}
 
 }
 

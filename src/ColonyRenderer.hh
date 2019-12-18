@@ -5,6 +5,7 @@
 # include <maths_utils/Size.hh>
 # include <sdl_core/SdlWidget.hh>
 # include <sdl_graphic/ScrollableWidget.hh>
+# include "Colony.hh"
 
 namespace cellulator {
 
@@ -141,6 +142,11 @@ namespace cellulator {
        *          indicating that the texture representing the colony needs to be updated.
        */
       bool m_colonyRendered;
+
+      /**
+       * @brief - The colony displayed in the renderer.
+       */
+      ColonyShPtr m_colony;
   };
 
 }

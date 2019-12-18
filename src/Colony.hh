@@ -2,8 +2,11 @@
 # define   COLONY_HH
 
 # include <mutex>
+# include <memory>
 # include <core_utils/CoreObject.hh>
 # include <maths_utils/Size.hh>
+# include <sdl_engine/Brush.hh>
+# include "Cell.hh"
 
 namespace cellulator {
 
@@ -56,6 +59,34 @@ namespace cellulator {
       void
       generate();
 
+      /**
+       * @brief - Create a new brush that can be used to create a texture representing this
+       *          colony. The current rendering area is rendered in the texture which might
+       *          or might not include all the content of the colony.
+       * @return - a pointer to a brush representing the colony.
+       */
+      sdl::core::engine::BrushShPtr
+      createBrush();
+
+    private:
+
+      /**
+       * @brief - Reinitialize the colony with the specified dimensions. All cells will be
+       *          assigned a `Dead` status. Assumes that the locker for this object has
+       *          already been acquired.
+       * @param dims - the dimensions of the cells array to allocate.
+       */
+      void
+      reset(const utils::Sizei& dims);
+
+      /**
+       * @brief - Used to assign random values for each cell of the colony. This assumes that
+       *          the colony is effectively stopped but no checks are performed to ensure it.
+       *          Note that this method assumes that the locker is already acquired.
+       */
+      void
+      randomize();
+
     private:
 
       /**
@@ -71,8 +102,13 @@ namespace cellulator {
        */
       utils::Sizei m_dims;
 
+      /**
+       * @brief - The internal array of cells representing the colony.
+       */
+      std::vector<Cell> m_cells;
   };
 
+  using ColonyShPtr = std::shared_ptr<Colony>;
 }
 
 # include "Colony.hxx"
