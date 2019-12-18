@@ -1,3 +1,98 @@
+
+/**
+ * @brief - Reimplementation of a program started in 05/2011 as a
+ *          training and a tool to visualize the evolution of a
+ *          cells colony following the rules of Conway's game of
+ *          life.
+ *          Implemented from 28/09/2019 - 17/12/2019.
+ */
+
+# include <core_utils/StdLogger.hh>
+# include <core_utils/LoggerLocator.hh>
+# include <sdl_app_core/SdlApplication.hh>
+# include <core_utils/CoreException.hh>
+# include "StatusBar.hh"
+# include "ColonyStatus.hh"
+# include "ColonyRenderer.hh"
+
+int main(int /*argc*/, char** /*argv*/) {
+  // Create the logger.
+  utils::StdLogger logger;
+  utils::LoggerLocator::provide(&logger);
+
+  const std::string service("automaton");
+  const std::string module("main");
+
+  // Create the application window parameters.
+  const std::string appName = std::string("cellulator");
+  const std::string appTitle = std::string("Cellular Automaton: Welcome to the Jungle (Old: Cells' game)");
+  const std::string appIcon = std::string("data/img/icon.bmp");
+  const utils::Sizei size(800, 600);
+
+  sdl::app::SdlApplicationShPtr app = nullptr;
+
+  try {
+    app = std::make_shared<sdl::app::SdlApplication>(
+      appName,
+      appTitle,
+      appIcon,
+      size,
+      true,
+      utils::Sizef(0.4f, 0.6f),
+      50.0f,
+      60.0f
+    );
+
+    // Create the layout of the window: the main tab is a scrollable widget
+    // allowing the display of the colony. The rigth dock widget allows to
+    // control the computation parameters and the status bar displays some
+    // general information about the colony.
+    cellulator::ColonyRenderer* renderer = new cellulator::ColonyRenderer();
+    app->setCentralWidget(renderer);
+
+    cellulator::ColonyStatus* status = new cellulator::ColonyStatus();
+    app->addDockWidget(status, sdl::app::DockWidgetArea::TopArea);
+
+    cellulator::StatusBar* bar = new cellulator::StatusBar();
+    app->setStatusBar(bar);
+
+    // Run it.
+    app->run();
+  }
+  catch (const utils::CoreException& e) {
+    utils::LoggerLocator::getLogger().logMessage(
+      utils::Level::Critical,
+      std::string("Caught internal exception while setting up application"),
+      module,
+      service,
+      e.what()
+    );
+  }
+  catch (const std::exception& e) {
+    utils::LoggerLocator::getLogger().logMessage(
+      utils::Level::Critical,
+      std::string("Caught exception while setting up application"),
+      module,
+      service,
+      e.what()
+    );
+  }
+  catch (...) {
+    utils::LoggerLocator::getLogger().logMessage(
+      utils::Level::Critical,
+      std::string("Unexpected error while setting up application"),
+      module,
+      service
+    );
+  }
+
+  app.reset();
+
+  // All is good.
+  return EXIT_SUCCESS;
+}
+
+# ifdef OLD
 /*
     15/05/2011 - Restored on 28/09/2019
     PROJET AUTOMATE CELLULAIRE
@@ -198,3 +293,5 @@ int main (int argc, char** argv) {
 
   return EXIT_SUCCESS;
 }
+
+# endif
