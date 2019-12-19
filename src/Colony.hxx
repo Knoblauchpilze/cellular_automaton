@@ -13,6 +13,14 @@ namespace cellulator {
   }
 
   inline
+  utils::Sizei
+  Colony::getSize() noexcept {
+    Guard guard(m_propsLocker);
+
+    return m_dims;
+  }
+
+  inline
   unsigned
   Colony::getWorkerThreadCount() noexcept {
     return 3u;

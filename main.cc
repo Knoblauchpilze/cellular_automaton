@@ -12,6 +12,7 @@
 # include <sdl_app_core/SdlApplication.hh>
 # include <core_utils/CoreException.hh>
 # include "StatusBar.hh"
+# include "Colony.hh"
 # include "ColonyStatus.hh"
 # include "ColonyRenderer.hh"
 
@@ -43,11 +44,17 @@ int main(int /*argc*/, char** /*argv*/) {
       60.0f
     );
 
+    // Create the colony to simulate.
+    cellulator::ColonyShPtr colony = std::make_shared<cellulator::Colony>(
+      utils::Sizei(500, 300),
+      std::string("Drop it like it's Hoth")
+    );
+
     // Create the layout of the window: the main tab is a scrollable widget
     // allowing the display of the colony. The rigth dock widget allows to
     // control the computation parameters and the status bar displays some
     // general information about the colony.
-    cellulator::ColonyRenderer* renderer = new cellulator::ColonyRenderer();
+    cellulator::ColonyRenderer* renderer = new cellulator::ColonyRenderer(colony);
     app->setCentralWidget(renderer);
 
     cellulator::ColonyStatus* status = new cellulator::ColonyStatus();
