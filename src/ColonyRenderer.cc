@@ -4,7 +4,8 @@
 
 namespace cellulator {
 
-  ColonyRenderer::ColonyRenderer(const utils::Sizef& hint,
+  ColonyRenderer::ColonyRenderer(ColonyShPtr colony,
+                                 const utils::Sizef& hint,
                                  sdl::core::SdlWidget* parent):
     sdl::graphic::ScrollableWidget(std::string("colony_renderer"),
                                    parent,
@@ -13,14 +14,23 @@ namespace cellulator {
     m_propsLocker(),
 
     m_tex(),
+    m_settings(),
     m_colonyRendered(true),
 
-    m_colony(nullptr),
+    m_colony(colony),
     m_generationComputedSignalID(utils::Signal<unsigned>::NoID),
 
     onGenerationComputed()
   {
     setService(std::string("colony_renderer"));
+
+    // Check consistency.
+    if (colony == nullptr) {
+      error(
+        std::string("Could not create renderer"),
+        std::string("Invalid null colony")
+      );
+    }
 
     build();
   }
@@ -29,20 +39,6 @@ namespace cellulator {
   ColonyRenderer::generate(const std::string& /*dummy*/) {
     // Protect from concurrent accesses.
     Guard guard(m_propsLocker);
-
-    // Create the colony if needed.
-    if (m_colony == nullptr) {
-      m_colony = std::make_shared<Colony>(
-        utils::Sizei(500, 300),
-        std::string("Drop it like it's Hoth")
-      );
-
-      // Connect to the handler signal.
-      m_generationComputedSignalID = m_colony->onGenerationComputed.connect_member<ColonyRenderer>(
-        this,
-        &ColonyRenderer::handleGenerationComputed
-      );
-    }
 
     // Generate it at random.
     m_colony->generate();
@@ -93,7 +89,15 @@ namespace cellulator {
 
   void
   ColonyRenderer::build() {
-    // TODO: Connect components.
+    // Connect to the handler signal.
+    m_generationComputedSignalID = m_colony->onGenerationComputed.connect_member<ColonyRenderer>(
+      this,
+      &ColonyRenderer::handleGenerationComputed
+    );
+
+    // Assign the rendering window: by default we consider that the whole area is visible.
+    utils::Sizei s = m_colony->getSize();
+    m_settings.area = utils::Boxf::fromSize(s, true);
   }
 
   void

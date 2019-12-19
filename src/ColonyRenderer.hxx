@@ -19,10 +19,8 @@ namespace cellulator {
     // Protect from concurrent accesses.
     Guard guard(m_propsLocker);
 
-    // Request to start the simulation if possible.
-    if (m_colony != nullptr) {
-      m_colony->start();
-    }
+    // Request to start the simulation.
+    m_colony->start();
   }
 
   inline
@@ -31,10 +29,8 @@ namespace cellulator {
     // Protect from concurrent accesses.
     Guard guard(m_propsLocker);
 
-    // Request to stop the simulation if possible.
-    if (m_colony != nullptr) {
-      m_colony->stop();
-    }
+    // Request to stop the simulation.
+    m_colony->stop();
   }
 
   inline
@@ -43,22 +39,8 @@ namespace cellulator {
     // Protect from concurrent accesses.
     Guard guard(m_propsLocker);
 
-    // Request a next step if possible.
-    if (m_colony != nullptr) {
-      m_colony->step();
-    }
-  }
-
-  inline
-  void
-  ColonyRenderer::updatePrivate(const utils::Boxf& window) {
-    // Protect from concurrent accesses.
-    Guard guard(m_propsLocker);
-
-    // Use the base handler.
-    sdl::core::SdlWidget::updatePrivate(window);
-
-    // TODO: Handle update.
+    // Request a next step.
+    m_colony->step();
   }
 
   inline
@@ -89,14 +71,11 @@ namespace cellulator {
     // Clear any existing texture representing the colony.
     clearColony();
 
-    // Check whether the colony is created: if this is not the case
-    // there's nothing to create and nothing to display.
-    if (m_colony == nullptr) {
-      return;
-    }
-
     // Create the brush representing the tile using the palette
     // provided by the user.
+    // TODO: This should probably be part of the renderer ? Or
+    // the colony should create the display using the internal
+    // area (`m_settings.area`).
     sdl::core::engine::BrushShPtr brush = m_colony->createBrush();
 
     // check consistency.

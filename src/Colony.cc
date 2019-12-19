@@ -14,6 +14,7 @@ namespace cellulator {
     m_generation(0u),
 
     m_scheduler(std::make_shared<utils::ThreadPool>(getWorkerThreadCount())),
+    m_simulationState(SimulationState::Stopped),
     m_taskProgress(0u),
     m_taskTotal(1u),
 
@@ -37,7 +38,15 @@ namespace cellulator {
     // Protect from concurrent accesses.
     Guard guard(m_propsLocker);
 
-    // TODO: Start the colony.
+    // Check whether the simulation is already started.
+    if (m_simulationState == SimulationState::Running) {
+      return;
+    }
+
+    // Assign the new state.
+    m_simulationState = SimulationState::Running;
+
+    scheduleRendering();
   }
 
   void
@@ -45,7 +54,15 @@ namespace cellulator {
     // Protect from concurrent accesses.
     Guard guard(m_propsLocker);
 
-    // TODO: Simulate a single step of the colony.
+    // Check whether the simulation is already computing a next step.
+    if (m_simulationState != SimulationState::Stopped) {
+      return;
+    }
+
+    // Assign the new state.
+    m_simulationState = SimulationState::SingleStep;
+
+    scheduleRendering();
   }
 
   void
@@ -53,7 +70,15 @@ namespace cellulator {
     // Protect from concurrent accesses.
     Guard guard(m_propsLocker);
 
-    // TODO: Stop the colony.
+    // Check whether the simulation is already stopped.
+    if (m_simulationState == SimulationState::Stopped) {
+      return;
+    }
+
+    // Request the simulation to stop.
+    m_simulationState = SimulationState::Stopped;
+
+    scheduleRendering();
   }
 
   void
@@ -61,7 +86,15 @@ namespace cellulator {
     // Protect from concurrent accesses.
     Guard guard(m_propsLocker);
 
-    // TODO: Be sure that the simulation has stopped.
+    // Check whether the simulation is stopped.
+    if (m_simulationState != SimulationState::Stopped) {
+      log(
+        std::string("Could not generate new colony while current one is running"),
+        utils::Level::Warning
+      );
+
+      return;
+    }
 
     // Use the dedicated handler to generate the colony.
     randomize();
@@ -128,11 +161,9 @@ namespace cellulator {
   }
 
   void
-  Colony::scheduleRendering(bool invalidate) {
-    // Cancel existing rendering operations if needed.
-    if (invalidate) {
-      m_scheduler->cancelJobs();
-    }
+  Colony::scheduleRendering() {
+    // Cancel existing rendering operations.
+    m_scheduler->cancelJobs();
 
     // Generate the launch schedule.
     // TODO: Create schedule.
@@ -146,7 +177,7 @@ namespace cellulator {
       return;
     }
 
-    m_scheduler->enqueueJobs(tilesAsJobs, invalidate);
+    m_scheduler->enqueueJobs(tilesAsJobs, false);
 
     // Notify listeners that the progression is now `0`.
     m_taskProgress = 0u;

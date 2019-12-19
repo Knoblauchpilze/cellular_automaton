@@ -31,6 +31,16 @@ namespace cellulator {
       ~Colony();
 
       /**
+       * @brief - Used to retrieve the size of the colony as of now. This includes
+       *          all the tiles generated so far even though they might not be
+       *          rendered yet (or visible for that matter).
+       *          The size is expressed in terms of cells.
+       * @return - the size of the colony.
+       */
+      utils::Sizei
+      getSize() noexcept;
+
+      /**
        * @brief - Attempt to start the execution of the colony. Note that if the
        *          colony is already running, nothing happens.
        */
@@ -107,11 +117,9 @@ namespace cellulator {
        * @brief - Used to schedule a rendering of the colony using the internal thread
        *          pool. Note that this function assumes that the locker on the options
        *          is already acquired before calling the method.
-       * @param invalidate - `true` if the old jobs should be invalidated (i.e. prevented
-       *                     from notifying external listeners).
        */
       void
-      scheduleRendering(bool invalidate);
+      scheduleRendering();
 
       /**
        * @brief - Internal slot used to handle the tiles computed by the thread
@@ -123,6 +131,15 @@ namespace cellulator {
       handleTilesComputed(const std::vector<utils::AsynchronousJobShPtr>& tiles);
 
     private:
+
+      /**
+       * @brief - Describe the possible state for the simulation.
+       */
+      enum class SimulationState {
+        Stopped,
+        Running,
+        SingleStep
+      };
 
       /**
        * @brief - Protect this colony from concurrent accesses.
@@ -153,6 +170,12 @@ namespace cellulator {
        * @brief - Convenience object allowing to schedule the simulation of the colony.
        */
       utils::ThreadPoolShPtr m_scheduler;
+
+      /**
+       * @brief - Holds the current simulation status. Checking this value allows to
+       *          find the possible actions regarding the colony.
+       */
+      SimulationState m_simulationState;
 
       /**
        * @brief - Used to keep track of the tiles already rendered so far in the current
