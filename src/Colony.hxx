@@ -13,6 +13,12 @@ namespace cellulator {
   }
 
   inline
+  unsigned
+  Colony::getWorkerThreadCount() noexcept {
+    return 3u;
+  }
+
+  inline
   void
   Colony::reset(const utils::Sizei& dims) {
     // Reset the cells.

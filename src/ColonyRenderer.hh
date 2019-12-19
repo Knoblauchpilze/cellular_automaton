@@ -4,6 +4,7 @@
 # include <mutex>
 # include <maths_utils/Size.hh>
 # include <sdl_core/SdlWidget.hh>
+# include <core_utils/Signal.hh>
 # include <sdl_graphic/ScrollableWidget.hh>
 # include "Colony.hh"
 
@@ -122,6 +123,15 @@ namespace cellulator {
       void
       loadColony();
 
+      /**
+       * @brief - Internal slot used to handle the notification whenever a new generation
+       *          has been computed by the colony. Used to both dispatch the information
+       *          and also perform a repaint of the content.
+       * @param generation - the index of the generation which was completed.
+       */
+      void
+      handleGenerationComputed(unsigned generation);
+
     private:
 
       /**
@@ -147,6 +157,23 @@ namespace cellulator {
        * @brief - The colony displayed in the renderer.
        */
       ColonyShPtr m_colony;
+
+      /**
+       * @brief - Contains the index of the signal registered on the colony to be notified
+       *          when a new generation has been computed. In case we want to change the
+       *          internal colony this value can be used to safely disconnect from the signal
+       *          and be ready to attach a new one if needed.
+       */
+      int m_generationComputedSignalID;
+
+    public:
+
+      /**
+       * @brief - Signal emitted whenever a new generation has been computed by the renderer.
+       *          This is useful for listeners which would like to keep up with the current
+       *          generation of cells displayed on screen.
+       */
+      utils::Signal<unsigned> onGenerationComputed;
   };
 
 }

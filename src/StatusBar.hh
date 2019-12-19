@@ -25,6 +25,14 @@ namespace cellulator {
 
       ~StatusBar() = default;
 
+      /**
+       * @brief - Used to receive notification about a generation being computed. This
+       *          will be used to update the related label.
+       * @param generation - the new generation that has just been computed.
+       */
+      void
+      onGenerationComputed(unsigned generation);
+
     protected:
 
       /**

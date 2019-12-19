@@ -74,6 +74,12 @@ int main(int /*argc*/, char** /*argv*/) {
       &cellulator::ColonyRenderer::generate
     );
 
+    // Connect the generation's notification to the dedicated slot.
+    renderer->onGenerationComputed.connect_member<cellulator::StatusBar>(
+      bar,
+      &cellulator::StatusBar::onGenerationComputed
+    );
+
     // Run it.
     app->run();
   }

@@ -6,6 +6,7 @@
 # include <core_utils/CoreObject.hh>
 # include <maths_utils/Size.hh>
 # include <sdl_engine/Brush.hh>
+# include <core_utils/ThreadPool.hh>
 # include "Cell.hh"
 
 namespace cellulator {
@@ -71,6 +72,21 @@ namespace cellulator {
     private:
 
       /**
+       * @brief - Used to return the number of threads to create to process the jobs
+       *          related to rendering the colony.
+       * @return - a value used to create the thread pool associated to this renderer.
+       */
+      static
+      unsigned
+      getWorkerThreadCount() noexcept;
+
+      /**
+       * @brief - Connect signals and build the scheduler to use to simulate the colony.
+       */
+      void
+      build();
+
+      /**
        * @brief - Reinitialize the colony with the specified dimensions. All cells will be
        *          assigned a `Dead` status. Assumes that the locker for this object has
        *          already been acquired.
@@ -86,6 +102,25 @@ namespace cellulator {
        */
       void
       randomize();
+
+      /**
+       * @brief - Used to schedule a rendering of the colony using the internal thread
+       *          pool. Note that this function assumes that the locker on the options
+       *          is already acquired before calling the method.
+       * @param invalidate - `true` if the old jobs should be invalidated (i.e. prevented
+       *                     from notifying external listeners).
+       */
+      void
+      scheduleRendering(bool invalidate);
+
+      /**
+       * @brief - Internal slot used to handle the tiles computed by the thread
+       *          pool. The goal is to trigger the creation of the needed repaint
+       *          events to display the results of the computation.
+       * @param tiles - a list of tiles that just completed.
+       */
+      void
+      handleTilesComputed(const std::vector<utils::AsynchronousJobShPtr>& tiles);
 
     private:
 
@@ -106,6 +141,42 @@ namespace cellulator {
        * @brief - The internal array of cells representing the colony.
        */
       std::vector<Cell> m_cells;
+
+      /**
+       * @brief - Holds the generation reached by this colony. Each call to `step`
+       *          or a simulation step when `start` has been called triggers a new
+       *          generation which is kept internally.
+       */
+      unsigned m_generation;
+
+      /**
+       * @brief - Convenience object allowing to schedule the simulation of the colony.
+       */
+      utils::ThreadPoolShPtr m_scheduler;
+
+      /**
+       * @brief - Used to keep track of the tiles already rendered so far in the current
+       *          rendering operation. This allows to compute some sort of percentage of
+       *          completion of the task.
+       */
+      unsigned m_taskProgress;
+
+      /**
+       * @brief - Keep track of the total size of the batch of tasks that were generated
+       *          to be scheduled.
+       *          Useful in conjunction with the `m_taskProgress` to provide some sort of
+       *          completion percentage.
+       */
+      unsigned m_taskTotal;
+
+    public:
+
+      /**
+       * @brief - Signal emitted whenever a new generation has been computed by the pool.
+       *          This is useful for listeners which would like to keep up with the current
+       *          generation of cells displayed on screen.
+       */
+      utils::Signal<unsigned> onGenerationComputed;
   };
 
   using ColonyShPtr = std::shared_ptr<Colony>;

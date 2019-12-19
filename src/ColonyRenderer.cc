@@ -15,38 +15,14 @@ namespace cellulator {
     m_tex(),
     m_colonyRendered(true),
 
-    m_colony(nullptr)
+    m_colony(nullptr),
+    m_generationComputedSignalID(utils::Signal<unsigned>::NoID),
+
+    onGenerationComputed()
   {
     setService(std::string("colony_renderer"));
 
     build();
-  }
-
-  void
-  ColonyRenderer::start(const std::string& dummy) {
-    // Protect from concurrent accesses.
-    Guard guard(m_propsLocker);
-
-    // TODO: Should start the simulation of the colony.
-    log("Should start the similation from " + dummy, utils::Level::Warning);
-  }
-
-  void
-  ColonyRenderer::stop(const std::string& dummy) {
-    // Protect from concurrent accesses.
-    Guard guard(m_propsLocker);
-
-    // TODO: Should stop the simulation of the colony.
-    log("Should stop the similation from " + dummy, utils::Level::Warning);
-  }
-
-  void
-  ColonyRenderer::nextStep(const std::string& dummy) {
-    // Protect from concurrent accesses.
-    Guard guard(m_propsLocker);
-
-    // TODO: Should simulate the next step of the simulation.
-    log("Should simulate the next step of the similation from " + dummy, utils::Level::Warning);
   }
 
   void
@@ -59,6 +35,12 @@ namespace cellulator {
       m_colony = std::make_shared<Colony>(
         utils::Sizei(500, 300),
         std::string("Drop it like it's Hoth")
+      );
+
+      // Connect to the handler signal.
+      m_generationComputedSignalID = m_colony->onGenerationComputed.connect_member<ColonyRenderer>(
+        this,
+        &ColonyRenderer::handleGenerationComputed
       );
     }
 
@@ -111,7 +93,27 @@ namespace cellulator {
 
   void
   ColonyRenderer::build() {
-    // TODO: Handle creation of content.
+    // TODO: Connect components.
+  }
+
+  void
+  ColonyRenderer::handleGenerationComputed(unsigned generation) {
+    // Protect from concurrent accesses.
+    Guard guard(m_propsLocker);
+
+    // Post a repaint event for each area that has been rendered.
+    sdl::core::engine::PaintEventShPtr e = std::make_shared<sdl::core::engine::PaintEvent>();
+
+    postEvent(e);
+
+    // The colony need to be rendered again.
+    setColonyChanged();
+
+    // Notify listeners.
+    onGenerationComputed.safeEmit(
+      std::string("onGenerationComputed(") + std::to_string(generation) + ")",
+      generation
+    );
   }
 
 }
