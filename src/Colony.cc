@@ -10,7 +10,14 @@ namespace cellulator {
     m_propsLocker(),
 
     m_dims(),
-    m_cells()
+    m_cells(),
+    m_generation(0u),
+
+    m_scheduler(std::make_shared<utils::ThreadPool>(getWorkerThreadCount())),
+    m_taskProgress(0u),
+    m_taskTotal(1u),
+
+    onGenerationComputed()
   {
     // Check consistency.
     if (!dims.valid()) {
@@ -19,6 +26,8 @@ namespace cellulator {
         std::string("Invalid dimensions ") + dims.toString()
       );
     }
+
+    build();
 
     reset(dims);
   }
@@ -107,6 +116,64 @@ namespace cellulator {
     brush->createFromRaw(m_dims, colors);
 
     return brush;
+  }
+
+  void
+  Colony::build() {
+    // Connect the results provider signal of the thread pool to the local slot.
+    m_scheduler->onJobsCompleted.connect_member<Colony>(
+      this,
+      &Colony::handleTilesComputed
+    );
+  }
+
+  void
+  Colony::scheduleRendering(bool invalidate) {
+    // Cancel existing rendering operations if needed.
+    if (invalidate) {
+      m_scheduler->cancelJobs();
+    }
+
+    // Generate the launch schedule.
+    // TODO: Create schedule.
+
+    // Convert to required pointer type.
+    std::vector<utils::AsynchronousJobShPtr> tilesAsJobs;
+
+    // Return early if nothing needs to be scheduled. We still want to trigger a repaint
+    // though so we need to mark the tiles as dirty.
+    if (tilesAsJobs.empty()) {
+      return;
+    }
+
+    m_scheduler->enqueueJobs(tilesAsJobs, invalidate);
+
+    // Notify listeners that the progression is now `0`.
+    m_taskProgress = 0u;
+    m_taskTotal = tilesAsJobs.size();
+
+    // Start the computing.
+    m_scheduler->notifyJobs();
+  }
+
+  void
+  Colony::handleTilesComputed(const std::vector<utils::AsynchronousJobShPtr>& tiles) {
+    // Protect from concurrent accesses.
+    Guard guard(m_propsLocker);
+
+    // Append the number of tiles to the internal count.
+    m_taskProgress += tiles.size();
+
+    // In case all the tiles have been computed for this generation, notify external
+    // listeners. Otherwise wait for the generation to complete.
+    if (m_taskProgress == m_taskTotal) {
+      ++m_generation;
+
+      onGenerationComputed.safeEmit(
+        std::string("onGenerationComputed(") + std::to_string(m_generation) + ")",
+        m_generation
+      );
+    }
   }
 
 }

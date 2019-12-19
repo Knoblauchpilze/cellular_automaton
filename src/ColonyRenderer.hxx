@@ -15,6 +15,42 @@ namespace cellulator {
 
   inline
   void
+  ColonyRenderer::start(const std::string& /*dummy*/) {
+    // Protect from concurrent accesses.
+    Guard guard(m_propsLocker);
+
+    // Request to start the simulation if possible.
+    if (m_colony != nullptr) {
+      m_colony->start();
+    }
+  }
+
+  inline
+  void
+  ColonyRenderer::stop(const std::string& /*dummy*/) {
+    // Protect from concurrent accesses.
+    Guard guard(m_propsLocker);
+
+    // Request to stop the simulation if possible.
+    if (m_colony != nullptr) {
+      m_colony->stop();
+    }
+  }
+
+  inline
+  void
+  ColonyRenderer::nextStep(const std::string& /*dummy*/) {
+    // Protect from concurrent accesses.
+    Guard guard(m_propsLocker);
+
+    // Request a next step if possible.
+    if (m_colony != nullptr) {
+      m_colony->step();
+    }
+  }
+
+  inline
+  void
   ColonyRenderer::updatePrivate(const utils::Boxf& window) {
     // Protect from concurrent accesses.
     Guard guard(m_propsLocker);

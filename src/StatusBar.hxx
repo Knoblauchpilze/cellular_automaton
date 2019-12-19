@@ -6,6 +6,25 @@
 namespace cellulator {
 
   inline
+  void
+  StatusBar::onGenerationComputed(unsigned generation) {
+    // Protect from concurrent accesses.
+    Guard guard(m_propsLocker);
+
+    sdl::graphic::LabelWidget* gen = getGenerationLabel();
+    if (gen == nullptr) {
+      log(
+        std::string("Could not find label to update generation to ") + std::to_string(generation),
+        utils::Level::Error
+      );
+
+      return;
+    }
+
+    gen->setText(std::string("Generation: ") + std::to_string(generation));
+  }
+
+  inline
   float
   StatusBar::getStatusMaxHeight() noexcept {
     return 30.0f;
