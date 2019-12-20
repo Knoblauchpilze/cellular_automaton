@@ -35,25 +35,27 @@ namespace cellulator {
 
   utils::Boxi
   Colony::fetchCells(std::vector<Cell>& cells,
-                     const utils::Boxi& area)
+                     const utils::Boxf& area)
   {
     // Protect from concurrent accesses.
     Guard guard(m_propsLocker);
 
     // Clamp the area to get only relevant cells.
+    utils::Boxi evenized = fromFPCoordinates(area);
+
     utils::Vector2i rC(
-      std::max(-m_dims.w() / 2, std::min(m_dims.w() / 2, area.x())),
-      std::max(-m_dims.h() / 2, std::min(m_dims.h() / 2, area.y()))
+      std::max(-m_dims.w() / 2, std::min(m_dims.w() / 2, evenized.x())),
+      std::max(-m_dims.h() / 2, std::min(m_dims.h() / 2, evenized.y()))
     );
     utils::Sizei rD(
-      std::min(area.w(), std::min(rC.x() + m_dims.w() / 2, m_dims.w() / 2 - rC.x())),
-      std::min(area.h(), std::min(rC.y() + m_dims.h() / 2, m_dims.h() / 2 - rC.y()))
+      2 * std::min(evenized.w() / 2, std::min(rC.x() + m_dims.w() / 2, m_dims.w() / 2 - rC.x())),
+      2 * std::min(evenized.h() / 2, std::min(rC.y() + m_dims.h() / 2, m_dims.h() / 2 - rC.y()))
     );
 
     utils::Boxi real(rC, rD);
 
     // Resize the output vector if needed.
-    if (cells.size() != real.area()) {
+    if (cells.size() != static_cast<unsigned>(real.area())) {
       cells.resize(real.area());
     }
 
@@ -65,12 +67,12 @@ namespace cellulator {
 
     for (int y = yMin ; y < yMax ; ++y) {
       // Convert logical coordinates to valid cells coordinates.
-      int offset = (y + yMin) * real.w();
+      int offset = (y  + real.h() / 2) * real.w();
       int rOffset = (y + m_dims.h() / 2) * m_dims.w();
 
       for (int x = xMin ; x < xMax ; ++x) {
         // Convert the `x` coordinate similarly to the `y` coordinate.
-        int xOff = x + xMin;
+        int xOff = x + real.w() / 2;
         int rXOff = x + m_dims.w() / 2;
 
         cells[offset + xOff] = m_cells[rOffset + rXOff];

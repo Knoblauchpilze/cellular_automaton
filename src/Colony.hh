@@ -59,7 +59,7 @@ namespace cellulator {
        */
       utils::Boxi
       fetchCells(std::vector<Cell>& cells,
-                 const utils::Boxi& area);
+                 const utils::Boxf& area);
 
       /**
        * @brief - Attempt to start the execution of the colony. Note that if the
@@ -101,6 +101,19 @@ namespace cellulator {
       static
       unsigned
       getWorkerThreadCount() noexcept;
+
+      /**
+       * @brief - Used to convert the input box from a floating point semantic to a
+       *          valid integer coordinates box. This will also make sure that the
+       *          returned box completely encompasses the input box so that we are
+       *          sure that all the data contained in the `in` box will also be there
+       *          in the output box.
+       * @param in - the box to convert to integer coordinates.
+       * @return - a box containing the input `in` box with integer coordinates.
+       */
+      static
+      utils::Boxi
+      fromFPCoordinates(const utils::Boxf& in) noexcept;
 
       /**
        * @brief - Connect signals and build the scheduler to use to simulate the colony.
