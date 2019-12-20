@@ -33,6 +33,53 @@ namespace cellulator {
     reset(dims);
   }
 
+  utils::Boxi
+  Colony::fetchCells(std::vector<Cell>& cells,
+                     const utils::Boxi& area)
+  {
+    // Protect from concurrent accesses.
+    Guard guard(m_propsLocker);
+
+    // Clamp the area to get only relevant cells.
+    utils::Vector2i rC(
+      std::max(-m_dims.w() / 2, std::min(m_dims.w() / 2, area.x())),
+      std::max(-m_dims.h() / 2, std::min(m_dims.h() / 2, area.y()))
+    );
+    utils::Sizei rD(
+      std::min(area.w(), std::min(rC.x() + m_dims.w() / 2, m_dims.w() / 2 - rC.x())),
+      std::min(area.h(), std::min(rC.y() + m_dims.h() / 2, m_dims.h() / 2 - rC.y()))
+    );
+
+    utils::Boxi real(rC, rD);
+
+    // Resize the output vector if needed.
+    if (cells.size() != real.area()) {
+      cells.resize(real.area());
+    }
+
+    // Populate the needed cells.
+    int xMin = real.getLeftBound();
+    int yMin = real.getBottomBound();
+    int xMax = real.getRightBound();
+    int yMax = real.getTopBound();
+
+    for (int y = yMin ; y < yMax ; ++y) {
+      // Convert logical coordinates to valid cells coordinates.
+      int offset = (y + yMin) * real.w();
+      int rOffset = (y + m_dims.h() / 2) * m_dims.w();
+
+      for (int x = xMin ; x < xMax ; ++x) {
+        // Convert the `x` coordinate similarly to the `y` coordinate.
+        int xOff = x + xMin;
+        int rXOff = x + m_dims.w() / 2;
+
+        cells[offset + xOff] = m_cells[rOffset + rXOff];
+      }
+    }
+
+    return real;
+  }
+
   void
   Colony::start() {
     // Protect from concurrent accesses.
@@ -98,57 +145,6 @@ namespace cellulator {
 
     // Use the dedicated handler to generate the colony.
     randomize();
-  }
-
-  sdl::core::engine::BrushShPtr
-  Colony::createBrush() {
-    // Protect from concurrent accesses.
-    Guard guard(m_propsLocker);
-
-    // Traverse the internal array of cells and build an array of
-    // colors to use to represent the colony.
-    sdl::core::engine::Color def = sdl::core::engine::Color::NamedColor::Black;
-    std::vector<sdl::core::engine::Color> colors(m_dims.area(), def);
-
-    for (int y = 0 ; y < m_dims.h() ; ++y) {
-      // Compute the coordinate of this pixel in the output canvas. Note that
-      // we perform an inversion of the internal data array along the `y` axis:
-      // indeed as we will use it to generate a surface we need to account for
-      // the axis inversion that will be applied there.
-      int offset = (m_dims.h() - 1 - y) * m_dims.w();
-
-      for (int x = 0 ; x < m_dims.w() ; ++x) {
-        // Determine the color for this cell.
-        sdl::core::engine::Color c = def;
-        switch (m_cells[offset + x].state()) {
-          case State::Newborn:
-            c = sdl::core::engine::Color::NamedColor::Green;
-            break;
-          case State::Alive:
-            c = sdl::core::engine::Color::NamedColor::Blue;
-            break;
-          case State::Dying:
-            c = sdl::core::engine::Color::NamedColor::Red;
-            break;
-          case State::Dead:
-          default:
-            // Keep the default color.
-            break;
-        }
-
-        colors[offset + x] = c;
-      }
-    }
-
-    // Create a brush from the array of colors.
-    sdl::core::engine::BrushShPtr brush = std::make_shared<sdl::core::engine::Brush>(
-      std::string("brush_for_") + getName(),
-      false
-    );
-
-    brush->createFromRaw(m_dims, colors);
-
-    return brush;
   }
 
   void
