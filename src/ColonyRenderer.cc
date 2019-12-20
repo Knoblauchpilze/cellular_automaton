@@ -161,8 +161,8 @@ namespace cellulator {
   }
 
   sdl::core::engine::BrushShPtr
-  ColonyRenderer::createBrushFromCells(const std::vector<Cell>& /*cells*/,
-                                       const utils::Boxi& /*area*/)
+  ColonyRenderer::createBrushFromCells(const std::vector<Cell>& cells,
+                                       const utils::Boxi& area)
   {
     // Determine the size of a single cell.
     utils::Sizef env = LayoutItem::getRenderingArea().toSize();
@@ -179,7 +179,43 @@ namespace cellulator {
     );
 
     // Fill in each cell with the corresponding color.
-    // TODO: Implemenation.
+    for (int y = 0 ; y < iEnv.h() ; ++y) {
+      for (int x = 0 ; x < iEnv.w() ; ++x) {
+        // Compute the float cell coordinate for this pixel.
+        float rX = x / cellsDims.w();
+        float rY = y / cellsDims.h();
+
+        // Compute the cell coordinate from the floating point coords.
+        int cX = static_cast<int>(std::floor(m_settings.area.getLeftBound() + rX));
+        int cY = static_cast<int>(std::floor(m_settings.area.getBottomBound() + rY));
+
+        // Transform this using the provided area.
+        utils::Vector2i c(cX - area.getLeftBound(), cY - area.getBottomBound());
+
+        // Retrieve the state of this cell.
+        const Cell& ce = cells[c.y() * area.w() + c.x()];
+
+        // Assign the corresponding color to the pixel.
+        sdl::core::engine::Color co = sdl::core::engine::Color::NamedColor::Pink;
+        switch (ce.state()) {
+          case State::Alive:
+            co = sdl::core::engine::Color::NamedColor::Blue;
+            break;
+          case State::Newborn:
+            co = sdl::core::engine::Color::NamedColor::Green;
+            break;
+          case State::Dying:
+            co = sdl::core::engine::Color::NamedColor::Red;
+            break;
+          case State::Dead:
+          default:
+            co = sdl::core::engine::Color::NamedColor::Black;
+            break;
+        }
+
+        colors[y * iEnv.w() + x] = co;
+      }
+    }
 
     // Create the brush and return it.
     sdl::core::engine::BrushShPtr brush = std::make_shared<sdl::core::engine::Brush>(
@@ -191,65 +227,5 @@ namespace cellulator {
 
     return brush;
   }
-
-
-      /**
-       * @brief - Create a new brush that can be used to create a texture representing this
-       *          colony. The current rendering area is rendered in the texture which might
-       *          or might not include all the content of the colony.
-       * @return - a pointer to a brush representing the colony.
-       */
-  /*    sdl::core::engine::BrushShPtr
-      createBrush();
-  sdl::core::engine::BrushShPtr
-  Colony::createBrush() {
-    // Protect from concurrent accesses.
-    Guard guard(m_propsLocker);
-
-    // Traverse the internal array of cells and build an array of
-    // colors to use to represent the colony.
-    sdl::core::engine::Color def = sdl::core::engine::Color::NamedColor::Black;
-    std::vector<sdl::core::engine::Color> colors(m_dims.area(), def);
-
-    for (int y = 0 ; y < m_dims.h() ; ++y) {
-      // Compute the coordinate of this pixel in the output canvas. Note that
-      // we perform an inversion of the internal data array along the `y` axis:
-      // indeed as we will use it to generate a surface we need to account for
-      // the axis inversion that will be applied there.
-      int offset = (m_dims.h() - 1 - y) * m_dims.w();
-
-      for (int x = 0 ; x < m_dims.w() ; ++x) {
-        // Determine the color for this cell.
-        sdl::core::engine::Color c = def;
-        switch (m_cells[offset + x].state()) {
-          case State::Newborn:
-            c = sdl::core::engine::Color::NamedColor::Green;
-            break;
-          case State::Alive:
-            c = sdl::core::engine::Color::NamedColor::Blue;
-            break;
-          case State::Dying:
-            c = sdl::core::engine::Color::NamedColor::Red;
-            break;
-          case State::Dead:
-          default:
-            // Keep the default color.
-            break;
-        }
-
-        colors[offset + x] = c;
-      }
-    }
-
-    // Create a brush from the array of colors.
-    sdl::core::engine::BrushShPtr brush = std::make_shared<sdl::core::engine::Brush>(
-      std::string("brush_for_") + getName(),
-      false
-    );
-
-    brush->createFromRaw(m_dims, colors);
-
-    return brush;
-  }*/
 
 }
