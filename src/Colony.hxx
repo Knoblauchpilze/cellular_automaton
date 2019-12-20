@@ -29,14 +29,24 @@ namespace cellulator {
   inline
   void
   Colony::reset(const utils::Sizei& dims) {
+    // Make the dims even if this is not already the case and assign
+    // the dimensions. Making things even will ease the process when
+    // fetching some cells.
+    m_dims.w() = dims.w() + dims.w() % 2;
+    m_dims.h() = dims.h() + dims.h() % 2;
+
+    if (m_dims != dims) {
+      log(
+        std::string("Changed dimensions for colony from ") + dims.toString() + " to " + m_dims.toString(),
+        utils::Level::Warning
+      );
+    }
+
     // Reset the cells.
-    m_cells.resize(dims.area());
+    m_cells.resize(m_dims.area());
 
     // Fill in with `Dead` cells.
     std::fill(m_cells.begin(), m_cells.end(), State::Dead);
-
-    // Assign the dimensions of the colony.
-    m_dims = dims;
   }
 
   inline

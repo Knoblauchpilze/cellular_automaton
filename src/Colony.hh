@@ -4,8 +4,9 @@
 # include <mutex>
 # include <memory>
 # include <core_utils/CoreObject.hh>
+# include <maths_utils/Box.hh>
 # include <maths_utils/Size.hh>
-# include <sdl_engine/Brush.hh>
+# include <maths_utils/Vector2.hh>
 # include <core_utils/ThreadPool.hh>
 # include "Cell.hh"
 
@@ -18,6 +19,9 @@ namespace cellulator {
        * @brief - Create a colony with the specified size. All cells will be
        *          initialized to a dead state. THe user can provide a name for
        *          the colony.
+       *          The dimensions will be increased by one if needed if they are
+       *          not multiple of `2`. This is to guarantee some consistency in
+       *          the access to the cells.
        * @param dims - the dimensions of the colony.
        * @param name - the lil' name of the colony.
        */
@@ -39,6 +43,23 @@ namespace cellulator {
        */
       utils::Sizei
       getSize() noexcept;
+
+      /**
+       * @brief - Used to retrieve the cells from the area described in input into
+       *          the specified vector. Note that any existing data in the vector
+       *          will be erased. Also the area is clamped to match the dimensions
+       *          of the colony if needed. The returned area describes the actual
+       *          content of the `cells` vector.
+       *          The input dimensions are clamped to the lowest which means that
+       *          for example if the box spans `x: 50, w: 25`, the actual cells
+       *          will be `[37; 62]`.
+       * @param cells - output vector where cells will be saved.
+       * @param area - the area for which cells should be retrieved.
+       * @return - the actual box of the cells returned in the `cells` vector.
+       */
+      utils::Boxi
+      fetchCells(std::vector<Cell>& cells,
+                 const utils::Boxi& area);
 
       /**
        * @brief - Attempt to start the execution of the colony. Note that if the
@@ -69,15 +90,6 @@ namespace cellulator {
        */
       void
       generate();
-
-      /**
-       * @brief - Create a new brush that can be used to create a texture representing this
-       *          colony. The current rendering area is rendered in the texture which might
-       *          or might not include all the content of the colony.
-       * @return - a pointer to a brush representing the colony.
-       */
-      sdl::core::engine::BrushShPtr
-      createBrush();
 
     private:
 
