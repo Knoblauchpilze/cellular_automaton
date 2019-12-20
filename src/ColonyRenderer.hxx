@@ -65,38 +65,6 @@ namespace cellulator {
     requestRepaint();
   }
 
-  inline
-  void
-  ColonyRenderer::loadColony() {
-    // Clear any existing texture representing the colony.
-    clearColony();
-
-    // Create the brush representing the tile using the palette
-    // provided by the user.
-    // TODO: This should probably be part of the renderer ? Or
-    // the colony should create the display using the internal
-    // area (`m_settings.area`).
-    sdl::core::engine::BrushShPtr brush = m_colony->createBrush();
-
-    // check consistency.
-    if (brush == nullptr) {
-      error(
-        std::string("Could not create texture to represent colony"),
-        std::string("Failed to create brush data")
-      );
-    }
-
-    // Use the brush to create a texture.
-    m_tex = getEngine().createTextureFromBrush(brush);
-
-    if (!m_tex.valid()) {
-      error(
-        std::string("Could not create texture to represent colony"),
-        std::string("Failed to transform brush into texture")
-      );
-    }
-  }
-
 }
 
 #endif    /* COLONY_RENDERER_HXX */

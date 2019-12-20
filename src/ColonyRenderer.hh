@@ -6,6 +6,7 @@
 # include <sdl_core/SdlWidget.hh>
 # include <core_utils/Signal.hh>
 # include <sdl_graphic/ScrollableWidget.hh>
+# include <sdl_engine/Brush.hh>
 # include "Colony.hh"
 
 namespace cellulator {
@@ -127,6 +128,18 @@ namespace cellulator {
        */
       void
       handleGenerationComputed(unsigned generation);
+
+      /**
+       * @brief - Used to create a brush representing the input cells given that it should
+       *          represent the input `area`. This takes into account the size of the canvas
+       *          for this object along with the number of cells visible.
+       * @param cells - the cells data to use to create the visual representation.
+       * @param area - the area represented by the cells.
+       * @return - the brush representing the input cells given the cells' size for this item.
+       */
+      sdl::core::engine::BrushShPtr
+      createBrushFromCells(const std::vector<Cell>& cells,
+                           const utils::Boxi& area);
 
     private:
 
