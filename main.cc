@@ -49,7 +49,7 @@ int main(int /*argc*/, char** /*argv*/) {
 
     // Create the colony to simulate.
     cellulator::ColonyShPtr colony = std::make_shared<cellulator::Colony>(
-      utils::Sizei(500, 300),
+      utils::Sizei(10, 8),
       std::string("Drop it like it's Hoth")
     );
 
@@ -84,10 +84,14 @@ int main(int /*argc*/, char** /*argv*/) {
       &cellulator::ColonyRenderer::generate
     );
 
-    // Connect the generation's notification to the dedicated slot.
+    // Connect changes in the colony to the status display.
     renderer->onGenerationComputed.connect_member<cellulator::StatusBar>(
       bar,
       &cellulator::StatusBar::onGenerationComputed
+    );
+    renderer->onCoordChanged.connect_member<cellulator::StatusBar>(
+      bar,
+      &cellulator::StatusBar::onSelectedCellChanged
     );
 
     // Run it.

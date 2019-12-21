@@ -21,7 +21,8 @@ namespace cellulator {
     m_colony(colony),
     m_generationComputedSignalID(utils::Signal<unsigned>::NoID),
 
-    onGenerationComputed()
+    onGenerationComputed(),
+    onCoordChanged()
   {
     setService(std::string("colony_renderer"));
 
@@ -46,6 +47,99 @@ namespace cellulator {
 
     // Indicate that the colony changed so that we can repaint it.
     setColonyChanged();
+  }
+
+  bool
+  ColonyRenderer::handleContentScrolling(const utils::Vector2f& /*posToFix*/,
+                          const utils::Vector2f& /*whereTo*/,
+                          const utils::Vector2f& /*motion*/,
+                          bool /*notify*/)
+  {
+    // TODO: Implementation.
+    return false;
+  }
+
+  bool
+  ColonyRenderer::keyPressEvent(const sdl::core::engine::KeyEvent& e) {
+    // Check for arrow keys.
+    bool move = false;
+    utils::Vector2f motion;
+    float delta = getArrowKeyMotion();
+
+    if (e.getRawKey() == sdl::core::engine::RawKey::Left) {
+      move = true;
+      motion.x() -= delta;
+    }
+    if (e.getRawKey() == sdl::core::engine::RawKey::Right) {
+      move = true;
+      motion.x() += delta;
+    }
+    if (e.getRawKey() == sdl::core::engine::RawKey::Down) {
+      move = true;
+      motion.y() -= delta;
+    }
+    if (e.getRawKey() == sdl::core::engine::RawKey::Up) {
+      move = true;
+      motion.y() += delta;
+    }
+
+    // Schedule a scrolling if some motion has been detected.
+    if (move) {
+      utils::Vector2f center, newCenter;
+
+      {
+        Guard guard(m_propsLocker);
+
+        // Convert the motion (which is right now expressed in terms of pixel(s))
+        // in a cell coordinates motion. This can be done by computing the size
+        // of a single cell.
+        utils::Sizef cellsDims = getCellsDims();
+
+        motion.x() /= cellsDims.w();
+        motion.y() /= cellsDims.h();
+
+        center = m_settings.area.getCenter();
+        newCenter = center + motion;
+      }
+
+      if (handleContentScrolling(center, newCenter, motion, false)) {
+        requestRepaint();
+      }
+    }
+
+    // Use the base handler to provide a return value.
+    return sdl::graphic::ScrollableWidget::keyPressEvent(e);
+  }
+
+  bool
+  ColonyRenderer::mouseWheelEvent(const sdl::core::engine::MouseEvent& e) {
+    // We want to trigger zooming operations only when the mouse is inside
+    // this widget.
+    bool toReturn = sdl::graphic::ScrollableWidget::mouseWheelEvent(e);
+
+    if (!isMouseInside()) {
+      return toReturn;
+    }
+
+    // Protect from concurrent accesses to perform the zoom operation and
+    // also request a repaint.
+    utils::Vector2i motion = e.getScroll();
+
+    // Protect from concurrent accesses.
+    Guard guard(m_propsLocker);
+
+    // Perform the zoom in operation.
+    float factor = motion.y() > 0 ? getDefaultZoomInFactor() : getDefaultZoomOutFactor();
+
+    utils::Vector2f conv = convertGlobalToRealWorld(e.getMousePosition());
+
+    zoom(conv, factor);
+
+    // Request a repaint and set the colony as dirty.
+    setColonyChanged();
+    requestRepaint();
+
+    return toReturn;
   }
 
   void

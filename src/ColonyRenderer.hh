@@ -75,6 +75,63 @@ namespace cellulator {
     protected:
 
       /**
+       * @brief - Specialziation of the parent method in order to perform the
+       *          scrolling on this object. What we want is to move the real
+       *          world area associated to the visual representation so that
+       *          we get another perspective on the fractal.
+       *          The interface is similar to what is expected by the parent
+       *          class (see `ScrollableWidget` for more details).
+       * @param posToFix - the position in local coordinate frame corresponding
+       *                   to the position that should be fixed during the
+       *                   scroll operation. Note that this corresponds to a
+       *                   `cell` coordinate.
+       * @param whereTo - the new position of the `posToFix`. Corresponds to
+       *                  the `posToFix` where the `motion` has been applied.
+       *                  Note that this corresponds to a `cell` coordinate.
+       * @param motion - the motion to apply in cells coordinates.
+       * @param notify - indication as to this method should emit some signals
+       *                 like `onHorizontalAxisChanged`.
+       * @return - `true` if the actual rendering area has been changed, and
+       *           `false` otherwise.
+       */
+      bool
+      handleContentScrolling(const utils::Vector2f& posToFix,
+                             const utils::Vector2f& whereTo,
+                             const utils::Vector2f& motion,
+                             bool notify = true) override;
+
+      /**
+       * @brief - Reimplementation of the base class method to detect whenever the
+       *          reset key is pressed, allowing to scroll the rendering area on
+       *          the colony and thus display non visible parts yet.
+       * @param e - the event to be interpreted.
+       * @return - `true` if the event was recognized and `false` otherwise.
+       */
+      bool
+      keyPressEvent(const sdl::core::engine::KeyEvent& e) override;
+
+      /**
+       * @brief - Reimplementation of the base class method to detect whenever the
+       *          mouse moves inside the widget. This allows to provide notification
+       *          to external listeners by converting the position into a real world
+       *          coordinates.
+       * @param e - the event to be interpreted.
+       * @return - `true` if the event was recognized and `false` otherwise.
+       */
+      bool
+      mouseMoveEvent(const sdl::core::engine::MouseEvent& e) override;
+
+      /**
+       * @brief - Reimplementation of the base class method to detect when the wheel
+       *          is used: this should trigger the zooming behavior based on the factor
+       *          defined for this renderer.
+       * @param e - the event to be interpreted.
+       * @return - `true` if the event was recognized and `false` otherwise.
+       */
+      bool
+      mouseWheelEvent(const sdl::core::engine::MouseEvent& e) override;
+
+      /**
        * @brief - Reimplementation of the base class method to handle the repaint
        *          of the texture representing the colony and its display.
        */
@@ -83,6 +140,35 @@ namespace cellulator {
                          const utils::Boxf& area) override;
 
     private:
+
+      /**
+       * @brief - Used to retrieve the default factor to use when zooming in.
+       * @return - a factor suitable for zooming in operations.
+       */
+      static
+      float
+      getDefaultZoomInFactor() noexcept;
+
+      /**
+       * @brief - Used to retrieve the default factor to use when zooming out.
+       * @return - a factor suitable for zooming out operations.
+       */
+      static
+      float
+      getDefaultZoomOutFactor() noexcept;
+
+      /**
+       * @brief - Used to retrieve the number of *pixel(s)* corresponding to a press
+       *          of an arrow key. The large this value the more a single key stroke
+       *          will shift the rendering area.
+       *          Note that the value is expressed in pixels so that it stays relevant
+       *          no matter the zoom level.
+       * @return - a value indicating the number of pixels moved when an arrow key is
+       *           pressed.
+       */
+      static
+      float
+      getArrowKeyMotion() noexcept;
 
       /**
        * @brief - Connect signals and build the renderer in a more general way.
@@ -121,6 +207,26 @@ namespace cellulator {
       loadColony();
 
       /**
+       * @brief - Computes the dimensions of a cell in terms of pixels. Note that this
+       *          method assumes that the locker is acquired and *recomputes* the value
+       *          at each call so use wisely and perform caching if needed.
+       * @return - the dimensions of a single cell in pixels.
+       */
+      utils::Sizef
+      getCellsDims();
+
+      /**
+       * @brief - Used to convert the input position expressed in global coordinate frame
+       *          into a position expressed in real world coordinate. This will produce
+       *          the return value in cells coordinate frame.
+       *          Note that this method assumes that the locker is already acquired.
+       * @param global - the global coordinate frame position to convert.
+       * @return - the corresponding position in real world coordinate frame.
+       */
+      utils::Vector2f
+      convertGlobalToRealWorld(const utils::Vector2f& global);
+
+      /**
        * @brief - Internal slot used to handle the notification whenever a new generation
        *          has been computed by the colony. Used to both dispatch the information
        *          and also perform a repaint of the content.
@@ -140,6 +246,21 @@ namespace cellulator {
       sdl::core::engine::BrushShPtr
       createBrushFromCells(const std::vector<Cell>& cells,
                            const utils::Boxi& area);
+
+      /**
+       * @brief - Perform a zoom which keeps the `center` at the specified location and
+       *          with the specified factor. Note that theoretically the center could be
+       *          outside of the visible range.
+       *          Note that the center is expressed in local coordinate frame and *not*
+       *          in cells coordinate frame. Assumes that the locker is already acquired.
+       *          The new area is directly assigned to the internal `m_settings` prop.
+       * @param center - the point to fix when performing the zoom.
+       * @param factor - a measure of the ratio between the new size and the current size
+       *                 of the rendering area.
+       */
+      void
+      zoom(const utils::Vector2f& center,
+           float factor = 2.0f);
 
     private:
 
@@ -199,6 +320,13 @@ namespace cellulator {
        *          generation of cells displayed on screen.
        */
       utils::Signal<unsigned> onGenerationComputed;
+
+      /**
+       * @brief - Signal emitted whenever the coordinates of the point located under the mouse
+       *          is changed. This is usually to keep track of said position (using a label for
+       *          example).
+       */
+      utils::Signal<utils::Vector2i> onCoordChanged;
   };
 
 }
