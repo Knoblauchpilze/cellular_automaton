@@ -20,6 +20,7 @@ namespace cellulator {
 
     onGenerationComputed()
   {
+    setService("cells");
     // Check consistency.
     if (!dims.valid()) {
       error(
@@ -54,16 +55,14 @@ namespace cellulator {
     int xMax = evenized.getRightBound();
     int yMax = evenized.getTopBound();
 
-    log("Fetching cells from " + evenized.toString() + " while dims are " + m_dims.toString());
-
     for (int y = yMin ; y < yMax ; ++y) {
       // Convert logical coordinates to valid cells coordinates.
-      int offset = (y  + evenized.h() / 2) * evenized.w();
+      int offset = (y - yMin) * evenized.w();
       int rOffset = (y + m_dims.h() / 2) * m_dims.w();
 
       for (int x = xMin ; x < xMax ; ++x) {
         // Convert the `x` coordinate similarly to the `y` coordinate.
-        int xOff = x + evenized.w() / 2;
+        int xOff = x - xMin;
         int rXOff = x + m_dims.w() / 2;
 
         // Check whether the cell exists in the internal data.

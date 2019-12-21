@@ -209,7 +209,6 @@ namespace cellulator {
 
     // Fetch the cells that are visible. We need to convert the
     // input area.
-    log("Fetching cells from " + m_settings.area.toString());
     std::vector<Cell> cells;
     utils::Boxi out = m_colony->fetchCells(cells, m_settings.area);
 
