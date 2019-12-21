@@ -43,43 +43,43 @@ namespace cellulator {
     // Clamp the area to get only relevant cells.
     utils::Boxi evenized = fromFPCoordinates(area);
 
-    utils::Vector2i rC(
-      std::max(-m_dims.w() / 2, std::min(m_dims.w() / 2, evenized.x())),
-      std::max(-m_dims.h() / 2, std::min(m_dims.h() / 2, evenized.y()))
-    );
-    utils::Sizei rD(
-      2 * std::min(evenized.w() / 2, std::min(rC.x() + m_dims.w() / 2, m_dims.w() / 2 - rC.x())),
-      2 * std::min(evenized.h() / 2, std::min(rC.y() + m_dims.h() / 2, m_dims.h() / 2 - rC.y()))
-    );
-
-    utils::Boxi real(rC, rD);
-
     // Resize the output vector if needed.
-    if (cells.size() != static_cast<unsigned>(real.area())) {
-      cells.resize(real.area());
+    if (cells.size() != static_cast<unsigned>(evenized.area())) {
+      cells.resize(evenized.area());
     }
 
     // Populate the needed cells.
-    int xMin = real.getLeftBound();
-    int yMin = real.getBottomBound();
-    int xMax = real.getRightBound();
-    int yMax = real.getTopBound();
+    int xMin = evenized.getLeftBound();
+    int yMin = evenized.getBottomBound();
+    int xMax = evenized.getRightBound();
+    int yMax = evenized.getTopBound();
+
+    log("Fetching cells from " + evenized.toString() + " while dims are " + m_dims.toString());
 
     for (int y = yMin ; y < yMax ; ++y) {
       // Convert logical coordinates to valid cells coordinates.
-      int offset = (y  + real.h() / 2) * real.w();
+      int offset = (y  + evenized.h() / 2) * evenized.w();
       int rOffset = (y + m_dims.h() / 2) * m_dims.w();
 
       for (int x = xMin ; x < xMax ; ++x) {
         // Convert the `x` coordinate similarly to the `y` coordinate.
-        int xOff = x + real.w() / 2;
+        int xOff = x + evenized.w() / 2;
         int rXOff = x + m_dims.w() / 2;
 
-        cells[offset + xOff] = m_cells[rOffset + rXOff];
+        // Check whether the cell exists in the internal data.
+        int coord = rOffset + rXOff;
+        Cell c(State::Dead);
+        if (rOffset >= 0 && rOffset < static_cast<int>(m_cells.size()) &&
+            rXOff >= 0 && rXOff < m_dims.w())
+        {
+          c = m_cells[coord];
+        }
+
+        cells[offset + xOff] = c;
       }
     }
 
-    return real;
+    return evenized;
   }
 
   void
