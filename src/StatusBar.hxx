@@ -25,6 +25,28 @@ namespace cellulator {
   }
 
   inline
+  void
+  StatusBar::onSelectedCellChanged(utils::Vector2i coords) {
+    // Protect from concurrent accesses.
+    Guard guard(m_propsLocker);
+
+    sdl::graphic::LabelWidget* mc = getMouseCoordsLabel();
+    if (mc == nullptr) {
+      log(
+        std::string("Could not find label to update coordinates to ") + coords.toString(),
+        utils::Level::Error
+      );
+
+      return;
+    }
+
+    mc->setText(
+      std::string("x: ") + std::to_string(coords.x()) +
+      " y: " + std::to_string(coords.y())
+    );
+  }
+
+  inline
   float
   StatusBar::getStatusMaxHeight() noexcept {
     return 30.0f;

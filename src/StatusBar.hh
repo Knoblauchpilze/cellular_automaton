@@ -33,6 +33,14 @@ namespace cellulator {
       void
       onGenerationComputed(unsigned generation);
 
+      /**
+       * @brief - Used to receive notification when the cell pointed at by the mouse is
+       *          changed so that we can update the related label.
+       * @param coords - the coordinates of the cell which is now pointed at by the mouse.
+       */
+      void
+      onSelectedCellChanged(utils::Vector2i coords);
+
     protected:
 
       /**
