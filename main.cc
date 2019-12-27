@@ -49,6 +49,7 @@ int main(int /*argc*/, char** /*argv*/) {
     // Create the colony to simulate.
     cellulator::ColonyShPtr colony = std::make_shared<cellulator::Colony>(
       utils::Sizei(10, 8),
+      cellulator::rules::Type::GameOfLife,
       std::string("Drop it like it's Hoth")
     );
 

@@ -4,11 +4,13 @@
 namespace cellulator {
 
   Colony::Colony(const utils::Sizei& dims,
+                 const rules::Type& ruleset,
                  const std::string& name):
     utils::CoreObject(name),
 
     m_propsLocker(),
 
+    m_ruleset(ruleset),
     m_dims(),
     m_cells(),
     m_generation(0u),

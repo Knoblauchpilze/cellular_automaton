@@ -83,7 +83,7 @@ namespace cellulator {
     m_cells.resize(m_dims.area());
 
     // Fill in with `Dead` cells.
-    std::fill(m_cells.begin(), m_cells.end(), State::Dead);
+    std::fill(m_cells.begin(), m_cells.end(), Cell(State::Dead, m_ruleset));
   }
 
   inline
