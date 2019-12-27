@@ -9,6 +9,11 @@
 
 namespace cellulator {
 
+  // Forward declaration to be able to use a shared pointer on a tree node
+  // right away.
+  class CellsQuadTreeNode;
+  using CellsQuadTreeNodeShPtr = std::shared_ptr<CellsQuadTreeNode>;
+
   class CellsQuadTreeNode: public utils::CoreObject {
     public:
 
@@ -53,6 +58,7 @@ namespace cellulator {
        * @brief - Used to split this node into sub-nodes until the node size reaches
        *          the provided argument. It will split up the internal data into a
        *          set of children nodes recursively.
+       *          Note that the internal data is erased upon splitting the node.
        * @param size - the maximum allowed size for nodes.
        */
       void
@@ -97,9 +103,16 @@ namespace cellulator {
        *          represented by it.
        */
       std::vector<Cell> m_cells;
+
+      /**
+       * @brief - Contains the children of this node. This vector can either be empty
+       *          or be assigned a subset of children. In this case the `m_area` is
+       *          an aggregation of all the areas encompassed by children nodes and
+       *          the `m_cells` array should be empty.
+       */
+      std::vector<CellsQuadTreeNodeShPtr> m_children;
   };
 
-  using CellsQuadTreeNodeShPtr = std::shared_ptr<CellsQuadTreeNode>;
 }
 
 # include "CellsQuadTreeNode.hxx"
