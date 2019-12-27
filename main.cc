@@ -18,6 +18,7 @@
 
 // TODO: Handle rendering.
 // TODO: Multiple rulesets ? See here: https://en.wikipedia.org/wiki/Cyclic_cellular_automaton
+// TODO: Handle centering of cells.
 
 int main(int /*argc*/, char** /*argv*/) {
   // Create the logger.
@@ -49,7 +50,7 @@ int main(int /*argc*/, char** /*argv*/) {
 
     // Create the colony to simulate.
     cellulator::ColonyShPtr colony = std::make_shared<cellulator::Colony>(
-      utils::Sizei(16, 8),
+      utils::Sizei(256, 256),
       cellulator::rules::Type::GameOfLife,
       std::string("Drop it like it's Hoth")
     );

@@ -77,9 +77,9 @@ namespace cellulator {
     // Create the root node: we want to create a node which is at least
     // the size of `m_nodesSize`, even if it is larger than the desired
     // dimensions.
-    // TODO: Handle cases where the dimensions are larger than the `m_nodesSize`.
-    int w = std::max(m_nodesSize.w(), static_cast<int>(std::ceil(1.0f * dims.w() / m_nodesSize.w())));
-    int h = std::max(m_nodesSize.h(), static_cast<int>(std::ceil(1.0f * dims.h() / m_nodesSize.h())));
+    int w = static_cast<int>(std::ceil(1.0f * dims.w() / m_nodesSize.w())) * m_nodesSize.w();
+    int h = static_cast<int>(std::ceil(1.0f * dims.h() / m_nodesSize.h())) * m_nodesSize.h();
+
     utils::Boxi area(0, 0, w, h);
 
     m_root = std::make_shared<CellsQuadTreeNode>(area, m_ruleset);
