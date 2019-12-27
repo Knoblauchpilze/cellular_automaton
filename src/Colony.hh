@@ -23,9 +23,12 @@ namespace cellulator {
        *          not multiple of `2`. This is to guarantee some consistency in
        *          the access to the cells.
        * @param dims - the dimensions of the colony.
+       * @param ruleset - the set of rules to use to update the cells at each
+       *                  iteration.
        * @param name - the lil' name of the colony.
        */
       Colony(const utils::Sizei& dims,
+             const rules::Type& ruleset,
              const std::string& name = std::string("Daddy's lil monster"));
 
       /**
@@ -170,6 +173,16 @@ namespace cellulator {
        * @brief - Protect this colony from concurrent accesses.
        */
       std::mutex m_propsLocker;
+
+      /**
+       * @brief - Holds a description of the set of rules to apply to perform
+       *          the computation of a cell to its descendant when evolving the
+       *          colony. Different sets of rules will most likely lead to some
+       *          distinct behaviors.
+       *          This property is transmitted to the cells created during the
+       *          evolution of the colony.
+       */
+      rules::Type m_ruleset;
 
       /**
        * @brief - Holds the dimensions of the colony. Note that these dimensions

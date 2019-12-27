@@ -11,6 +11,7 @@ set (SOURCES
   ColonyStatus.cc
   Cell.cc
   Colony.cc
+  ColonyTile.cc
   )
 
 add_library (cellular_automaton_lib SHARED

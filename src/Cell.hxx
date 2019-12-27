@@ -4,6 +4,7 @@
 # include "Cell.hh"
 # include <type_traits>
 # include <cstdlib>
+# include <core_utils/CoreException.hh>
 
 namespace cellulator {
 
@@ -25,6 +26,34 @@ namespace cellulator {
     UType v = std::rand() % max;
 
     m_state = static_cast<State>(v);
+  }
+
+  inline
+  void
+  Cell::step() {
+    // Apply the next state to the current.
+    m_next = m_state;
+  }
+
+  inline
+  State
+  Cell::update(unsigned livingNeigboors) {
+    // Based on the ruleset, call the dedicated handler.
+    switch (m_ruleset) {
+      case rules::Type::GameOfLife:
+        m_next = evolveGameOfLife(m_state, livingNeigboors);
+        break;
+      default:
+        // Unknown ruleset.
+        break;
+    }
+
+    throw utils::CoreException(
+      std::string("Could not update cell"),
+      std::string("cell"),
+      std::string("colony"),
+      std::string("Unknown ruleset ") + std::to_string(static_cast<int>(m_ruleset))
+    );
   }
 
 }
