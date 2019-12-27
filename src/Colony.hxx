@@ -2,7 +2,6 @@
 # define   COLONY_HXX
 
 # include "Colony.hh"
-# include <algorithm>
 
 namespace cellulator {
 
@@ -20,7 +19,7 @@ namespace cellulator {
 
   inline
   utils::Boxi
-  Colony::fetchCells(std::vector<Cell>& cells,
+  Colony::fetchCells(std::vector<State>& cells,
                      const utils::Boxf& area)
   {
     return m_cells->fetchCells(cells, area);

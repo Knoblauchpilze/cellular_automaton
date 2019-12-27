@@ -244,7 +244,7 @@ namespace cellulator {
        * @return - the brush representing the input cells given the cells' size for this item.
        */
       sdl::core::engine::BrushShPtr
-      createBrushFromCells(const std::vector<Cell>& cells,
+      createBrushFromCells(const std::vector<State>& cells,
                            const utils::Boxi& area);
 
       /**

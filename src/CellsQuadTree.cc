@@ -13,7 +13,9 @@ namespace cellulator {
 
     m_ruleset(ruleset),
     m_nodesSize(nodeDims),
-    m_size()
+    m_size(),
+
+    m_root(nullptr)
   {
     setService("cells_quadtree");
 
@@ -29,7 +31,7 @@ namespace cellulator {
   }
 
   utils::Boxi
-  CellsQuadTree::fetchCells(std::vector<Cell>& cells,
+  CellsQuadTree::fetchCells(std::vector<State>& cells,
                             const utils::Boxf& area)
   {
     // Protect from concurrent accesses.
@@ -43,35 +45,14 @@ namespace cellulator {
       cells.resize(evenized.area());
     }
 
-    // Populate the needed cells.
-    int xMin = evenized.getLeftBound();
-    int yMin = evenized.getBottomBound();
-    int xMax = evenized.getRightBound();
-    int yMax = evenized.getTopBound();
+    // Reset with dead cells as to not display some randomness.
+    std::fill(cells.begin(), cells.end(), State::Dead);
 
-    for (int y = yMin ; y < yMax ; ++y) {
-      // Convert logical coordinates to valid cells coordinates.
-      int offset = (y - yMin) * evenized.w();
-      // int rOffset = (y + m_size.h() / 2) * m_size.w();
+    // Fetch the cells from the internal data.
+    m_root->fetchCells(cells, evenized);
 
-      for (int x = xMin ; x < xMax ; ++x) {
-        // Convert the `x` coordinate similarly to the `y` coordinate.
-        int xOff = x - xMin;
-        // int rXOff = x + m_size.w() / 2;
-
-        // Check whether the cell exists in the internal data.
-        // int coord = rOffset + rXOff;
-        Cell c(State::Dead);
-        // if (rOffset >= 0 && rOffset < static_cast<int>(m_cells.size()) &&
-        //     rXOff >= 0 && rXOff < m_size.w())
-        // {
-        //   c = m_cells[coord];
-        // }
-
-        cells[offset + xOff] = c;
-      }
-    }
-
+    // Return the area that is actually represented by the
+    // returns `cells` array.
     return evenized;
   }
 
@@ -93,13 +74,15 @@ namespace cellulator {
 
     m_size = evenized;
 
-    // Reset the cells.
-    // TODO: Implementation.
-    log("Should resize quad tree with specified dims " + dims.toString());
-    // m_cells->reset(evenized);
+    // Create the root node: we want to create a node which is at least
+    // the size of `m_nodesSize`, even if it is larger than the desired
+    // dimensions.
+    // TODO: Handle cases where the dimensions are larger than the `m_nodesSize`.
+    int w = std::max(m_nodesSize.w(), static_cast<int>(std::ceil(1.0f * dims.w() / m_nodesSize.w())));
+    int h = std::max(m_nodesSize.h(), static_cast<int>(std::ceil(1.0f * dims.h() / m_nodesSize.h())));
+    utils::Boxi area(0, 0, w, h);
 
-    // Fill in with `Dead` cells.
-    // std::fill(m_cells.begin(), m_cells.end(), Cell(State::Dead, m_ruleset));
+    m_root = std::make_shared<CellsQuadTreeNode>(area, m_ruleset);
   }
 
 }
