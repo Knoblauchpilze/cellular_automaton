@@ -30,6 +30,15 @@ namespace cellulator {
   CellsQuadTreeNode::fetchCells(std::vector<State>& cells,
                                 const utils::Boxi& area)
   {
+    // Traverse children if there are any.
+    if (!m_children.empty()) {
+      for (unsigned id = 0u ; id < m_children.size() ; ++id) {
+        m_children[id]->fetchCells(cells, area);
+      }
+
+      return;
+    }
+
     // Populate the needed cells.
     int xMin = area.getLeftBound();
     int yMin = area.getBottomBound();
@@ -39,23 +48,21 @@ namespace cellulator {
     for (int y = yMin ; y < yMax ; ++y) {
       // Convert logical coordinates to valid cells coordinates.
       int offset = (y - yMin) * area.w();
-      int rOffset = (y + m_area.h() / 2) * m_area.w();
+      int rOffset = (y - m_area.getBottomBound()) * m_area.w();
 
       for (int x = xMin ; x < xMax ; ++x) {
         // Convert the `x` coordinate similarly to the `y` coordinate.
         int xOff = x - xMin;
-        int rXOff = x + m_area.w() / 2;
+        int rXOff = x - m_area.getLeftBound();
 
-        // Check whether the cell exists in the internal data.
+        // Check whether the cell exists in the internal data. If this
+        // is the case we assign it, otherwise we don't modify the value.
         int coord = rOffset + rXOff;
-        Cell c(State::Dead);
         if (rOffset >= 0 && rOffset < static_cast<int>(m_cells.size()) &&
             rXOff >= 0 && rXOff < m_area.w())
         {
-          c = m_cells[coord];
+          cells[offset + xOff] = m_cells[coord].state();
         }
-
-        cells[offset + xOff] = c.state();
       }
     }
   }

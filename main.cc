@@ -50,6 +50,7 @@ int main(int /*argc*/, char** /*argv*/) {
 
     // Create the colony to simulate.
     cellulator::ColonyShPtr colony = std::make_shared<cellulator::Colony>(
+      // utils::Sizei(512, 512),
       utils::Sizei(256, 256),
       cellulator::rules::Type::GameOfLife,
       std::string("Drop it like it's Hoth")
