@@ -16,7 +16,6 @@
 # include "ColonyStatus.hh"
 # include "ColonyRenderer.hh"
 
-// TODO: Handle scrolling. This includes the expansion of the colony if needed.
 // TODO: Handle rendering.
 
 int main(int /*argc*/, char** /*argv*/) {

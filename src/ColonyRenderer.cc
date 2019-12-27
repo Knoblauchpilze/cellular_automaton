@@ -52,11 +52,39 @@ namespace cellulator {
   bool
   ColonyRenderer::handleContentScrolling(const utils::Vector2f& /*posToFix*/,
                           const utils::Vector2f& /*whereTo*/,
-                          const utils::Vector2f& /*motion*/,
+                          const utils::Vector2f& motion,
                           bool /*notify*/)
   {
-    // TODO: Implementation.
-    return false;
+    // We want to apply a motion of `motion` in local coordinate frame to the
+    // underlying support area. In order to do that we need to convert the
+    // motion into a real world coordinate frame.
+    Guard guard(m_propsLocker);
+
+
+    // Note: we need to invert the motion's direction for some reasons.
+    utils::Sizef cellsDims = getCellsDims();
+    utils::Vector2f realWorldMotion(
+      -motion.x() / cellsDims.w(),
+      -motion.y() / cellsDims.h()
+    );
+
+    // Compute the new rendering area by offseting the old one with the motion.
+    utils::Boxf newArea(
+      m_settings.area.x() + realWorldMotion.x(),
+      m_settings.area.y() + realWorldMotion.y(),
+      m_settings.area.toSize()
+    );
+
+    log("Moving from " + m_settings.area.toString() + " to " + newArea.toString() + " (motion: " + motion.toString() + ", real: " + realWorldMotion.toString() + ")", utils::Level::Verbose);
+
+    // Update the rendering area.
+    m_settings.area = newArea;
+
+    // Request a repaint operation.
+    setColonyChanged();
+
+    // Notify the caller that we changed the area.
+    return true;
   }
 
   bool
@@ -135,9 +163,8 @@ namespace cellulator {
 
     zoom(conv, factor);
 
-    // Request a repaint and set the colony as dirty.
+    // Set the colony as dirty.
     setColonyChanged();
-    requestRepaint();
 
     return toReturn;
   }
@@ -238,11 +265,6 @@ namespace cellulator {
   ColonyRenderer::handleGenerationComputed(unsigned generation) {
     // Protect from concurrent accesses.
     Guard guard(m_propsLocker);
-
-    // Post a repaint event for each area that has been rendered.
-    sdl::core::engine::PaintEventShPtr e = std::make_shared<sdl::core::engine::PaintEvent>();
-
-    postEvent(e);
 
     // The colony need to be rendered again.
     setColonyChanged();
