@@ -17,6 +17,7 @@
 # include "ColonyRenderer.hh"
 
 // TODO: Handle rendering.
+// TODO: Multiple rulesets ? See here: https://en.wikipedia.org/wiki/Cyclic_cellular_automaton
 
 int main(int /*argc*/, char** /*argv*/) {
   // Create the logger.
