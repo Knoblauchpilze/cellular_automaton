@@ -59,4 +59,10 @@ namespace cellulator {
     }
   }
 
+  void
+  CellsQuadTreeNode::splitUntil(const utils::Sizei& size) {
+    // TODO: Implement.
+    log("Should split until we reach " + size.toString() + " (current is " + m_area.toString() + ")");
+  }
+
 }
