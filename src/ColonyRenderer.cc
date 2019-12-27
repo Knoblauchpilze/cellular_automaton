@@ -27,7 +27,7 @@ namespace cellulator {
     setService(std::string("colony_renderer"));
 
     // Check consistency.
-    if (colony == nullptr) {
+    if (m_colony == nullptr) {
       error(
         std::string("Could not create renderer"),
         std::string("Invalid null colony")
@@ -260,7 +260,7 @@ namespace cellulator {
   {
     // Determine the size of a single cell.
     utils::Sizef env = LayoutItem::getRenderingArea().toSize();
-    utils::Sizef cellsDims(env.w() / m_settings.area.w(), env.h() / m_settings.area.h());
+    utils::Sizef cellsDims = getCellsDims();
     utils::Sizei iEnv(
       static_cast<int>(std::floor(env.w())),
       static_cast<int>(std::floor(env.h()))
@@ -307,7 +307,10 @@ namespace cellulator {
             break;
         }
 
-        colors[y * iEnv.w() + x] = co;
+        // Invert the `y` axis because the surface that will be created from the raw pixels
+        // will be assumed to represent a top down image.
+        int off = (iEnv.h() - 1 - y) * iEnv.w() + x;
+        colors[off] = co;
       }
     }
 
