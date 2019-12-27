@@ -7,6 +7,7 @@
 # include <maths_utils/Size.hh>
 # include <maths_utils/Box.hh>
 # include "Cell.hh"
+# include "CellsQuadTreeNode.hh"
 
 namespace cellulator {
 
@@ -58,7 +59,7 @@ namespace cellulator {
        * @return - the actual box of the cells returned in the `cells` vector.
        */
       utils::Boxi
-      fetchCells(std::vector<Cell>& cells,
+      fetchCells(std::vector<State>& cells,
                  const utils::Boxf& area);
 
       /**
@@ -88,9 +89,8 @@ namespace cellulator {
        * @param in - the box to convert to integer coordinates.
        * @return - a box containing the input `in` box with integer coordinates.
        */
-      static
       utils::Boxi
-      fromFPCoordinates(const utils::Boxf& in) noexcept;
+      fromFPCoordinates(const utils::Boxf& in) const noexcept;
 
     private:
 
@@ -126,6 +126,14 @@ namespace cellulator {
        *          not the box used to represent the dimensions of it.
        */
       utils::Sizei m_size;
+
+      /**
+       * @brief - Contains the top level child of the quad tree. This element can
+       *          be changed in case the quad tree need to be extended to cover
+       *          some other area. It is guaranteed to be valid during the life
+       *          of the quad tree.
+       */
+      CellsQuadTreeNodeShPtr m_root;
   };
 
   using CellsQuadTreeShPtr = std::shared_ptr<CellsQuadTree>;

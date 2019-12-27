@@ -8,26 +8,24 @@ namespace cellulator {
   inline
   utils::Sizei
   CellsQuadTree::getSize() noexcept {
+    // Protect from concurrent accesses.
+    Guard guard(m_propsLocker);
+
     return m_size;
   }
 
   inline
   void
   CellsQuadTree::randomize() {
-    // Randomize each cell.
-    // TODO: Reactivate.
-    // std::for_each(
-    //   m_cells.begin(),
-    //   m_cells.end(),
-    //   [](Cell& c) {
-    //     c.randomize();
-    //   }
-    // );
+    // Protect from concurrent accesses.
+    Guard guard(m_propsLocker);
+
+    m_root->randomize();
   }
 
   inline
   utils::Boxi
-  CellsQuadTree::fromFPCoordinates(const utils::Boxf& in) noexcept {
+  CellsQuadTree::fromFPCoordinates(const utils::Boxf& in) const noexcept {
     // First compute extremum for the input box.
     float minX = std::floor(in.getLeftBound());
     float maxX = std::ceil(in.getRightBound());

@@ -62,7 +62,7 @@ namespace cellulator {
        * @return - the actual box of the cells returned in the `cells` vector.
        */
       utils::Boxi
-      fetchCells(std::vector<Cell>& cells,
+      fetchCells(std::vector<State>& cells,
                  const utils::Boxf& area);
 
       /**
