@@ -9,7 +9,16 @@ namespace cellulator {
   inline
   void
   CellsQuadTreeNode::randomize() {
-    // Randomize each cell.
+    // Randomize each cell. In case children are available, we need
+    // to call the randomization method on them.
+    if (!m_children.empty()) {
+      for (unsigned id = 0u ; id < m_children.size() ; ++id) {
+        m_children[id]->randomize();
+      }
+
+      return;
+    }
+
     std::for_each(
       m_cells.begin(),
       m_cells.end(),
