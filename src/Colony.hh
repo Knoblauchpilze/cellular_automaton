@@ -9,6 +9,7 @@
 # include <maths_utils/Vector2.hh>
 # include <core_utils/ThreadPool.hh>
 # include "Cell.hh"
+# include "CellsQuadTree.hh"
 
 namespace cellulator {
 
@@ -106,40 +107,26 @@ namespace cellulator {
       getWorkerThreadCount() noexcept;
 
       /**
-       * @brief - Used to convert the input box from a floating point semantic to a
-       *          valid integer coordinates box. This will also make sure that the
-       *          returned box completely encompasses the input box so that we are
-       *          sure that all the data contained in the `in` box will also be there
-       *          in the output box.
-       * @param in - the box to convert to integer coordinates.
-       * @return - a box containing the input `in` box with integer coordinates.
+       * @brief - Used to provide a suited value for the size (in cells) for the nodes
+       *          of the quad tree keeping track of the cells of the colony.
+       * @return - a size that can be used when creating the quad tree for the cells.
        */
       static
-      utils::Boxi
-      fromFPCoordinates(const utils::Boxf& in) noexcept;
+      utils::Sizei
+      getQuadTreeNodeSize() noexcept;
 
       /**
        * @brief - Connect signals and build the scheduler to use to simulate the colony.
+       *          Also perform the creation of the undelrying quad tree used to keep the
+       *          cells' data for this colony.
+       *          The dimensions of the cells' quad tree to create should be specified as
+       *          input for the build process.
+       * @param dims - the dimensions of the colony upon creation.
+       * @param ruleset - the type of simulation to perform on the cells.
        */
       void
-      build();
-
-      /**
-       * @brief - Reinitialize the colony with the specified dimensions. All cells will be
-       *          assigned a `Dead` status. Assumes that the locker for this object has
-       *          already been acquired.
-       * @param dims - the dimensions of the cells array to allocate.
-       */
-      void
-      reset(const utils::Sizei& dims);
-
-      /**
-       * @brief - Used to assign random values for each cell of the colony. This assumes that
-       *          the colony is effectively stopped but no checks are performed to ensure it.
-       *          Note that this method assumes that the locker is already acquired.
-       */
-      void
-      randomize();
+      build(const utils::Sizei& dims,
+            const rules::Type& ruleset);
 
       /**
        * @brief - Used to schedule a rendering of the colony using the internal thread
@@ -175,27 +162,9 @@ namespace cellulator {
       std::mutex m_propsLocker;
 
       /**
-       * @brief - Holds a description of the set of rules to apply to perform
-       *          the computation of a cell to its descendant when evolving the
-       *          colony. Different sets of rules will most likely lead to some
-       *          distinct behaviors.
-       *          This property is transmitted to the cells created during the
-       *          evolution of the colony.
+       * @brief - The internal container for the cells representing the colony.
        */
-      rules::Type m_ruleset;
-
-      /**
-       * @brief - Holds the dimensions of the colony. Note that these dimensions
-       *          might be updated in case the colony is expanded and should reflect
-       *          the total size of the colony (i.e. the farthest position a living
-       *          cell has reached).
-       */
-      utils::Sizei m_dims;
-
-      /**
-       * @brief - The internal array of cells representing the colony.
-       */
-      std::vector<Cell> m_cells;
+      CellsQuadTreeShPtr m_cells;
 
       /**
        * @brief - Holds the generation reached by this colony. Each call to `step`

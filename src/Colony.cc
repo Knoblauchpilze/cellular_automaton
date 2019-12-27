@@ -10,9 +10,7 @@ namespace cellulator {
 
     m_propsLocker(),
 
-    m_ruleset(ruleset),
-    m_dims(),
-    m_cells(),
+    m_cells(nullptr),
     m_generation(0u),
 
     m_scheduler(std::make_shared<utils::ThreadPool>(getWorkerThreadCount())),
@@ -31,56 +29,7 @@ namespace cellulator {
       );
     }
 
-    build();
-
-    reset(dims);
-  }
-
-  utils::Boxi
-  Colony::fetchCells(std::vector<Cell>& cells,
-                     const utils::Boxf& area)
-  {
-    // Protect from concurrent accesses.
-    Guard guard(m_propsLocker);
-
-    // Clamp the area to get only relevant cells.
-    utils::Boxi evenized = fromFPCoordinates(area);
-
-    // Resize the output vector if needed.
-    if (cells.size() != static_cast<unsigned>(evenized.area())) {
-      cells.resize(evenized.area());
-    }
-
-    // Populate the needed cells.
-    int xMin = evenized.getLeftBound();
-    int yMin = evenized.getBottomBound();
-    int xMax = evenized.getRightBound();
-    int yMax = evenized.getTopBound();
-
-    for (int y = yMin ; y < yMax ; ++y) {
-      // Convert logical coordinates to valid cells coordinates.
-      int offset = (y - yMin) * evenized.w();
-      int rOffset = (y + m_dims.h() / 2) * m_dims.w();
-
-      for (int x = xMin ; x < xMax ; ++x) {
-        // Convert the `x` coordinate similarly to the `y` coordinate.
-        int xOff = x - xMin;
-        int rXOff = x + m_dims.w() / 2;
-
-        // Check whether the cell exists in the internal data.
-        int coord = rOffset + rXOff;
-        Cell c(State::Dead);
-        if (rOffset >= 0 && rOffset < static_cast<int>(m_cells.size()) &&
-            rXOff >= 0 && rXOff < m_dims.w())
-        {
-          c = m_cells[coord];
-        }
-
-        cells[offset + xOff] = c;
-      }
-    }
-
-    return evenized;
+    build(dims, ruleset);
   }
 
   void
@@ -134,28 +83,40 @@ namespace cellulator {
   void
   Colony::generate() {
     // Protect from concurrent accesses.
-    Guard guard(m_propsLocker);
+    {
+      Guard guard(m_propsLocker);
 
-    // Check whether the simulation is stopped.
-    if (m_simulationState != SimulationState::Stopped) {
-      log(
-        std::string("Could not generate new colony while current one is running"),
-        utils::Level::Warning
-      );
+      // Check whether the simulation is stopped.
+      if (m_simulationState != SimulationState::Stopped) {
+        log(
+          std::string("Could not generate new colony while current one is running"),
+          utils::Level::Warning
+        );
 
-      return;
+        return;
+      }
     }
 
     // Use the dedicated handler to generate the colony.
-    randomize();
+    m_cells->randomize();
   }
 
   void
-  Colony::build() {
+  Colony::build(const utils::Sizei& dims,
+                const rules::Type& ruleset)
+  {
     // Connect the results provider signal of the thread pool to the local slot.
     m_scheduler->onJobsCompleted.connect_member<Colony>(
       this,
       &Colony::handleTilesComputed
+    );
+
+    // Create the cells' data.
+    m_cells = std::make_shared<CellsQuadTree>(
+      dims,
+      getQuadTreeNodeSize(),
+      ruleset,
+      std::string("cells_quad_tree")
     );
   }
 
