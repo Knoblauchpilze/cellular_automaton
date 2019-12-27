@@ -49,6 +49,15 @@ namespace cellulator {
       fetchCells(std::vector<State>& cells,
                  const utils::Boxi& area);
 
+      /**
+       * @brief - Used to split this node into sub-nodes until the node size reaches
+       *          the provided argument. It will split up the internal data into a
+       *          set of children nodes recursively.
+       * @param size - the maximum allowed size for nodes.
+       */
+      void
+      splitUntil(const utils::Sizei& size);
+
     private:
 
       /**
