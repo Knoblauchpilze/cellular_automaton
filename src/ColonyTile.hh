@@ -46,7 +46,7 @@ namespace cellulator {
       /**
        * @brief - The quadtree node containing the cells to evolve.
        */
-      CellsQuadTreeNode* m_cells;
+      CellsQuadTreeNode* m_data;
   };
 
   using ColonyTileShPtr = std::shared_ptr<ColonyTile>;

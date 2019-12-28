@@ -89,6 +89,16 @@ namespace cellulator {
       void
       registerTiles(std::vector<ColonyTileShPtr>& tiles);
 
+      /**
+       * @brief - Used to finalize the state of the cells and to swap their `next` state
+       *          with their current one. This basically applies the evolution computed
+       *          during a generation.
+       *          We either swap the states for the internal cells or call the adequate
+       *          method on children of this node.
+       */
+      void
+      step();
+
     private:
 
       /**
@@ -113,7 +123,23 @@ namespace cellulator {
       bool
       isLeaf() const noexcept;
 
+      /**
+       * @brief - Used to update the adjacency count for the cell at `coord` given that
+       *          it is itself alive or dead (based on the value of the `alive` boolean).
+       * @param coord - the coordinate of the cell to update.
+       * @param alive - `true` if the cell is alive and `false` otherwise.
+       */
+      void
+      updateAdjacencyFor(const utils::Vector2i& coord,
+                         bool alive);
+
     private:
+
+      /**
+       * @brief - Allows the `ColonyTile` to access some elements of this class for
+       *          computation and evolution purposes.
+       */
+      friend class ColonyTile;
 
       /**
        * @brief - The area represented by this quad tree node. The area is expressed
@@ -135,6 +161,15 @@ namespace cellulator {
        *          represented by it.
        */
       std::vector<Cell> m_cells;
+
+      /**
+       * @brief - Holds a vector representing for each cell the number of alive cells
+       *          in the neighborhood. This allows to find very quickly the current
+       *          state of the cell and possibly its next state.
+       *          We need to keep this value up-to-date so as to benefit from it and
+       *          speed up the evolution process.
+       */
+      std::vector<unsigned> m_adjacency;
 
       /**
        * @brief - Describes the number of alive cells in this node and its children.
