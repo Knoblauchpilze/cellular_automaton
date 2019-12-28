@@ -3,6 +3,7 @@
 
 # include <memory>
 # include <vector>
+# include <unordered_map>
 # include <core_utils/CoreObject.hh>
 # include <maths_utils/Box.hh>
 # include "Cell.hh"
@@ -126,6 +127,11 @@ namespace cellulator {
       /**
        * @brief - Used to update the adjacency count for the cell at `coord` given that
        *          it is itself alive or dead (based on the value of the `alive` boolean).
+       *          Note that the `m_nextAdjacency` will be updated and will not be persisted
+       *          to the `m_adjacency` until the `step` method is called.
+       *          Note also that if the coordinates are on the boundaries, this method does
+       *          not try to update the contiguous children, we assume that another process
+       *          will handle it.
        * @param coord - the coordinate of the cell to update.
        * @param alive - `true` if the cell is alive and `false` otherwise.
        */
@@ -140,6 +146,21 @@ namespace cellulator {
        *          computation and evolution purposes.
        */
       friend class ColonyTile;
+
+      /**
+       * @brief - Used to identify a child based on its location in the parent area.
+       */
+      enum class Child {
+        NorthWest,
+        NorthEast,
+        SouthWest,
+        SouthEast
+      };
+
+      /**
+       * @brief - Convenience define to refer to the map of children.
+       */
+      using ChildrenMap = std::unordered_map<Child, CellsQuadTreeNodeShPtr>;
 
       /**
        * @brief - The area represented by this quad tree node. The area is expressed
@@ -172,6 +193,14 @@ namespace cellulator {
       std::vector<unsigned> m_adjacency;
 
       /**
+       * @brief - Used as a temporary buffer allowing to store the adjacency for the
+       *          next step of the evolution of the cells. This value is swapped with
+       *          the `m_adjacency` attribute when the `step` method is called on the
+       *          node.
+       */
+      std::vector<unsigned> m_nextAdjacency;
+
+      /**
        * @brief - Describes the number of alive cells in this node and its children.
        *          This count is updated upon each evolution of the colony.
        */
@@ -183,7 +212,7 @@ namespace cellulator {
        *          an aggregation of all the areas encompassed by children nodes and
        *          the `m_cells` array should be empty.
        */
-      std::vector<CellsQuadTreeNodeShPtr> m_children;
+      ChildrenMap m_children;
   };
 
 }

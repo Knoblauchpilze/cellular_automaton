@@ -12,6 +12,7 @@ namespace cellulator {
 
     m_cells(),
     m_adjacency(),
+    m_nextAdjacency(),
 
     m_aliveCount(0u),
     m_children()
@@ -40,8 +41,11 @@ namespace cellulator {
 
     // Traverse children if there are any.
     if (!isLeaf()) {
-      for (unsigned id = 0u ; id < m_children.size() ; ++id) {
-        m_children[id]->fetchCells(cells, area);
+      for (ChildrenMap::const_iterator it = m_children.cbegin() ;
+           it != m_children.cend() ;
+           ++it)
+      {
+        it->second->fetchCells(cells, area);
       }
 
       return;
@@ -83,6 +87,14 @@ namespace cellulator {
       return;
     }
 
+    // Also if some children are already available, this is a problem.
+    if (!isLeaf()) {
+      error(
+        std::string("Could not split quadtree node to reach ") + size.toString(),
+        std::string("Node is already splitted")
+      );
+    }
+
     // Check whether the input size is a perfect divisor of the internal
     // size. Otherwise we won't be able to split the node into sub-nodes
     // while still keeping equal size: we could try to determine a size
@@ -115,49 +127,44 @@ namespace cellulator {
     int x = m_area.x() - cW / 2;
     int y = m_area.y() + cH / 2;
 
-    m_children.push_back(
-      std::make_shared<CellsQuadTreeNode>(
-        utils::Boxi(x, y, cW, cH),
-        m_ruleset
-      )
+    m_children[Child::NorthWest] = std::make_shared<CellsQuadTreeNode>(
+      utils::Boxi(x, y, cW, cH),
+      m_ruleset
     );
 
     // Top right.
     x = m_area.x() + cW / 2;
     y = m_area.y() + cH / 2;
 
-    m_children.push_back(
-      std::make_shared<CellsQuadTreeNode>(
-        utils::Boxi(x, y, cW, cH),
-        m_ruleset
-      )
+    m_children[Child::NorthEast] = std::make_shared<CellsQuadTreeNode>(
+      utils::Boxi(x, y, cW, cH),
+      m_ruleset
     );
 
     // Bottom left.
     x = m_area.x() - cW / 2;
     y = m_area.y() - cH / 2;
 
-    m_children.push_back(
-      std::make_shared<CellsQuadTreeNode>(
-        utils::Boxi(x, y, cW, cH),
-        m_ruleset
-      )
+    m_children[Child::SouthEast] = std::make_shared<CellsQuadTreeNode>(
+      utils::Boxi(x, y, cW, cH),
+      m_ruleset
     );
 
     // Bottom right.
     x = m_area.x() + cW / 2;
     y = m_area.y() - cH / 2;
 
-    m_children.push_back(
-      std::make_shared<CellsQuadTreeNode>(
-        utils::Boxi(x, y, cW, cH),
-        m_ruleset
-      )
+    m_children[Child::SouthWest] = std::make_shared<CellsQuadTreeNode>(
+      utils::Boxi(x, y, cW, cH),
+      m_ruleset
     );
 
     // Split children nodes in case we need more than one split operation.
-    for (unsigned id = 0u ; id < m_children.size() ; ++id) {
-      m_children[id]->splitUntil(size);
+    for (ChildrenMap::const_iterator it = m_children.cbegin() ;
+         it != m_children.cend() ;
+         ++it)
+    {
+      it->second->splitUntil(size);
     }
 
     // Clear the internal data.
@@ -183,33 +190,38 @@ namespace cellulator {
       return;
     }
 
-    for (unsigned id = 0u ; id < m_children.size() ; ++id) {
-      m_children[id]->registerTiles(tiles);
+    for (ChildrenMap::const_iterator it = m_children.cbegin() ;
+         it != m_children.cend() ;
+         ++it)
+    {
+      it->second->registerTiles(tiles);
     }
   }
 
   void
-  CellsQuadTreeNode::step() {
-    // If this node is not a leaf; call the adequate method for all children.
-    if (!isLeaf()) {
-      for (unsigned id = 0u ; id < m_children.size() ; ++id) {
-        m_children[id]->step();
+  CellsQuadTreeNode::updateAdjacencyFor(const utils::Vector2i& coord,
+                                        bool alive)
+  {
+    // We need to update the internal adjacency values with the alive data.
+    for (int y = coord.y() - 1 ; y <= coord.y() + 1 ; ++y) {
+      // Check whether the coordinate lies inside the boundaries.
+      if (y < 0 || y > m_area.h() - 1) {
+        continue;
       }
 
-      return;
-    }
+      int offset = y * m_area.w();
 
-    // If this node is a leaf, update all the internal cells.
-    for (unsigned id = 0u ; id < m_cells.size() ; ++id) {
-      m_cells[id].step();
-    }
-  }
+      for(int x = coord.x() - 1 ; x <= coord.x() + 1 ; ++x) {
+        // Check consistency of the coordinates.
+        if (x < 0 || x > m_area.w() - 1) {
+          continue;
+        }
 
-  void
-  CellsQuadTreeNode::updateAdjacencyFor(const utils::Vector2i& /*coord*/,
-                                        bool /*alive*/)
-  {
-    // TODO: Implementation.
+        if (alive) {
+          ++m_nextAdjacency[offset + x];
+        }
+      }
+    }
   }
 
 }
