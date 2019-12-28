@@ -47,15 +47,14 @@ namespace cellulator {
         break;
       default:
         // Unknown ruleset.
-        break;
+        throw utils::CoreException(
+          std::string("Could not update cell"),
+          std::string("cell"),
+          std::string("colony"),
+          std::string("Unknown ruleset ") + std::to_string(static_cast<int>(m_ruleset))
+        );
     }
 
-    throw utils::CoreException(
-      std::string("Could not update cell"),
-      std::string("cell"),
-      std::string("colony"),
-      std::string("Unknown ruleset ") + std::to_string(static_cast<int>(m_ruleset))
-    );
   }
 
 }
