@@ -31,10 +31,12 @@ namespace cellulator {
   }
 
   inline
-  void
+  State
   Cell::step() {
     // Apply the next state to the current.
-    m_next = m_state;
+    m_state = m_next;
+
+    return m_state;
   }
 
   inline
@@ -55,6 +57,7 @@ namespace cellulator {
         );
     }
 
+    return m_next;
   }
 
 }

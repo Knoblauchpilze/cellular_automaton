@@ -64,8 +64,9 @@ namespace cellulator {
        *          current state of the cell. This method allows to effectively
        *          change the current state of the cell so that it can be used
        *          in later computations.
+       * @return - the new state for this cell.
        */
-      void
+      State
       step();
 
       /**
