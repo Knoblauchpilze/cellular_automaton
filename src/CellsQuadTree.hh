@@ -90,6 +90,17 @@ namespace cellulator {
       std::vector<ColonyTileShPtr>
       generateSchedule();
 
+      /**
+       * @brief - Used to finalize the state of the cells and to swap their `next` state with
+       *          their current one. This basically applies the evolution computed during a
+       *          generation.
+       *          This operation is usually performed once *all* the cells have finished to be
+       *          updated. At this level we merely call the adequate method on the root node
+       *          of this tree.
+       */
+      void
+      step();
+
     private:
 
       /**

@@ -171,6 +171,9 @@ namespace cellulator {
         m_generation
       );
 
+      // Step up all the cells to their next state.
+      m_cells->step();
+
       // Check whether we should schedule a new generation based on the status of
       // the simulation. We will also update the simulation state accordingly.
       switch (m_simulationState) {

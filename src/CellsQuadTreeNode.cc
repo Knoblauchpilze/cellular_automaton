@@ -11,6 +11,8 @@ namespace cellulator {
     m_ruleset(ruleset),
 
     m_cells(),
+    m_adjacency(),
+
     m_aliveCount(0u),
     m_children()
   {
@@ -184,6 +186,30 @@ namespace cellulator {
     for (unsigned id = 0u ; id < m_children.size() ; ++id) {
       m_children[id]->registerTiles(tiles);
     }
+  }
+
+  void
+  CellsQuadTreeNode::step() {
+    // If this node is not a leaf; call the adequate method for all children.
+    if (!isLeaf()) {
+      for (unsigned id = 0u ; id < m_children.size() ; ++id) {
+        m_children[id]->step();
+      }
+
+      return;
+    }
+
+    // If this node is a leaf, update all the internal cells.
+    for (unsigned id = 0u ; id < m_cells.size() ; ++id) {
+      m_cells[id].step();
+    }
+  }
+
+  void
+  CellsQuadTreeNode::updateAdjacencyFor(const utils::Vector2i& /*coord*/,
+                                        bool /*alive*/)
+  {
+    // TODO: Implementation.
   }
 
 }

@@ -24,6 +24,15 @@ namespace cellulator {
   }
 
   inline
+  void
+  CellsQuadTree::step() {
+    // Protect from concurrent accesses.
+    Guard guard(m_propsLocker);
+
+    m_root->step();
+  }
+
+  inline
   utils::Boxi
   CellsQuadTree::fromFPCoordinates(const utils::Boxf& in) const noexcept {
     // First compute extremum for the input box.
