@@ -15,7 +15,7 @@ namespace cellulator {
   }
 
   inline
-  void
+  State
   Cell::randomize() {
     // Pick a value among the possible states. We will use the basic
     // `rand` method: even though it is probably not perfect it is
@@ -26,6 +26,8 @@ namespace cellulator {
     UType v = std::rand() % max;
 
     m_state = static_cast<State>(v);
+
+    return m_state;
   }
 
   inline

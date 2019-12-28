@@ -51,9 +51,12 @@ namespace cellulator {
 
       /**
        * @brief - Used to assign a random state to the cell from the possible
-       *          values.
+       *          values. Note that the new state is applied right away and
+       *          does not need to be `validated` through the `step` method
+       *          like in the case of an update.
+       * @return - the new state for this cell.
        */
-      void
+      State
       randomize();
 
       /**

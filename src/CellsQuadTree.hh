@@ -8,6 +8,7 @@
 # include <maths_utils/Box.hh>
 # include "Cell.hh"
 # include "CellsQuadTreeNode.hh"
+# include "ColonyTile.hh"
 
 namespace cellulator {
 
@@ -77,6 +78,17 @@ namespace cellulator {
        */
       void
       randomize();
+
+      /**
+       * @brief - Used to generate a list of tiles to schedule for evolving the cells composing
+       *          the colony. This schedule is by no means executed and is used to reflect the
+       *          internal structure of the quad tree to divide the workload efficiently.
+       *          The return value is a list of tiles that can be executed concurrently and which
+       *          allow to evolve the colony one step further in time.
+       * @return - a list of tiles to execute to evolve the colony.
+       */
+      std::vector<ColonyTileShPtr>
+      generateSchedule();
 
     private:
 

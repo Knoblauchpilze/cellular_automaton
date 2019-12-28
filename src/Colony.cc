@@ -1,5 +1,6 @@
 
 # include "Colony.hh"
+# include "ColonyTile.hh"
 
 namespace cellulator {
 
@@ -126,14 +127,19 @@ namespace cellulator {
     m_scheduler->cancelJobs();
 
     // Generate the launch schedule.
-    // TODO: Create schedule.
+    std::vector<ColonyTileShPtr> tiles = m_cells->generateSchedule();
 
     // Convert to required pointer type.
-    std::vector<utils::AsynchronousJobShPtr> tilesAsJobs;
+    std::vector<utils::AsynchronousJobShPtr> tilesAsJobs(tiles.begin(), tiles.end());
 
-    // Return early if nothing needs to be scheduled. We still want to trigger a repaint
-    // though so we need to mark the tiles as dirty.
+    // Return early if nothing needs to be scheduled. We still want to notify listeners
+    // that a new generation has been computed.
     if (tilesAsJobs.empty()) {
+      onGenerationComputed.safeEmit(
+        std::string("onGenerationComputed(") + std::to_string(m_generation) + ")",
+        m_generation
+      );
+
       return;
     }
 
@@ -164,6 +170,24 @@ namespace cellulator {
         std::string("onGenerationComputed(") + std::to_string(m_generation) + ")",
         m_generation
       );
+
+      // Check whether we should schedule a new generation based on the status of
+      // the simulation. We will also update the simulation state accordingly.
+      switch (m_simulationState) {
+        case SimulationState::Running:
+          scheduleRendering();
+          break;
+        case SimulationState::SingleStep:
+          // Reset the simulation to a waiting state.
+          m_simulationState = SimulationState::Stopped;
+          break;
+        case SimulationState::Stopped:
+          // Nothing to do, the simulation is already stopped we will not start a
+          // new rendering nor modify the state.
+        default:
+          // Same behavior as if the simulation was stopped.
+          break;
+      }
     }
   }
 

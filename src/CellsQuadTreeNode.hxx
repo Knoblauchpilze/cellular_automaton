@@ -11,21 +11,36 @@ namespace cellulator {
   CellsQuadTreeNode::randomize() {
     // Randomize each cell. In case children are available, we need
     // to call the randomization method on them.
-    if (!m_children.empty()) {
+    if (!isLeaf()) {
+      m_aliveCount = 0u;
+
       for (unsigned id = 0u ; id < m_children.size() ; ++id) {
         m_children[id]->randomize();
+        m_aliveCount += m_children[id]->getAliveCellsCount();
       }
 
       return;
     }
 
-    std::for_each(
-      m_cells.begin(),
-      m_cells.end(),
-      [](Cell& c) {
-        c.randomize();
+    for (unsigned id = 0u ; id < m_cells.size() ; ++id) {
+      State s = m_cells[id].randomize();
+
+      switch (s) {
+        case State::Newborn:
+        case State::Alive:
+          ++m_aliveCount;
+          break;
+        default:
+          // Do not consider the cell alive by default.
+          break;
       }
-    );
+    }
+  }
+
+  inline
+  unsigned
+  CellsQuadTreeNode::getAliveCellsCount() noexcept {
+    return m_aliveCount;
   }
 
   inline
@@ -37,6 +52,12 @@ namespace cellulator {
 
     // Create the internal array of cells.
     m_cells.resize(m_area.area(), Cell(state, m_ruleset));
+  }
+
+  inline
+  bool
+  CellsQuadTreeNode::isLeaf() const noexcept {
+    return m_children.empty();
   }
 
 }

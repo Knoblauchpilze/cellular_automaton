@@ -90,4 +90,17 @@ namespace cellulator {
     }
   }
 
+  std::vector<ColonyTileShPtr>
+  CellsQuadTree::generateSchedule() {
+    // Protect from concurrent accesses.
+    Guard guard(m_propsLocker);
+
+    // We need to traverse the children of this node if any and create the corresponding
+    // rendering tiles.
+    std::vector<ColonyTileShPtr> tiles;
+    m_root->registerTiles(tiles);
+
+    return tiles;
+  }
+
 }
