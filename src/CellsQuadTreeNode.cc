@@ -11,6 +11,7 @@ namespace cellulator {
     m_ruleset(ruleset),
 
     m_cells(),
+    m_aliveCount(0u),
     m_children()
   {
     setService("node");
@@ -30,8 +31,13 @@ namespace cellulator {
   CellsQuadTreeNode::fetchCells(std::vector<State>& cells,
                                 const utils::Boxi& area)
   {
+    // If no cells are available, we can return early.
+    if (m_aliveCount == 0) {
+      return;
+    }
+
     // Traverse children if there are any.
-    if (!m_children.empty()) {
+    if (!isLeaf()) {
       for (unsigned id = 0u ; id < m_children.size() ; ++id) {
         m_children[id]->fetchCells(cells, area);
       }
@@ -154,6 +160,30 @@ namespace cellulator {
 
     // Clear the internal data.
     m_cells.clear();
+    m_aliveCount = 0u;
+  }
+
+  void
+  CellsQuadTreeNode::registerTiles(std::vector<ColonyTileShPtr>& tiles) {
+    // In the case this node is a leaf, we only need to register a single
+    // tile corresponding to the internal data of this node. Otherwise we
+    // will transmit the request to the children if any.
+    if (isLeaf()) {
+      log("Registering job for area " + m_area.toString() + " (already " + std::to_string(tiles.size()) + " registered)");
+
+      tiles.push_back(
+        std::make_shared<ColonyTile>(
+          m_area,
+          this
+        )
+      );
+
+      return;
+    }
+
+    for (unsigned id = 0u ; id < m_children.size() ; ++id) {
+      m_children[id]->registerTiles(tiles);
+    }
   }
 
 }

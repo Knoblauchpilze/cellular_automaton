@@ -6,6 +6,7 @@
 # include <core_utils/CoreObject.hh>
 # include <maths_utils/Box.hh>
 # include "Cell.hh"
+# include "ColonyTile.hh"
 
 namespace cellulator {
 
@@ -13,6 +14,11 @@ namespace cellulator {
   // right away.
   class CellsQuadTreeNode;
   using CellsQuadTreeNodeShPtr = std::shared_ptr<CellsQuadTreeNode>;
+
+  // Forward declaration to be able to use a shared pointer on a colony tile
+  // right away.
+  class ColonyTile;
+  using ColonyTileShPtr = std::shared_ptr<ColonyTile>;
 
   class CellsQuadTreeNode: public utils::CoreObject {
     public:
@@ -64,6 +70,25 @@ namespace cellulator {
       void
       splitUntil(const utils::Sizei& size);
 
+      /**
+       * @brief - Return the number of alive cells in this node. This can be used to
+       *          speed up the computations and not compute anything if needed.
+       * @return - the number of alive cells for this node.
+       */
+      unsigned
+      getAliveCellsCount() noexcept;
+
+      /**
+       * @brief - Used to register the tiles needed to recompute the cells contained
+       *          by this node or its children. Each needed tile is added to the input
+       *          provided container. The tiles already contained in the vector are
+       *          left unchanged.
+       * @param tiles - an output array where the tiles needed to evolve this node
+       *                will be registered.
+       */
+      void
+      registerTiles(std::vector<ColonyTileShPtr>& tiles);
+
     private:
 
       /**
@@ -80,6 +105,13 @@ namespace cellulator {
       void
       initialize(const utils::Boxi& area,
                  const State& state);
+
+      /**
+       * @brief - Determine whether this tree node is a leaf or not.
+       * @return - `true` if this node is a leaf and `false` otherwise.
+       */
+      bool
+      isLeaf() const noexcept;
 
     private:
 
@@ -103,6 +135,12 @@ namespace cellulator {
        *          represented by it.
        */
       std::vector<Cell> m_cells;
+
+      /**
+       * @brief - Describes the number of alive cells in this node and its children.
+       *          This count is updated upon each evolution of the colony.
+       */
+      unsigned m_aliveCount;
 
       /**
        * @brief - Contains the children of this node. This vector can either be empty
