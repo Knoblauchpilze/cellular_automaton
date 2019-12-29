@@ -120,11 +120,45 @@ namespace cellulator {
        * @param root - the node to expand.
        * @return - the expanded version of the input `root` node.
        */
-      static
       CellsQuadTreeNodeShPtr
       expand(CellsQuadTreeNodeShPtr root);
 
     private:
+
+      /**
+       * @brief - Used to identify a child based on its location in the parent area.
+       */
+      enum class Child {
+        NorthWest,
+        NorthEast,
+        SouthWest,
+        SouthEast,
+        None
+      };
+
+      /**
+       * @brief - Similar to the public constructor but allows to specify the parent node in
+       *          argument. This is the only way to create a children of a quadtree node and
+       *          this is a protection so that only the class itself can expand and create
+       *          its own children.
+       *          The node can be marked for initialization or not. This will create internal
+       *          arrays containing cells and adjacency data (so usually because the node will
+       *          be a leaf) or not if the node is meant to be an intermediary node.
+       *          Note that an orientation should be provided to indicate which role this node
+       *          has in the parent's children.
+       * @param area - the area of the node.
+       * @param ruleset - the set of rules to use to update the cells to
+       *                  the next iteration.
+       * @param parent - the parent node to this quadtree node.
+       * @param orientation - the role of this child within the parent's children.
+       * @param allocate - `true` if the internal arrays should be initialized and `false`
+       *                   otherwise.
+       */
+      CellsQuadTreeNode(const utils::Boxi& area,
+                        const rules::Type& ruleset,
+                        CellsQuadTreeNode* parent,
+                        const Child& orientation,
+                        bool allocate);
 
       /**
        * @brief - Creates the internal data needed to represent the input area. This
@@ -136,10 +170,20 @@ namespace cellulator {
        *          behavior.
        * @param area - the area to associate to this node.
        * @param state - the state to assign to each created cell.
+       * @param allocate - `true` if the internal array should be allocated (i.e. the
+       *                   cells and adjacency values) and `false` otherwise.
        */
       void
       initialize(const utils::Boxi& area,
-                 const State& state);
+                 const State& state,
+                 bool allocate);
+
+      /**
+       * @brief - Return `true` if this node is a root node (i.e. with no parent).
+       * @return - `true` if the node does not have a parent, `false` otherwise.
+       */
+      bool
+      isRoot() const noexcept;
 
       /**
        * @brief - Determine whether this tree node is a leaf or not.
@@ -147,6 +191,26 @@ namespace cellulator {
        */
       bool
       isLeaf() const noexcept;
+
+      /**
+       * @brief - Used to colletc the boundaries leaves nodes that are children of
+       *          this node's hierarchy. This include this node if it matches (i.e.
+       *          if it is a leaf) or all the matching children.
+       *          Note that if this node is a leaf it will be added to the input
+       *          vector as we consider that the parent should not have called this
+       *          method on the child if it was not at least susceptible to be a
+       *          leaf.
+       *          Also note that the boundary nodes for this node will be appended
+       *          to the input vector.
+       * @param nodes - output vector which will contain the boundary nodes that
+       *                belong to the hierarchy defined by this node.
+       * @param includeEmpty - if `true` will collect all the boundaries including
+       *                       the ones only containing dead cells. Note that not
+       *                       allocated boundaries are never included.
+       */
+      void
+      collectBoundaries(std::vector<CellsQuadTreeNode*>& nodes,
+                        bool includeEmpty) noexcept;
 
       /**
        * @brief - Used to update the adjacency count for the cell at `coord` given that
@@ -168,16 +232,6 @@ namespace cellulator {
                          bool makeCurrent = false);
 
     private:
-
-      /**
-       * @brief - Used to identify a child based on its location in the parent area.
-       */
-      enum class Child {
-        NorthWest,
-        NorthEast,
-        SouthWest,
-        SouthEast
-      };
 
       /**
        * @brief - Convenience define to refer to the map of children.
@@ -227,6 +281,20 @@ namespace cellulator {
        *          This count is updated upon each evolution of the colony.
        */
       unsigned m_aliveCount;
+
+      /**
+       * @brief - A reference to the parent noe of this quadtree element. May be `null`
+       *          in case this node is a root node.
+       */
+      CellsQuadTreeNode* m_parent;
+
+      /**
+       * @brief - Used to hold the orientation of this child relatively to its parent.
+       *          This indicates under which key this node can be found in the parent
+       *          quadtree node. If the node has no parent, the orientation is set to
+       *          `None`.
+       */
+      Child m_orientation;
 
       /**
        * @brief - Contains the children of this node. This vector can either be empty
