@@ -7,6 +7,12 @@
 namespace cellulator {
 
   inline
+  utils::Boxi
+  CellsQuadTreeNode::getArea() const noexcept {
+    return m_area;
+  }
+
+  inline
   void
   CellsQuadTreeNode::randomize() {
     // Randomize each cell. In case children are available, we need
