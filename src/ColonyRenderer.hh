@@ -31,6 +31,19 @@ namespace cellulator {
       ~ColonyRenderer();
 
       /**
+       * @brief - Used to request the viewing area to fit the content. This action is
+       *          usually interesting for colonies not too large, otherwise the size
+       *          of the individual cells can become too small. This method only uses
+       *          the total size of the colony as a basis for the rendering window.
+       *          Note that the aspect ratio of the cells is kept which means that one
+       *          of the dimensions may display areas that do not belong to the colony.
+       * @param dummy - the name of the component which requestes to fit the display
+       *                to the content. Should not be used.
+       */
+      void
+      fitToContent(const std::string& dummy);
+
+      /**
        * @brief - Used to request the simulation to start immediately. This will
        *          fire a request to start simulating the colony and make cells
        *          live and die until a call to the `stop` method is issued.

@@ -7,6 +7,12 @@ namespace cellulator {
 
   inline
   sdl::graphic::Button&
+  ColonyStatus::getFitToContentButton() {
+    return *getChildAs<sdl::graphic::Button>(getFitToContentButtonName());
+  }
+
+  inline
+  sdl::graphic::Button&
   ColonyStatus::getStartSimilationButton() {
     return *getChildAs<sdl::graphic::Button>(getStartSimulationButtonName());
   }
@@ -45,6 +51,12 @@ namespace cellulator {
   float
   ColonyStatus::getComponentMargins() noexcept {
     return 15.0f;
+  }
+
+  inline
+  const char*
+  ColonyStatus::getFitToContentButtonName() noexcept {
+    return "colony_fit_to_content";
   }
 
   inline

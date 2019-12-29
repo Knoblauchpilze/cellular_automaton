@@ -40,6 +40,9 @@ namespace cellulator {
 
     // Expand the root using the dedicated handler
     m_root = m_root->expand(m_root);
+
+    // Update the size of the colony.
+    m_size = m_root->getArea().toSize();
   }
 
   inline
