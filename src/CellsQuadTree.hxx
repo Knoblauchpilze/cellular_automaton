@@ -33,6 +33,16 @@ namespace cellulator {
   }
 
   inline
+  void
+  CellsQuadTree::expand() {
+    // Protect from concurrent accesses.
+    Guard guard(m_propsLocker);
+
+    // Expand the root using the dedicated handler
+    m_root = CellsQuadTreeNode::expand(m_root);
+  }
+
+  inline
   utils::Boxi
   CellsQuadTree::fromFPCoordinates(const utils::Boxf& in) const noexcept {
     // First compute extremum for the input box.

@@ -211,6 +211,46 @@ namespace cellulator {
   }
 
   void
+  CellsQuadTreeNode::evolve() {
+    // Check whether this node is a leaf.
+    if (!isLeaf()) {
+      log(
+        std::string("Cannot evolve node spanning ") + m_area.toString() + ", node is not a leaf",
+        utils::Level::Error
+      );
+
+      return;
+    }
+
+    // First we need to compute the internal elements of the quadtree node. This
+    // corresponds to all the cells except the boundaries, where we would need to
+    // access the data from adjacent nodes. In the meantime we need to update the
+    // adjacency count.
+    for (int y = 0 ; y < m_area.h() ; ++y) {
+      int offset = y * m_area.w();
+
+      for (int x = 0 ; x < m_area.w() ; ++x) {
+        State s = m_cells[offset + x].update(m_adjacency[offset + x]);
+        bool alive = (s == State::Alive || s == State::Newborn);
+
+        updateAdjacencyFor(utils::Vector2i(x, y), alive);
+      }
+    }
+  }
+
+  CellsQuadTreeNodeShPtr
+  CellsQuadTreeNode::expand(CellsQuadTreeNodeShPtr root) {
+    // Check consistency of the input node.
+    if (root == nullptr) {
+      return CellsQuadTreeNodeShPtr();
+    }
+
+    // TODO: Implementation.
+
+    return root;
+  }
+
+  void
   CellsQuadTreeNode::updateAdjacencyFor(const utils::Vector2i& coord,
                                         bool alive,
                                         bool makeCurrent)

@@ -101,6 +101,19 @@ namespace cellulator {
       void
       step();
 
+      /**
+       * @brief - Used to expand this quadtree to have an area four times as large as it
+       *          currently have. The expansion process is abstracted away by the quadtree
+       *          node class which is owned by the tree.
+       *          This method is smart enough to automatically detect whether the tree does
+       *          indeed need to expand or not. In order to do that it checks whether the
+       *          children at the boundary of the quadtree have a non-zero cells count in
+       *          which case we need to be conservative and assume that the cells could be
+       *          reaching the boundaries in a subsequent iteration.
+       */
+      void
+      expand();
+
     private:
 
       /**

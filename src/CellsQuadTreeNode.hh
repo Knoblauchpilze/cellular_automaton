@@ -100,6 +100,30 @@ namespace cellulator {
       void
       step();
 
+      /**
+       * @brief - Perform the evolution of the cells contained in this node. Note that
+       *          in case the node is not a leaf, nothing happens.
+       */
+      void
+      evolve();
+
+      /**
+       * @brief - Used to expand the input quadtree node to have an area four times as large
+       *          as it currently have. The expansion process will split the current data into
+       *          four children and create the parent root.
+       *          All internal data will be copied, including the adjacency arrays. The data
+       *          itself will be divided into the four children encompassing the current area
+       *          and boundaries wrappers will be allocated as well.
+       *          Note that in case the provided node does not need to be expanded, it will be
+       *          returned as is. This allows to entirely rely on this method to handle the
+       *          logic of expansion and call it no matter the real data contained in the tree.
+       * @param root - the node to expand.
+       * @return - the expanded version of the input `root` node.
+       */
+      static
+      CellsQuadTreeNodeShPtr
+      expand(CellsQuadTreeNodeShPtr root);
+
     private:
 
       /**
@@ -144,12 +168,6 @@ namespace cellulator {
                          bool makeCurrent = false);
 
     private:
-
-      /**
-       * @brief - Allows the `ColonyTile` to access some elements of this class for
-       *          computation and evolution purposes.
-       */
-      friend class ColonyTile;
 
       /**
        * @brief - Used to identify a child based on its location in the parent area.
