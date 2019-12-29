@@ -8,9 +8,36 @@ namespace cellulator {
   inline
   ColonyRenderer::~ColonyRenderer() {
     // Protect from concurrent accesses
-    Guard guard (m_propsLocker);
+    Guard guard(m_propsLocker);
 
     clearColony();
+  }
+
+  inline
+  void
+  ColonyRenderer::fitToContent(const std::string& /*dummy*/) {
+    // Protect from concurrent accesses
+    Guard guard(m_propsLocker);
+
+    // Request the size of the colony and use this as the rendering window.
+    // We need to account for the current aspect ratio and keep it though.
+    utils::Sizei cSize = m_colony->getSize();
+    float aspectRatio = m_settings.area.w() / m_settings.area.h();
+
+    float w = (aspectRatio < 1.0f ? cSize.w() : cSize.w() * aspectRatio);
+    float h = (aspectRatio < 1.0f ? cSize.h() * aspectRatio : cSize.h());
+
+    utils::Boxf area(0.0f, 0.0f, w, h);
+
+    log(
+      "Changing rendering area from " + m_settings.area.toString() + " to " + area.toString() + " (colony is " +
+      cSize.toString() + ", ratio: " + std::to_string(aspectRatio) + ")",
+      utils::Level::Verbose
+    );
+
+    // Assign the new rendering area and request a repaint.
+    m_settings.area = area;
+    setColonyChanged();
   }
 
   inline

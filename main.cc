@@ -19,7 +19,6 @@
 // TODO: Multiple rulesets ? See here: https://en.wikipedia.org/wiki/Cyclic_cellular_automaton
 // TODO: Handle boundaries.
 // TODO: Improve dead areas.
-// TODO: Fit to content button.
 
 int main(int /*argc*/, char** /*argv*/) {
   // Create the logger.
@@ -70,7 +69,11 @@ int main(int /*argc*/, char** /*argv*/) {
     cellulator::StatusBar* bar = new cellulator::StatusBar();
     app->setStatusBar(bar);
 
-    // Connect the render button to the options panel slots.
+    // Connect the simulation's control button to the options panel slots.
+    status->getFitToContentButton().onClick.connect_member<cellulator::ColonyRenderer>(
+      renderer,
+      &cellulator::ColonyRenderer::fitToContent
+    );
     status->getStartSimilationButton().onClick.connect_member<cellulator::ColonyRenderer>(
       renderer,
       &cellulator::ColonyRenderer::start

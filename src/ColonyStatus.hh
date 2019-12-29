@@ -25,6 +25,18 @@ namespace cellulator {
       ~ColonyStatus() = default;
 
       /**
+       * @brief - Used to retrive the fit to content button associated to this
+       *          status. This method is only meant as a way to connect elements
+       *          to the `onClick` signal of this button, lacking of a better way.
+       *          The method may raise an error in case the start simulation
+       *          button is not defined.
+       * @return - a reference to the fit to content button  associated to this
+       *           status.
+       */
+      sdl::graphic::Button&
+      getFitToContentButton();
+
+      /**
        * @brief - Used to retrive the start simulation button associated to this
        *          status. This method is only meant as a way to connect elements
        *          to the `onClick` signal of this button, lacking of a better way.
@@ -91,9 +103,18 @@ namespace cellulator {
       getComponentMargins() noexcept;
 
       /**
+       * @brief - Used to retrieve the default name for the fit to content button.
+       * @return - a string that should be used to provide consistent naming for
+       *           the fit to content button.
+       */
+      static
+      const char*
+      getFitToContentButtonName() noexcept;
+
+      /**
        * @brief - Used to retrieve the default name for the start simulation button.
        * @return - a string that should be used to provide consistent naming for the
-       *           start similation button.
+       *           start simulation button.
        */
       static
       const char*
@@ -101,7 +122,7 @@ namespace cellulator {
 
       /**
        * @brief - Similar to the `getStartSimulationButtonName` but retrieves the
-       *          default name to use for the button allowing to stop the similation.
+       *          default name to use for the button allowing to stop the simulation.
        * @return - a string that should be used to provide consistent naming for the
        *           stop simulation button.
        */

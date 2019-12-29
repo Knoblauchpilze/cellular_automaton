@@ -52,6 +52,23 @@ namespace cellulator {
       );
     }
 
+    sdl::graphic::Button* fitToContent = new sdl::graphic::Button(
+      getFitToContentButtonName(),
+      std::string(),
+      std::string("data/img/fit.bmp"),
+      getButtonFontName(),
+      15u,
+      this,
+      utils::Sizef(),
+      sdl::core::engine::Color::NamedColor::White
+    );
+    if (fitToContent == nullptr) {
+      error(
+        std::string("Could not create colony status"),
+        std::string("Fit to content button not allocated")
+      );
+    }
+
     sdl::graphic::Button* start = new sdl::graphic::Button(
       getStartSimulationButtonName(),
       std::string(),
@@ -104,12 +121,14 @@ namespace cellulator {
     }
 
     // Assign maximum size to component(s) if needed.
+    fitToContent->setMaxSize(getSimulationButtonMaxSize());
     start->setMaxSize(getSimulationButtonMaxSize());
     stop->setMaxSize(getSimulationButtonMaxSize());
     next->setMaxSize(getSimulationButtonMaxSize());
 
     // Add each element to the layout.
     layout->addItem(generate);
+    layout->addItem(fitToContent);
     layout->addItem(start);
     layout->addItem(next);
     layout->addItem(stop);
