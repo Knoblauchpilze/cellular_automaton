@@ -58,11 +58,14 @@ namespace cellulator {
   CellsQuadTreeNode::step() {
     // If this node is not a leaf; call the adequate method for all children.
     if (!isLeaf()) {
+      m_aliveCount = 0u;
+
       for (ChildrenMap::const_iterator it = m_children.cbegin() ;
            it != m_children.cend() ;
            ++it)
       {
         it->second->step();
+        m_aliveCount += it->second->m_aliveCount;
       }
 
       return;
@@ -90,22 +93,82 @@ namespace cellulator {
   inline
   void
   CellsQuadTreeNode::initialize(const utils::Boxi& area,
-                                const State& state)
+                                const State& state,
+                                bool allocate)
   {
     m_area = area;
 
-    // Create the internal array of cells.
-    m_cells.resize(m_area.area(), Cell(state, m_ruleset));
+    if (allocate) {
+      // Create the internal array of cells.
+      m_cells.resize(m_area.area(), Cell(state, m_ruleset));
 
-    // Update the adjacency elements.
-    m_adjacency.resize(m_area.area(), 0);
-    m_nextAdjacency.resize(m_area.area(), 0);
+      // Update the adjacency elements.
+      m_adjacency.resize(m_area.area(), 0);
+      m_nextAdjacency.resize(m_area.area(), 0);
+    }
+  }
+
+  inline
+  bool
+  CellsQuadTreeNode::isRoot() const noexcept {
+    return m_parent == nullptr;
   }
 
   inline
   bool
   CellsQuadTreeNode::isLeaf() const noexcept {
     return m_children.empty();
+  }
+
+  inline
+  void
+  CellsQuadTreeNode::collectBoundaries(std::vector<CellsQuadTreeNode*>& nodes,
+                                       bool includeEmpty) noexcept
+  {
+    // If this quadtree node is a leaf, add it to the input list and return early.
+    // We also care about the `includeEmpty` input boolean.
+    if (isLeaf() && (m_aliveCount > 0 || includeEmpty)) {
+      nodes.push_back(this);
+
+      return;
+    }
+
+    // Based on the role of this child in the parent, only collect boundaries on some
+    // particular children. In the case of a root node (i.e. with no parent) all the
+    // children can contain boundaries.
+    for (ChildrenMap::const_iterator it = m_children.cbegin() ;
+         it != m_children.cend() ;
+         ++it)
+    {
+      bool collect = false;
+
+      switch (it->first) {
+        case Child::NorthEast:
+          collect = (isRoot() || m_orientation != Child::SouthWest);
+          break;
+        case Child::NorthWest:
+          collect = (isRoot() || m_orientation != Child::SouthEast);
+          break;
+        case Child::SouthEast:
+          collect = (isRoot() || m_orientation != Child::NorthWest);
+          break;
+        case Child::SouthWest:
+          collect = (isRoot() || m_orientation != Child::NorthEast);
+          break;
+        case Child::None:
+        default:
+          // Do nothing, unknown child role.
+          log(
+            "Cannot collect boundary on child " + it->second->getName() + ", unknown role " +
+            std::to_string(static_cast<int>(it->first))
+          );
+          break;
+      }
+
+      if (collect && (it->second->getAliveCellsCount() || includeEmpty)) {
+        it->second->collectBoundaries(nodes, includeEmpty);
+      }
+    }
   }
 
 }

@@ -39,7 +39,7 @@ namespace cellulator {
     Guard guard(m_propsLocker);
 
     // Expand the root using the dedicated handler
-    m_root = CellsQuadTreeNode::expand(m_root);
+    m_root = m_root->expand(m_root);
   }
 
   inline
