@@ -96,6 +96,14 @@ namespace cellulator {
 
         return;
       }
+
+      // Reset the generation count.
+      m_generation = 0u;
+
+      onGenerationComputed.safeEmit(
+        std::string("onGenerationComputed(") + std::to_string(m_generation) + ")",
+        m_generation
+      );
     }
 
     // Use the dedicated handler to generate the colony.
@@ -111,6 +119,9 @@ namespace cellulator {
       this,
       &Colony::handleTilesComputed
     );
+
+    // Disable logging for the scheduler.
+    m_scheduler->allowLog(false);
 
     // Create the cells' data.
     m_cells = std::make_shared<CellsQuadTree>(

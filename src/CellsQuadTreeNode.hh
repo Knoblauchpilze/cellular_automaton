@@ -128,16 +128,20 @@ namespace cellulator {
        * @brief - Used to update the adjacency count for the cell at `coord` given that
        *          it is itself alive or dead (based on the value of the `alive` boolean).
        *          Note that the `m_nextAdjacency` will be updated and will not be persisted
-       *          to the `m_adjacency` until the `step` method is called.
+       *          to the `m_adjacency` until the `step` method is called: this only holds
+       *          as long as the `makeCurrent` boolean is `false`.
        *          Note also that if the coordinates are on the boundaries, this method does
        *          not try to update the contiguous children, we assume that another process
        *          will handle it.
        * @param coord - the coordinate of the cell to update.
        * @param alive - `true` if the cell is alive and `false` otherwise.
+       * @param makeCurrent - `true` if the adjacency should be updated right away (i.e. if
+       *                      the `m_adjacency` array is to be modified).
        */
       void
       updateAdjacencyFor(const utils::Vector2i& coord,
-                         bool alive);
+                         bool alive,
+                         bool makeCurrent = false);
 
     private:
 

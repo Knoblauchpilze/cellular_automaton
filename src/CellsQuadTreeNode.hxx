@@ -25,19 +25,25 @@ namespace cellulator {
       return;
     }
 
-    // TODO: We should update the adjacency count.
+    // Update both the internal alive count and the adjacency values.
+    // Note that we will have to indicate to the `updateAdjacencyFor`
+    // method that we want to update the current adjacency.
     for (unsigned id = 0u ; id < m_cells.size() ; ++id) {
       State s = m_cells[id].randomize();
 
+      bool alive = false;
       switch (s) {
         case State::Newborn:
         case State::Alive:
           ++m_aliveCount;
+          alive = true;
           break;
         default:
           // Do not consider the cell alive by default.
           break;
       }
+
+      updateAdjacencyFor(utils::Vector2i(id % m_area.w(), id / m_area.w()), alive, true);
     }
   }
 

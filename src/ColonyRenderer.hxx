@@ -16,9 +16,6 @@ namespace cellulator {
   inline
   void
   ColonyRenderer::start(const std::string& /*dummy*/) {
-    // Protect from concurrent accesses.
-    Guard guard(m_propsLocker);
-
     // Request to start the simulation.
     m_colony->start();
   }
@@ -26,9 +23,6 @@ namespace cellulator {
   inline
   void
   ColonyRenderer::stop(const std::string& /*dummy*/) {
-    // Protect from concurrent accesses.
-    Guard guard(m_propsLocker);
-
     // Request to stop the simulation.
     m_colony->stop();
   }
@@ -36,9 +30,6 @@ namespace cellulator {
   inline
   void
   ColonyRenderer::nextStep(const std::string& /*dummy*/) {
-    // Protect from concurrent accesses.
-    Guard guard(m_propsLocker);
-
     // Request a next step.
     m_colony->step();
   }
