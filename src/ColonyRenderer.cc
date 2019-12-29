@@ -96,19 +96,19 @@ namespace cellulator {
 
     if (e.getRawKey() == sdl::core::engine::RawKey::Left) {
       move = true;
-      motion.x() -= delta;
+      motion.x() += delta;
     }
     if (e.getRawKey() == sdl::core::engine::RawKey::Right) {
       move = true;
-      motion.x() += delta;
+      motion.x() -= delta;
     }
     if (e.getRawKey() == sdl::core::engine::RawKey::Down) {
       move = true;
-      motion.y() -= delta;
+      motion.y() += delta;
     }
     if (e.getRawKey() == sdl::core::engine::RawKey::Up) {
       move = true;
-      motion.y() += delta;
+      motion.y() -= delta;
     }
 
     // Schedule a scrolling if some motion has been detected.
