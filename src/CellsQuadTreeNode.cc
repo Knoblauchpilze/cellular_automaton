@@ -178,7 +178,7 @@ namespace cellulator {
     // tile corresponding to the internal data of this node. Otherwise we
     // will transmit the request to the children if any.
     if (isLeaf()) {
-      log("Registering job for area " + m_area.toString() + " (already " + std::to_string(tiles.size()) + " registered)");
+      log("Registering job for area " + m_area.toString() + " (already " + std::to_string(tiles.size()) + " registered)", utils::Level::Verbose);
 
       tiles.push_back(
         std::make_shared<ColonyTile>(
@@ -200,7 +200,8 @@ namespace cellulator {
 
   void
   CellsQuadTreeNode::updateAdjacencyFor(const utils::Vector2i& coord,
-                                        bool alive)
+                                        bool alive,
+                                        bool makeCurrent)
   {
     // We need to update the internal adjacency values with the alive data.
     for (int y = coord.y() - 1 ; y <= coord.y() + 1 ; ++y) {
@@ -217,8 +218,18 @@ namespace cellulator {
           continue;
         }
 
+        // Do not update the count for this cell.
+        if (y == coord.y() && x == coord.x()) {
+          continue;
+        }
+
         if (alive) {
-          ++m_nextAdjacency[offset + x];
+          if (makeCurrent) {
+            ++m_adjacency[offset + x];
+          }
+          else {
+            ++m_nextAdjacency[offset + x];
+          }
         }
       }
     }
