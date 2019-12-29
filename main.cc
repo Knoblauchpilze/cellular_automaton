@@ -18,6 +18,8 @@
 
 // TODO: Multiple rulesets ? See here: https://en.wikipedia.org/wiki/Cyclic_cellular_automaton
 // TODO: Handle boundaries.
+// TODO: Improve dead areas.
+// TODO: Fit to content button.
 
 int main(int /*argc*/, char** /*argv*/) {
   // Create the logger.
