@@ -16,9 +16,7 @@
 # include "ColonyStatus.hh"
 # include "ColonyRenderer.hh"
 
-// TODO: Handle rendering.
 // TODO: Multiple rulesets ? See here: https://en.wikipedia.org/wiki/Cyclic_cellular_automaton
-// TODO: Handle centering of cells.
 // TODO: Handle boundaries.
 
 int main(int /*argc*/, char** /*argv*/) {
