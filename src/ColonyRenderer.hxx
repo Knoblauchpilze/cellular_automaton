@@ -79,6 +79,12 @@ namespace cellulator {
   }
 
   inline
+  utils::Boxf
+  ColonyRenderer::getDefaultRenderingArea() noexcept {
+    return utils::Boxf(0.0f, 0.0f, 256.0f, 128.0f);
+  }
+
+  inline
   void
   ColonyRenderer::clearColony() {
     if (m_tex.valid()) {

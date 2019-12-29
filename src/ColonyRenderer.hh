@@ -171,6 +171,17 @@ namespace cellulator {
       getArrowKeyMotion() noexcept;
 
       /**
+       * @brief - Return a default viewing area for the colony. This value may or may
+       *          not be suited to view very small or very large colony but given that
+       *          one can zoom in or out it is not much of a problem.
+       * @return - a default rendering area suited to see part of the colony displayed
+       *           by this widget.
+       */
+      static
+      utils::Boxf
+      getDefaultRenderingArea() noexcept;
+
+      /**
        * @brief - Connect signals and build the renderer in a more general way.
        */
       void
