@@ -52,25 +52,37 @@ namespace cellulator {
     }
 
     // Populate the needed cells.
-    int xMin = area.getLeftBound();
-    int yMin = area.getBottomBound();
-    int xMax = area.getRightBound();
-    int yMax = area.getTopBound();
+    int gXMin = area.getLeftBound();
+    int gYMin = area.getBottomBound();
+    int gXMax = area.getRightBound();
+    int gYMax = area.getTopBound();
+
+    int lXMin = m_area.getLeftBound();
+    int lYMin = m_area.getBottomBound();
+    int lXMax = m_area.getRightBound();
+    int lYMax = m_area.getTopBound();
+
+    int xMin = std::max(gXMin, lXMin);
+    int yMin = std::max(gYMin, lYMin);
+    int xMax = std::min(gXMax, lXMax);
+    int yMax = std::min(gYMax, lYMax);
+
+    int uB = static_cast<int>(m_cells.size());
 
     for (int y = yMin ; y < yMax ; ++y) {
       // Convert logical coordinates to valid cells coordinates.
-      int offset = (y - yMin) * area.w();
-      int rOffset = (y - m_area.getBottomBound()) * m_area.w();
+      int offset = (y - gYMin) * area.w();
+      int rOffset = (y - lYMin) * m_area.w();
 
       for (int x = xMin ; x < xMax ; ++x) {
         // Convert the `x` coordinate similarly to the `y` coordinate.
-        int xOff = x - xMin;
-        int rXOff = x - m_area.getLeftBound();
+        int xOff = x - gXMin;
+        int rXOff = x - lXMin;
 
         // Check whether the cell exists in the internal data. If this
         // is the case we assign it, otherwise we don't modify the value.
         int coord = rOffset + rXOff;
-        if (rOffset >= 0 && rOffset < static_cast<int>(m_cells.size()) &&
+        if (rOffset >= 0 && rOffset < uB &&
             rXOff >= 0 && rXOff < m_area.w())
         {
           cells[offset + xOff] = m_cells[coord].state();
