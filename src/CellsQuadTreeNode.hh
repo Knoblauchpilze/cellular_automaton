@@ -39,6 +39,13 @@ namespace cellulator {
       ~CellsQuadTreeNode() = default;
 
       /**
+       * @brief - Used to retrieve the area associated to this quadtree node.
+       * @return - the area associated to this quad tree node.
+       */
+      utils::Boxi
+      getArea() const noexcept;
+
+      /**
        * @brief - Used to assign random values for each cell of this node.
        */
       void
