@@ -115,6 +115,16 @@ namespace cellulator {
       evolve();
 
       /**
+       * @brief - Perform the evolution of the boundary of this node. Note that this method
+       *          handles both the update of the internal boundaries (i.e. the boundaries of
+       *          the children) and the boundaries of the exterior of the node. However the
+       *          latter case is only handled when the node is the root, otherwise we consider
+       *          that the boundaries will be handled by the parent node.
+       */
+      void
+      evolveBoundaries();
+
+      /**
        * @brief - Used to expand the input quadtree node to have an area four times as large
        *          as it currently have. The expansion process will split the current data into
        *          four children and create the parent root.
