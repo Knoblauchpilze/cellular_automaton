@@ -84,7 +84,7 @@ namespace cellulator {
        * @return - the number of alive cells for this node.
        */
       unsigned
-      getAliveCellsCount() noexcept;
+      getAliveCellsCount() const noexcept;
 
       /**
        * @brief - Used to register the tiles needed to recompute the cells contained
@@ -208,6 +208,24 @@ namespace cellulator {
        */
       bool
       isLeaf() const noexcept;
+
+      /**
+       * @brief - Used to determine whether this node has at least one live cell in
+       *          the current generation. This is useful to filter out really early
+       *          nodes where nothing will happen.
+       * @return - `true` if at least one cell is not dead in this node.
+       */
+      bool
+      hasLiveCells() const noexcept;
+
+      /**
+       * @brief - Exact opposite to the `hasLiveCells` method. This is just to have
+       *          a nice semantic for the method instead of always checking for the
+       *          `!hasLiveCells()` method.
+       * @return - `true` if noe of the cells are alive in this node.
+       */
+      bool
+      isDead() const noexcept;
 
       /**
        * @brief - Used to colletc the boundaries leaves nodes that are children of

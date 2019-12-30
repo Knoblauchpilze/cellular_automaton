@@ -71,7 +71,7 @@ namespace cellulator {
                                 const utils::Boxi& area)
   {
     // If no cells are available, we can return early.
-    if (m_aliveCount == 0) {
+    if (isDead()) {
       return;
     }
 
@@ -247,6 +247,13 @@ namespace cellulator {
     // will transmit the request to the children if any.
     // We should also create a boundary job for this node. This operation
     // is needed no matter whether the job is a leaf or not.
+    // Note that we try to minimize the number of tiles to create by not
+    // registering anything if the node is `dead` (meaning that no live
+    // cell can be found in it).
+    if (isDead()) {
+      return;
+    }
+
     tiles.push_back(
       std::make_shared<ColonyTile>(
         m_area,
@@ -290,6 +297,13 @@ namespace cellulator {
       return;
     }
 
+    // Do not waste processing time if there's no live cells: the only evolution
+    // that could happen comes from the boundaries and it is not handled in this
+    // method.
+    if (isDead()) {
+      return;
+    }
+
     // First we need to compute the internal elements of the quadtree node. This
     // corresponds to all the cells except the boundaries, where we would need to
     // access the data from adjacent nodes. In the meantime we need to update the
@@ -308,6 +322,33 @@ namespace cellulator {
 
   void
   CellsQuadTreeNode::evolveBoundaries() {
+    // This method aims at providing an evolution for the cells that are
+    // on the boundaries of data nodes (i.e. leaves). We have two kind of
+    // boundaries:
+    //  - the internal boundaries which are boundaries not on the exterior
+    //    of the colony and which usually link two sibling nodes.
+    //  - the exterior of the colony.
+    //
+    // For any node, the internal boundaries are always defined within the
+    // children of the node: basically if we go deep enough we will finally
+    // reach the cells data for the boundaries. The process is thus to get
+    // the relevant data to pass to each children node so that they can
+    // update their boundaries if needed: this is to account for the fact
+    // that the cells data might be defined several layers below this node
+    // (in case the boundaries link two different parts of the hierarchy).
+    //
+    // One important part of the process is to provide information to the
+    // nodes about the state of their neighbors. If the neighbors are not
+    // allocated yet we will provide a dummy data to be used, and we will
+    // also have to create the node if needed (in case the cells exits the
+    // node for example). This will effectively allow to expand the colony.
+    //
+    // Finally the root node should also handle the exterior boundaries of
+    // the colony: given our process it should always be useless because at
+    // each step we expand the colony if the boundary nodes contain alive
+    // cells: this allow that we will always have some extra buffer space
+    // between the first live cell and the boundaries of the colony.
+
     // TODO: Implementation.
     log("Should handle boundaries for node", utils::Level::Warning);
   }
