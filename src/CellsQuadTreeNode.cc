@@ -245,19 +245,31 @@ namespace cellulator {
     // In the case this node is a leaf, we only need to register a single
     // tile corresponding to the internal data of this node. Otherwise we
     // will transmit the request to the children if any.
+    // We should also create a boundary job for this node. This operation
+    // is needed no matter whether the job is a leaf or not.
+    tiles.push_back(
+      std::make_shared<ColonyTile>(
+        m_area,
+        this,
+        ColonyTile::Type::Border
+      )
+    );
+
     if (isLeaf()) {
       log("Registering job for area " + m_area.toString() + " (already " + std::to_string(tiles.size()) + " registered)", utils::Level::Verbose);
 
       tiles.push_back(
         std::make_shared<ColonyTile>(
           m_area,
-          this
+          this,
+          ColonyTile::Type::Interior
         )
       );
 
       return;
     }
 
+    // Register the jobs needed to update the children of this node.
     for (ChildrenMap::const_iterator it = m_children.cbegin() ;
          it != m_children.cend() ;
          ++it)
@@ -292,6 +304,12 @@ namespace cellulator {
         updateAdjacencyFor(utils::Vector2i(x, y), alive);
       }
     }
+  }
+
+  void
+  CellsQuadTreeNode::evolveBoundaries() {
+    // TODO: Implementation.
+    log("Should handle boundaries for node", utils::Level::Warning);
   }
 
   CellsQuadTreeNodeShPtr
