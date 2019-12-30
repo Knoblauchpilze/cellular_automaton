@@ -282,10 +282,10 @@ namespace cellulator {
     // corresponds to all the cells except the boundaries, where we would need to
     // access the data from adjacent nodes. In the meantime we need to update the
     // adjacency count.
-    for (int y = 0 ; y < m_area.h() ; ++y) {
+    for (int y = 1 ; y < m_area.h() - 1 ; ++y) {
       int offset = y * m_area.w();
 
-      for (int x = 0 ; x < m_area.w() ; ++x) {
+      for (int x = 1 ; x < m_area.w() - 1 ; ++x) {
         State s = m_cells[offset + x].update(m_adjacency[offset + x]);
         bool alive = (s == State::Alive || s == State::Newborn);
 

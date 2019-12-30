@@ -4,7 +4,9 @@
  *          training and a tool to visualize the evolution of a
  *          cells colony following the rules of Conway's game of
  *          life.
- *          Implemented from 28/09/2019 - 17/12/2019.
+ *          Implemented from:
+ *            - 28/09/2019 - 03/10/2019
+ *            - 17/12/2019 - ??/??/2020
  */
 
 # include <core_utils/StdLogger.hh>
