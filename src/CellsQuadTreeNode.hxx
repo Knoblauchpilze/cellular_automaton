@@ -55,7 +55,7 @@ namespace cellulator {
 
   inline
   unsigned
-  CellsQuadTreeNode::getAliveCellsCount() noexcept {
+  CellsQuadTreeNode::getAliveCellsCount() const noexcept {
     return m_aliveCount;
   }
 
@@ -63,8 +63,9 @@ namespace cellulator {
   void
   CellsQuadTreeNode::step() {
     // If this node is not a leaf; call the adequate method for all children.
+    m_aliveCount = 0u;
+
     if (!isLeaf()) {
-      m_aliveCount = 0u;
 
       for (ChildrenMap::const_iterator it = m_children.cbegin() ;
            it != m_children.cend() ;
@@ -78,8 +79,6 @@ namespace cellulator {
     }
 
     // If this node is a leaf, update all the internal cells.
-    m_aliveCount = 0u;
-
     for (unsigned id = 0u ; id < m_cells.size() ; ++id) {
       State s = m_cells[id].step();
 
@@ -127,13 +126,25 @@ namespace cellulator {
   }
 
   inline
+  bool
+  CellsQuadTreeNode::hasLiveCells() const noexcept {
+    return getAliveCellsCount() > 0u;
+  }
+
+  inline
+  bool
+  CellsQuadTreeNode::isDead() const noexcept {
+    return !hasLiveCells();
+  }
+
+  inline
   void
   CellsQuadTreeNode::collectBoundaries(std::vector<CellsQuadTreeNode*>& nodes,
                                        bool includeEmpty) noexcept
   {
     // If this quadtree node is a leaf, add it to the input list and return early.
     // We also care about the `includeEmpty` input boolean.
-    if (isLeaf() && (m_aliveCount > 0 || includeEmpty)) {
+    if (isLeaf() && (hasLiveCells() || includeEmpty)) {
       nodes.push_back(this);
 
       return;
@@ -171,7 +182,7 @@ namespace cellulator {
           break;
       }
 
-      if (collect && (it->second->getAliveCellsCount() || includeEmpty)) {
+      if (collect && (it->second->hasLiveCells() || includeEmpty)) {
         it->second->collectBoundaries(nodes, includeEmpty);
       }
     }
