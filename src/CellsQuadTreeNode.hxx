@@ -34,6 +34,9 @@ namespace cellulator {
     // Update both the internal alive count and the adjacency values.
     // Note that we will have to indicate to the `updateAdjacencyFor`
     // method that we want to update the current adjacency.
+    int xOffset = m_area.w() / 2;
+    int yOffset = m_area.h() / 2;
+
     for (unsigned id = 0u ; id < m_cells.size() ; ++id) {
       State s = m_cells[id].randomize();
 
@@ -49,7 +52,13 @@ namespace cellulator {
           break;
       }
 
-      updateAdjacencyFor(utils::Vector2i(id % m_area.w(), id / m_area.w()), alive, true);
+      log(std::string("Cell at ") + utils::Vector2i(id % m_area.w(), id / m_area.w()).toString() + " is " + (alive ? "alive": "dead"));
+
+      updateAdjacencyFor(utils::Vector2i(id % m_area.w() - xOffset, id / m_area.w() - yOffset), alive, true);
+    }
+
+    for (unsigned id = 0u ; id < m_adjacency.size() ; ++id) {
+      log("Count at " + utils::Vector2i(id % m_area.w(), id / m_area.w()).toString() + " is " + std::to_string(m_adjacency[id]));
     }
   }
 
@@ -96,14 +105,67 @@ namespace cellulator {
   }
 
   inline
+  utils::Boxi
+  CellsQuadTreeNode::getBoxForChild(const utils::Boxi& world,
+                                    const Child& orientation) noexcept
+  {
+    // Distinguish based on the desired orientation.
+    switch (orientation) {
+      case Child::NorthWest:
+        return utils::Boxi(-world.w() / 4, world.h() / 4, world.w() / 2, world.h() / 2);
+      case Child::NorthEast:
+        return utils::Boxi(world.w() / 4, world.h() / 4, world.w() / 2, world.h() / 2);
+      case Child::SouthWest:
+        return utils::Boxi(-world.w() / 4, -world.h() / 4, world.w() / 2, world.h() / 2);
+      case Child::SouthEast:
+        return utils::Boxi(world.w() / 4, -world.h() / 4, world.w() / 2, world.h() / 2);
+      case Child::None:
+      default:
+        // Return the input area as a fallback behavior.
+        break;
+    }
+
+    return world;
+  }
+
+  inline
+  CellsQuadTreeNodeShPtr
+  CellsQuadTreeNode::createChild(const Child& orientation,
+                                 CellsQuadTreeNode* parent) noexcept
+  {
+    // Consistency check.
+    if (parent == nullptr) {
+      return nullptr;
+    }
+
+    // Create the child.
+    CellsQuadTreeNodeShPtr child = std::shared_ptr<CellsQuadTreeNode>(
+      new CellsQuadTreeNode(
+        getBoxForChild(parent->getArea(), orientation),
+        parent->m_ruleset,
+        parent,
+        orientation,
+        parent->m_minSize
+      )
+    );
+
+    // Register it as a child of the parent.
+    parent->m_children[orientation] = child;
+
+    // Return the built-in child.
+    return child;
+  }
+
+  inline
   void
   CellsQuadTreeNode::initialize(const utils::Boxi& area,
-                                const State& state,
-                                bool allocate)
+                                const State& state)
   {
     m_area = area;
 
-    if (allocate) {
+    // Allocate the data if the area has the required dimensions
+    // (i.e. if we can't subdivide this node any further).
+    if (m_area.w() <= m_minSize.w() && m_area.h() <= m_minSize.h()) {
       // Create the internal array of cells.
       m_cells.resize(m_area.area(), Cell(state, m_ruleset));
 

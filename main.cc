@@ -21,6 +21,7 @@
 // TODO: Multiple rulesets ? See here: https://en.wikipedia.org/wiki/Cyclic_cellular_automaton
 // TODO: Handle boundaries.
 // TODO: Improve dead areas.
+// TODO: Main simulation does not seem to work anymore.
 
 int main(int /*argc*/, char** /*argv*/) {
   // Create the logger.
@@ -51,9 +52,11 @@ int main(int /*argc*/, char** /*argv*/) {
     );
 
     // Create the colony to simulate.
+    // TODO: We should create boundaries on this.
     cellulator::ColonyShPtr colony = std::make_shared<cellulator::Colony>(
       // utils::Sizei(512, 512),
-      utils::Sizei(256, 256),
+      // utils::Sizei(256, 256),
+      utils::Sizei(8, 8),
       cellulator::rules::Type::GameOfLife,
       std::string("Drop it like it's Hoth")
     );

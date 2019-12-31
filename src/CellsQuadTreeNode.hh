@@ -32,9 +32,13 @@ namespace cellulator {
        * @param area - the area of the node.
        * @param ruleset - the set of rules to use to update the cells to
        *                  the next iteration.
+       * @param minSize - the minimum dimensions of any children node for
+       *                  this tree. Will stop the subdivision process as
+       *                  soon as the dimensions of a child reach this size.
        */
       CellsQuadTreeNode(const utils::Boxi& area,
-                        const rules::Type& ruleset);
+                        const rules::Type& ruleset,
+                        const utils::Sizei& minSize);
 
       ~CellsQuadTreeNode() = default;
 
@@ -67,16 +71,6 @@ namespace cellulator {
       void
       fetchCells(std::vector<State>& cells,
                  const utils::Boxi& area);
-
-      /**
-       * @brief - Used to split this node into sub-nodes until the node size reaches
-       *          the provided argument. It will split up the internal data into a
-       *          set of children nodes recursively.
-       *          Note that the internal data is erased upon splitting the node.
-       * @param size - the maximum allowed size for nodes.
-       */
-      void
-      splitUntil(const utils::Sizei& size);
 
       /**
        * @brief - Return the number of alive cells in this node. This can be used to
@@ -154,6 +148,40 @@ namespace cellulator {
       };
 
       /**
+       * @brief - Used to retrieve the bounding box for the children given the parent
+       *          area and its orientation. Note that in case the input bounding box
+       *          is not even (any of the dimensions) the user will run into undefined
+       *          behavior.
+       *          Note that providing an orientation of `None` will return the input
+       *          area without any modifications (this should not happen).
+       * @param world - the area of the parent node. Note that the dimensions should be
+       *                even for this method to work correctly.
+       * @param orientation - the orientation of the child to compute.
+       * @return - the area associated to the child with the specified orientation.
+       */
+      static
+      utils::Boxi
+      getBoxForChild(const utils::Boxi& world,
+                     const Child& orientation) noexcept;
+
+      /**
+       * @brief - Perform the creation of a quadtree node with the specified parent and
+       *          orientation. The ruleset is derived from the parent along with the
+       *          required area and the initialization status (i.e. whether internal data
+       *          should be created for the node).
+       *          Note that this method is thus not suited to create root nodes. Failure
+       *          to provide a valid node as `parent` will result in undefined behavior.
+       * @param orientation - the orientation of the child node to create.
+       * @param parent - the parent node of the child.
+       * @return - the pointer to the created child (already parented and initialized) if
+       *           the `parent` is valid or `null` if the `parent` is not valid.
+       */
+      static
+      CellsQuadTreeNodeShPtr
+      createChild(const Child& orientation,
+                  CellsQuadTreeNode* parent) noexcept;
+
+      /**
        * @brief - Similar to the public constructor but allows to specify the parent node in
        *          argument. This is the only way to create a children of a quadtree node and
        *          this is a protection so that only the class itself can expand and create
@@ -168,14 +196,15 @@ namespace cellulator {
        *                  the next iteration.
        * @param parent - the parent node to this quadtree node.
        * @param orientation - the role of this child within the parent's children.
-       * @param allocate - `true` if the internal arrays should be initialized and `false`
-       *                   otherwise.
+       * @param minSize - the minimum dimensions of any children node for
+       *                  this tree. Will stop the subdivision process as
+       *                  soon as the dimensions of a child reach this size.
        */
       CellsQuadTreeNode(const utils::Boxi& area,
                         const rules::Type& ruleset,
                         CellsQuadTreeNode* parent,
                         const Child& orientation,
-                        bool allocate);
+                        const utils::Sizei& minSize);
 
       /**
        * @brief - Creates the internal data needed to represent the input area. This
@@ -185,15 +214,23 @@ namespace cellulator {
        *          current rules set for the node. Note that the area is assumed to
        *          be valid and is not checked. Failure to comply will cause undefined
        *          behavior.
+       *          In case the size of the node is equal to the `m_minSize` the data
+       *          representing cells will be allocated internally.
        * @param area - the area to associate to this node.
        * @param state - the state to assign to each created cell.
-       * @param allocate - `true` if the internal array should be allocated (i.e. the
-       *                   cells and adjacency values) and `false` otherwise.
        */
       void
       initialize(const utils::Boxi& area,
-                 const State& state,
-                 bool allocate);
+                 const State& state);
+
+      /**
+       * @brief - Used to split this node into sub-nodes until the node size reaches
+       *          the internallly defined minimum size. It will split up the internal
+       *          data into a set of children nodes recursively.
+       *          Note that the internal data is erased upon splitting the node.
+       */
+      void
+      split();
 
       /**
        * @brief - Return `true` if this node is a root node (i.e. with no parent).
@@ -266,6 +303,42 @@ namespace cellulator {
                          bool alive,
                          bool makeCurrent = false);
 
+      /**
+       * @brief - Used to retrieve the cell at coordinates `coord`. In case the cell does not
+       *          lie within the boundaries of this node, a `null` pointer is returned and the
+       *          `inside` boolean is set to `false`.
+       *          In case the cell does not exist (for example if the child that would have
+       *          contained it is not created), the return value is `null` and the `created`
+       *          boolean is set to `false` (but the `inside` will be set to `true`).
+       *          Note that in case this node does not contain data (i.e. is not a leaf) the
+       *          request is issued to the adequate child.
+       * @param coord - the coordinate of the cell to retrieve.
+       * @param alive - the number of cells alive around the coordinate. This corresponds to
+       *                the current count (so before any `step` operation has been applied).
+       * @param inside - `true` if the input coordinate could be found within this node, and
+       *                 `false` otherwise.
+       * @param created - `true` if the cell exists (only case where the return value can be
+       *                  valid) and `false` otherwise. This value should be ignored if the
+       *                  `inside` boolean is `false`.
+       * @return - a pointer to the cell if it lies inside this node and it exists or `null`
+       *           otherwise.
+       */
+      Cell*
+      at(const utils::Vector2i& coord,
+         unsigned& alive,
+         bool& inside,
+         bool& created) noexcept;
+
+      /**
+       * @brief - Used as a wrapper to evolve a boundary element. This gathers all the needed
+       *          parameter in a generci fashion so that we can use it to evolve any boundary
+       *          element (exterior or interior) and factor as much code as possible.
+       * @param coord - the coordinate for which the boundary should be evolved.
+       * @return - `true` if the cell was alive and `false` otherwise.
+       */
+      bool
+      evolveBoundaryElement(const utils::Vector2i& coord);
+
     private:
 
       /**
@@ -286,6 +359,12 @@ namespace cellulator {
        *          represented by this node evolve.
        */
       rules::Type m_ruleset;
+
+      /**
+       * @brief - Used as a bound to stop creating deeper nested nodes as soon as the
+       *          size of the quadtree node reach this size.
+       */
+      utils::Sizei m_minSize;
 
       /**
        * @brief - The actual data of this node. Contains the cells and their current

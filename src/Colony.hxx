@@ -34,7 +34,8 @@ namespace cellulator {
   inline
   utils::Sizei
   Colony::getQuadTreeNodeSize() noexcept {
-    return utils::Sizei(256, 256);
+    // return utils::Sizei(256, 256);
+    return utils::Sizei(8, 8);
   }
 
 }
