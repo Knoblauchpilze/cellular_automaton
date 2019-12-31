@@ -11,6 +11,7 @@ namespace cellulator {
     m_area(),
     m_ruleset(ruleset),
     m_minSize(minSize),
+    m_depth(0u),
 
     m_cells(),
     m_adjacency(),
@@ -50,6 +51,7 @@ namespace cellulator {
     m_area(),
     m_ruleset(ruleset),
     m_minSize(minSize),
+    m_depth(parent == nullptr ? 0u : parent->m_depth + 1u),
 
     m_cells(),
     m_adjacency(),
@@ -132,6 +134,63 @@ namespace cellulator {
           cells[offset + xOff] = m_cells[coord].state();
         }
       }
+    }
+  }
+
+  void
+  CellsQuadTreeNode::randomize() {
+    // Randomize each cell. In case children are available, we need
+    // to call the randomization method on them.
+    if (!isLeaf()) {
+      m_aliveCount = 0u;
+
+      for (ChildrenMap::const_iterator it = m_children.cbegin() ;
+           it != m_children.cend() ;
+           ++it)
+      {
+        it->second->randomize();
+        m_aliveCount += it->second->getAliveCellsCount();
+      }
+
+      return;
+    }
+
+    // Update both the internal alive count and the adjacency values.
+    // Note that we will have to indicate to the `updateAdjacencyFor`
+    // method that we want to update the current adjacency.
+    // We don't want to generate elements on the boundaries of the
+    int xOffset = m_area.w() / 2;
+    int yOffset = m_area.h() / 2;
+
+    bool generateOnBoundaries = !isBoundary();
+
+    int uB = m_cells.size();
+    for (int id = 0 ; id < uB ; ++id) {
+      int x = id % m_area.w();
+      int y = id / m_area.w();
+
+      // Prevent generation of random values on the boundary.
+      if (!generateOnBoundaries &&
+          (x == 0 || x == m_area.w() - 1 || y == 0 || y == m_area.h() - 1))
+      {
+        continue;
+      }
+
+      State s = m_cells[id].randomize();
+
+      bool alive = false;
+      switch (s) {
+        case State::Newborn:
+        case State::Alive:
+          ++m_aliveCount;
+          alive = true;
+          break;
+        default:
+          // Do not consider the cell alive by default.
+          break;
+      }
+
+      updateAdjacencyFor(utils::Vector2i(x - xOffset, y - yOffset), alive, true);
     }
   }
 
@@ -220,6 +279,7 @@ namespace cellulator {
 
   void
   CellsQuadTreeNode::evolveBoundaries() {
+    return;
     // This method aims at providing an evolution for the cells that are
     // on the boundaries of data nodes (i.e. leaves). We have two kind of
     // boundaries:
@@ -465,11 +525,7 @@ namespace cellulator {
           }
 
           // Assign values.
-          log("Adding coord " + std::to_string(coord) + " from " + std::to_string(x) + "x" + std::to_string(y) + " in " + std::to_string(uB) + " old world was " + oldWorld.toString());
           if (coord >= 0 && coord < uB && n != nullptr) {
-
-            log("Data is " + std::to_string(n->m_cells.size()));
-
             n->m_cells[coord] = c;
             n->m_adjacency[coord] = a;
             n->m_nextAdjacency[coord] = na;
@@ -558,6 +614,7 @@ namespace cellulator {
          it != m_children.cend() ;
          ++it)
     {
+      log("Splitting child " + it->second->m_area.toString());
       it->second->split();
     }
 
@@ -825,8 +882,6 @@ namespace cellulator {
       State s = c->update(neighbors);
       alive = s == State::Alive || s == State::Newborn;
       updateAdjacencyFor(coord, alive);
-
-      log(std::string("Cell at ") + coord.toString() + " with " + std::to_string(neighbors) + " neighbor(s) is now " + (alive ? "alive": "dead"));
     }
 
     return alive;

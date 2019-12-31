@@ -13,56 +13,6 @@ namespace cellulator {
   }
 
   inline
-  void
-  CellsQuadTreeNode::randomize() {
-    // Randomize each cell. In case children are available, we need
-    // to call the randomization method on them.
-    if (!isLeaf()) {
-      m_aliveCount = 0u;
-
-      for (ChildrenMap::const_iterator it = m_children.cbegin() ;
-           it != m_children.cend() ;
-           ++it)
-      {
-        it->second->randomize();
-        m_aliveCount += it->second->getAliveCellsCount();
-      }
-
-      return;
-    }
-
-    // Update both the internal alive count and the adjacency values.
-    // Note that we will have to indicate to the `updateAdjacencyFor`
-    // method that we want to update the current adjacency.
-    int xOffset = m_area.w() / 2;
-    int yOffset = m_area.h() / 2;
-
-    for (unsigned id = 0u ; id < m_cells.size() ; ++id) {
-      State s = m_cells[id].randomize();
-
-      bool alive = false;
-      switch (s) {
-        case State::Newborn:
-        case State::Alive:
-          ++m_aliveCount;
-          alive = true;
-          break;
-        default:
-          // Do not consider the cell alive by default.
-          break;
-      }
-
-      log(std::string("Cell at ") + utils::Vector2i(id % m_area.w(), id / m_area.w()).toString() + " is " + (alive ? "alive": "dead"));
-
-      updateAdjacencyFor(utils::Vector2i(id % m_area.w() - xOffset, id / m_area.w() - yOffset), alive, true);
-    }
-
-    for (unsigned id = 0u ; id < m_adjacency.size() ; ++id) {
-      log("Count at " + utils::Vector2i(id % m_area.w(), id / m_area.w()).toString() + " is " + std::to_string(m_adjacency[id]));
-    }
-  }
-
-  inline
   unsigned
   CellsQuadTreeNode::getAliveCellsCount() const noexcept {
     return m_aliveCount;
@@ -112,13 +62,13 @@ namespace cellulator {
     // Distinguish based on the desired orientation.
     switch (orientation) {
       case Child::NorthWest:
-        return utils::Boxi(-world.w() / 4, world.h() / 4, world.w() / 2, world.h() / 2);
+        return utils::Boxi(world.x() - world.w() / 4, world.y() + world.h() / 4, world.w() / 2, world.h() / 2);
       case Child::NorthEast:
-        return utils::Boxi(world.w() / 4, world.h() / 4, world.w() / 2, world.h() / 2);
+        return utils::Boxi(world.x() + world.w() / 4, world.y() + world.h() / 4, world.w() / 2, world.h() / 2);
       case Child::SouthWest:
-        return utils::Boxi(-world.w() / 4, -world.h() / 4, world.w() / 2, world.h() / 2);
+        return utils::Boxi(world.x() - world.w() / 4, world.y() - world.h() / 4, world.w() / 2, world.h() / 2);
       case Child::SouthEast:
-        return utils::Boxi(world.w() / 4, -world.h() / 4, world.w() / 2, world.h() / 2);
+        return utils::Boxi(world.x() + world.w() / 4, world.y() - world.h() / 4, world.w() / 2, world.h() / 2);
       case Child::None:
       default:
         // Return the input area as a fallback behavior.
@@ -189,6 +139,61 @@ namespace cellulator {
 
   inline
   bool
+  CellsQuadTreeNode::isBoundary() const noexcept {
+    // A node is a boundary if there exists a contiguous path of the same
+    // direction from the root. Basically we are not allowed to move what
+    // is called `backward` in the tree hierarchy.
+    // For example any child whose parents all are `NorthWest` nodes is
+    // a boundary element, but should any parent be either `NorthEast` or
+    // `SouthEast` and it can't be a boundary.
+    // Basically we want to check for continuous path to parents.
+    return isRoot() || m_parent->validFor(m_orientation);
+  }
+
+  inline
+  bool
+  CellsQuadTreeNode::validFor(const Child& orientation) const noexcept {
+    // Any path exists from the root directly.
+    // The root is a boundary, along with all the level `1` nodes.
+    if (isRoot()) {
+      return true;
+    }
+
+    // Prevent any utilization of the `Child::None` value.
+    if (orientation == Child::None) {
+      return false;
+    }
+
+    // If the parent does not have a valid path for its own orientation
+    // we can't find a path for this one.
+    if (!m_parent->isBoundary()) {
+      return false;
+    }
+
+    switch (m_orientation) {
+      case Child::NorthWest:
+        return orientation != Child::SouthEast;
+      case Child::NorthEast:
+        return orientation != Child::SouthWest;
+      case Child::SouthWest:
+        return orientation != Child::NorthEast;
+      case Child::SouthEast:
+        return orientation != Child::NorthWest;
+      case Child::None:
+      default:
+        log(
+          "Cannot determine path on element " + getName() + ", unknown role " +
+          std::to_string(static_cast<int>(m_orientation))
+        );
+        break;
+
+    }
+
+    return false;
+  }
+
+  inline
+  bool
   CellsQuadTreeNode::hasLiveCells() const noexcept {
     return getAliveCellsCount() > 0u;
   }
@@ -219,32 +224,7 @@ namespace cellulator {
          it != m_children.cend() ;
          ++it)
     {
-      bool collect = false;
-
-      switch (it->first) {
-        case Child::NorthEast:
-          collect = (isRoot() || m_orientation != Child::SouthWest);
-          break;
-        case Child::NorthWest:
-          collect = (isRoot() || m_orientation != Child::SouthEast);
-          break;
-        case Child::SouthEast:
-          collect = (isRoot() || m_orientation != Child::NorthWest);
-          break;
-        case Child::SouthWest:
-          collect = (isRoot() || m_orientation != Child::NorthEast);
-          break;
-        case Child::None:
-        default:
-          // Do nothing, unknown child role.
-          log(
-            "Cannot collect boundary on child " + it->second->getName() + ", unknown role " +
-            std::to_string(static_cast<int>(it->first))
-          );
-          break;
-      }
-
-      if (collect && (it->second->hasLiveCells() || includeEmpty)) {
+      if (it->second->isBoundary() && (it->second->hasLiveCells() || includeEmpty)) {
         it->second->collectBoundaries(nodes, includeEmpty);
       }
     }
