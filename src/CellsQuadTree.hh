@@ -47,6 +47,14 @@ namespace cellulator {
       getSize() noexcept;
 
       /**
+       * @brief - Used to retrieve the bounding box of the smallest area that contain
+       *          all the living cells registered in this quadtree.
+       * @return - the area encapsulating all living cells in this tree.
+       */
+      utils::Boxi
+      getLiveArea() noexcept;
+
+      /**
        * @brief - Used to retrieve the cells from the area described in input into
        *          the specified vector. Note that any existing data in the vector
        *          will be erased. Also the area is clamped to match the dimensions
@@ -162,6 +170,12 @@ namespace cellulator {
        *          not the box used to represent the dimensions of it.
        */
       utils::Sizei m_size;
+
+      /**
+       * @brief - Holds a bounding box for smallest posible area encapsulating all
+       *          the living cells contained in this quadtree.
+       */
+      utils::Boxi m_liveArea;
 
       /**
        * @brief - Contains the top level child of the quad tree. This element can

@@ -21,17 +21,17 @@ namespace cellulator {
 
     // Request the size of the colony and use this as the rendering window.
     // We need to account for the current aspect ratio and keep it though.
-    utils::Sizei cSize = m_colony->getSize();
+    utils::Boxi cArea = m_colony->getArea();
     float aspectRatio = m_settings.area.w() / m_settings.area.h();
 
-    float w = (aspectRatio < 1.0f ? cSize.w() : cSize.w() * aspectRatio);
-    float h = (aspectRatio < 1.0f ? cSize.h() * aspectRatio : cSize.h());
+    float w = (aspectRatio < 1.0f ? cArea.w() : cArea.w() * aspectRatio);
+    float h = (aspectRatio < 1.0f ? cArea.h() * aspectRatio : cArea.h());
 
-    utils::Boxf area(0.0f, 0.0f, w, h);
+    utils::Boxf area(cArea.x(), cArea.y(), w, h);
 
     log(
       "Changing rendering area from " + m_settings.area.toString() + " to " + area.toString() + " (colony is " +
-      cSize.toString() + ", ratio: " + std::to_string(aspectRatio) + ")",
+      cArea.toSize().toString() + ", ratio: " + std::to_string(aspectRatio) + ")",
       utils::Level::Verbose
     );
 

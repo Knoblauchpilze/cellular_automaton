@@ -218,7 +218,6 @@ namespace cellulator {
     );
 
     // Assign the rendering window: by default we consider that the whole area is visible.
-    utils::Sizei s = m_colony->getSize();
     m_settings.area = getDefaultRenderingArea();
   }
 

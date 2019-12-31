@@ -15,6 +15,15 @@ namespace cellulator {
   }
 
   inline
+  utils::Boxi
+  CellsQuadTree::getLiveArea() noexcept {
+    // Protect from concurrent accesses.
+    Guard guard(m_propsLocker);
+
+    return m_liveArea;
+  }
+
+  inline
   void
   CellsQuadTree::randomize() {
     // Protect from concurrent accesses.
@@ -39,7 +48,7 @@ namespace cellulator {
     Guard guard(m_propsLocker);
 
     // Expand the root using the dedicated handler
-    m_root = m_root->expand(m_root);
+    m_root = m_root->expand(m_root, m_liveArea);
 
     // Update the size of the colony.
     m_size = m_root->getArea().toSize();

@@ -305,7 +305,9 @@ namespace cellulator {
   }
 
   CellsQuadTreeNodeShPtr
-  CellsQuadTreeNode::expand(CellsQuadTreeNodeShPtr root) {
+  CellsQuadTreeNode::expand(CellsQuadTreeNodeShPtr root,
+                            utils::Boxi& liveArea)
+  {
     // Check consistency of the input node.
     if (root == nullptr) {
       return CellsQuadTreeNodeShPtr();
@@ -321,6 +323,25 @@ namespace cellulator {
     if (nodes.empty()) {
       return root;
     }
+
+    // Update maximum boundaries.
+    utils::Vector2i rX = utils::Vector2i::maxmin();
+    utils::Vector2i rY = utils::Vector2i::maxmin();
+
+    for (unsigned id = 0u ; id < nodes.size() ; ++id) {
+      rX.x() = std::min(rX.x(), nodes[id]->getArea().getLeftBound());
+      rX.y() = std::max(rX.y(), nodes[id]->getArea().getRightBound());
+
+      rY.x() = std::min(rY.x(), nodes[id]->getArea().getBottomBound());
+      rY.y() = std::max(rY.y(), nodes[id]->getArea().getTopBound());
+    }
+
+    liveArea = utils::Boxi(
+      (rX.x() + rX.y()) / 2,
+      (rY.x() + rY.y()) / 2,
+      rX.y() - rX.x(),
+      rY.y() - rY.x()
+    );
 
     // Expanding a node is done in two different ways according to whether the
     // input `root` node is a single node or a composite one.
