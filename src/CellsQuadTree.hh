@@ -72,14 +72,6 @@ namespace cellulator {
                  const utils::Boxf& area);
 
       /**
-       * @brief - Reinitialize the quadtree with the specified dimensions. All nodes will
-       *          be destroyed and rebuilt with the specified size.
-       * @param dims - the dimensions of the cells array to allocate.
-       */
-      void
-      reset(const utils::Sizei& dims);
-
-      /**
        * @brief - Used to assign random values for each cell of the colony. This assumes that
        *          the colony is effectively stopped but no checks are performed to ensure it.
        *          Note that this method assumes that the locker is already acquired.
@@ -135,6 +127,14 @@ namespace cellulator {
        */
       utils::Boxi
       fromFPCoordinates(const utils::Boxf& in) const noexcept;
+
+      /**
+       * @brief - Reinitialize the quadtree with the specified dimensions. All nodes will
+       *          be destroyed and rebuilt with the specified size.
+       * @param dims - the dimensions of the cells array to allocate.
+       */
+      void
+      reset(const utils::Sizei& dims);
 
     private:
 

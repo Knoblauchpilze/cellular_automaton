@@ -50,7 +50,10 @@ namespace cellulator {
       getArea() const noexcept;
 
       /**
-       * @brief - Used to assign random values for each cell of this node.
+       * @brief - Used to assign random values for each cell of this node. In
+       *          case the node is a boundary, we will not assign random values
+       *          to the exterior of the node, as to keep some buffer space in
+       *          the node for cells to grow.
        */
       void
       randomize();
@@ -252,6 +255,25 @@ namespace cellulator {
       isLeaf() const noexcept;
 
       /**
+       * @brief - Used to determine whether this quadtree node is a boundary node, i.e.
+       *          one which has no siblings expanding further out in one either the `x`
+       *          or `y` axis.
+       * @return - `true` if this node is a boundary of the tree and `false` otherwise.
+       */
+      bool
+      isBoundary() const noexcept;
+
+      /**
+       * @brief - Allows to determine whether a path which follows the general direction
+       *          indicated by `orientation` exists to reach this node from the root.
+       * @param orientation - the orientation to check.
+       * @return - `true` if a path following the general direction of `orientation`
+       *           exists from the root node.
+       */
+      bool
+      validFor(const Child& orientation) const noexcept;
+
+      /**
        * @brief - Used to determine whether this node has at least one live cell in
        *          the current generation. This is useful to filter out really early
        *          nodes where nothing will happen.
@@ -370,6 +392,12 @@ namespace cellulator {
        *          size of the quadtree node reach this size.
        */
       utils::Sizei m_minSize;
+
+      /**
+       * @brief - The depth of this quadtree node. Basically tells how many parents this
+       *          node has to reach the root of the tree.
+       */
+      unsigned m_depth;
 
       /**
        * @brief - The actual data of this node. Contains the cells and their current

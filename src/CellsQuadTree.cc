@@ -57,6 +57,19 @@ namespace cellulator {
     return evenized;
   }
 
+  std::vector<ColonyTileShPtr>
+  CellsQuadTree::generateSchedule() {
+    // Protect from concurrent accesses.
+    Guard guard(m_propsLocker);
+
+    // We need to traverse the children of this node if any and create the corresponding
+    // rendering tiles.
+    std::vector<ColonyTileShPtr> tiles;
+    m_root->registerTiles(tiles);
+
+    return tiles;
+  }
+
   void
   CellsQuadTree::reset(const utils::Sizei& dims) {
     // Make the dims even if this is not already the case and assign
@@ -85,19 +98,6 @@ namespace cellulator {
     utils::Boxi area(0, 0, w, h);
 
     m_root = std::make_shared<CellsQuadTreeNode>(area, m_ruleset, m_nodesSize);
-  }
-
-  std::vector<ColonyTileShPtr>
-  CellsQuadTree::generateSchedule() {
-    // Protect from concurrent accesses.
-    Guard guard(m_propsLocker);
-
-    // We need to traverse the children of this node if any and create the corresponding
-    // rendering tiles.
-    std::vector<ColonyTileShPtr> tiles;
-    m_root->registerTiles(tiles);
-
-    return tiles;
   }
 
 }

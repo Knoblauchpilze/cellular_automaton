@@ -22,6 +22,8 @@
 // TODO: Handle boundaries.
 // TODO: Improve dead areas.
 // TODO: Main simulation does not seem to work anymore.
+// TODO: Add brushes.
+// TODO: Add grid.
 
 int main(int /*argc*/, char** /*argv*/) {
   // Create the logger.
@@ -56,7 +58,7 @@ int main(int /*argc*/, char** /*argv*/) {
     cellulator::ColonyShPtr colony = std::make_shared<cellulator::Colony>(
       // utils::Sizei(512, 512),
       // utils::Sizei(256, 256),
-      utils::Sizei(8, 8),
+      utils::Sizei(32, 32),
       cellulator::rules::Type::GameOfLife,
       std::string("Drop it like it's Hoth")
     );
