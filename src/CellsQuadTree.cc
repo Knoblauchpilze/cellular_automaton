@@ -82,12 +82,7 @@ namespace cellulator {
 
     utils::Boxi area(0, 0, w, h);
 
-    m_root = std::make_shared<CellsQuadTreeNode>(area, m_ruleset);
-
-    // Split the root node until it reach the desired node size.
-    if (w >= m_nodesSize.w() || h >= m_nodesSize.h()) {
-      m_root->splitUntil(m_nodesSize);
-    }
+    m_root = std::make_shared<CellsQuadTreeNode>(area, m_ruleset, m_nodesSize);
   }
 
   std::vector<ColonyTileShPtr>

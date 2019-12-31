@@ -4,11 +4,13 @@
 namespace cellulator {
 
   CellsQuadTreeNode::CellsQuadTreeNode(const utils::Boxi& area,
-                                       const rules::Type& ruleset):
+                                       const rules::Type& ruleset,
+                                       const utils::Sizei& minSize):
     utils::CoreObject(std::string("quadtree_node_") + area.toString()),
 
     m_area(),
     m_ruleset(ruleset),
+    m_minSize(minSize),
 
     m_cells(),
     m_adjacency(),
@@ -30,18 +32,24 @@ namespace cellulator {
       );
     }
 
-    initialize(area, State::Dead, true);
+    initialize(area, State::Dead);
+
+    // Split this root node until it reaches the desired node size.
+    if (m_area.w() >= m_minSize.w() || m_area.h() >= m_minSize.h()) {
+      split();
+    }
   }
 
   CellsQuadTreeNode::CellsQuadTreeNode(const utils::Boxi& area,
                                        const rules::Type& ruleset,
                                        CellsQuadTreeNode* parent,
                                        const Child& orientation,
-                                       bool allocate):
+                                       const utils::Sizei& minSize):
     utils::CoreObject(std::string("quadtree_node_") + area.toString()),
 
     m_area(),
     m_ruleset(ruleset),
+    m_minSize(minSize),
 
     m_cells(),
     m_adjacency(),
@@ -63,7 +71,7 @@ namespace cellulator {
       );
     }
 
-    initialize(area, State::Dead, allocate);
+    initialize(area, State::Dead);
   }
 
   void
@@ -125,119 +133,6 @@ namespace cellulator {
         }
       }
     }
-  }
-
-  void
-  CellsQuadTreeNode::splitUntil(const utils::Sizei& size) {
-    // We consider that if the input size is larger than the current
-    // size of the node we don't need to do anything.
-    if (size.contains(m_area.toSize())) {
-      return;
-    }
-
-    // Also if some children are already available, this is a problem.
-    if (!isLeaf()) {
-      error(
-        std::string("Could not split quadtree node to reach ") + size.toString(),
-        std::string("Node is already splitted")
-      );
-    }
-
-    // Check whether the input size is a perfect divisor of the internal
-    // size. Otherwise we won't be able to split the node into sub-nodes
-    // while still keeping equal size: we could try to determine a size
-    // that divides best the input size but what about prime numbers ?
-    // So better not try anything.
-    if (m_area.w() % size.w() != 0 || m_area.h() % size.h() != 0) {
-      error(
-        std::string("Could not split quadtree node to reach ") + size.toString(),
-        std::string("Internal size ") + m_area.toSize().toString() +
-        " is not a multiple of it"
-      );
-    }
-
-    // The dimensions of the child nodes are the dimensions of the parent
-    // divided by 2. Indeed we want to create 4 children nodes. If the
-    // dimensions are not even, we will declare a failure as we can't do
-    // much with integer arithmetic.
-    if (m_area.w() % 2 != 0 || m_area.h() % 2 != 0) {
-      error(
-        std::string("Could not split quadtree node to reach ") + size.toString(),
-        std::string("Internal size ") + m_area.toSize().toString() + " cannot be divided evenly"
-      );
-    }
-
-    // Create children.
-    int cW = m_area.w() / 2;
-    int cH = m_area.h() / 2;
-
-    // Top left.
-    int x = m_area.x() - cW / 2;
-    int y = m_area.y() + cH / 2;
-
-    m_children[Child::NorthWest] = std::shared_ptr<CellsQuadTreeNode>(
-      new CellsQuadTreeNode(
-        utils::Boxi(x, y, cW, cH),
-        m_ruleset,
-        this,
-        Child::NorthWest,
-        true
-      )
-    );
-
-    // Top right.
-    x = m_area.x() + cW / 2;
-    y = m_area.y() + cH / 2;
-
-    m_children[Child::NorthEast] = std::shared_ptr<CellsQuadTreeNode>(
-      new CellsQuadTreeNode(
-        utils::Boxi(x, y, cW, cH),
-        m_ruleset,
-        this,
-        Child::NorthEast,
-        true
-      )
-    );
-
-    // Bottom left.
-    x = m_area.x() - cW / 2;
-    y = m_area.y() - cH / 2;
-
-    m_children[Child::SouthWest] = std::shared_ptr<CellsQuadTreeNode>(
-      new CellsQuadTreeNode(
-        utils::Boxi(x, y, cW, cH),
-        m_ruleset,
-        this,
-        Child::SouthWest,
-        true
-      )
-    );
-
-    // Bottom right.
-    x = m_area.x() + cW / 2;
-    y = m_area.y() - cH / 2;
-
-    m_children[Child::SouthEast] = std::shared_ptr<CellsQuadTreeNode>(
-      new CellsQuadTreeNode(
-        utils::Boxi(x, y, cW, cH),
-        m_ruleset,
-        this,
-        Child::SouthEast,
-        true
-      )
-    );
-
-    // Split children nodes in case we need more than one split operation.
-    for (ChildrenMap::const_iterator it = m_children.cbegin() ;
-         it != m_children.cend() ;
-         ++it)
-    {
-      it->second->splitUntil(size);
-    }
-
-    // Clear the internal data.
-    m_cells.clear();
-    m_aliveCount = 0u;
   }
 
   void
@@ -308,6 +203,9 @@ namespace cellulator {
     // corresponds to all the cells except the boundaries, where we would need to
     // access the data from adjacent nodes. In the meantime we need to update the
     // adjacency count.
+    int xOffset = m_area.w() / 2;
+    int yOffset = m_area.h() / 2;
+
     for (int y = 1 ; y < m_area.h() - 1 ; ++y) {
       int offset = y * m_area.w();
 
@@ -315,7 +213,7 @@ namespace cellulator {
         State s = m_cells[offset + x].update(m_adjacency[offset + x]);
         bool alive = (s == State::Alive || s == State::Newborn);
 
-        updateAdjacencyFor(utils::Vector2i(x, y), alive);
+        updateAdjacencyFor(utils::Vector2i(x - xOffset, y - yOffset), alive);
       }
     }
   }
@@ -348,6 +246,59 @@ namespace cellulator {
     // each step we expand the colony if the boundary nodes contain alive
     // cells: this allow that we will always have some extra buffer space
     // between the first live cell and the boundaries of the colony.
+
+    // Handle exterior boundaries: top and bottom rows then left and right
+    // rows.
+    if (isRoot()) {
+      unsigned countB = 0u, countU = 0u, countL = 0u, countR = 0u;
+
+      utils::Vector2i coord1(m_area.getLeftBound(), m_area.getBottomBound());
+      utils::Vector2i coord2(m_area.getLeftBound(), m_area.getTopBound() - 1);
+
+      for (int x = 0 ; x < m_area.w() ; ++x) {
+        if (evolveBoundaryElement(coord1)) {
+          ++countB;
+        }
+        if (evolveBoundaryElement(coord2)) {
+          ++countU;
+        }
+
+        ++coord1.x();
+        ++coord2.x();
+      }
+
+      // We don't need to compute the top and bottom cell of the rows as it
+      // has already been handled by the top and bottom rows.
+      coord1.x() = m_area.getLeftBound();
+      coord1.y() = m_area.getBottomBound() + 1;
+      coord2.x() = m_area.getRightBound() - 1;
+      coord2.y() = m_area.getBottomBound() + 1;
+
+      int yMax = m_area.h() - 1;
+
+      for (int y = 1 ; y < yMax ; ++y) {
+        if (evolveBoundaryElement(coord1)) {
+          ++countL;
+        }
+        if (evolveBoundaryElement(coord2)) {
+          ++countR;
+        }
+
+        ++coord1.y();
+        ++coord2.y();
+      }
+
+      log(
+        std::string("Exterior boundaries contained [r: ") + std::to_string(countR) + " u: " + std::to_string(countU) +
+        " l: " + std::to_string(countL) + " b: " + std::to_string(countB) + "]",
+        utils::Level::Debug
+      );
+    }
+
+    // Handle interior boundaries if the node has at least one living cell.
+    if (isDead()) {
+      return;
+    }
 
     // TODO: Implementation.
     log("Should handle boundaries for node", utils::Level::Warning);
@@ -388,16 +339,15 @@ namespace cellulator {
     //
     // That being said part of the process can be factorized, i.e. the creation
     // of the new root node and its children.
-    utils::Boxi world = root->m_area;
-    utils::Boxi area(world.x(), world.y(), world.w() * 2, world.h() * 2);
+    utils::Boxi world(root->m_area.x(), root->m_area.y(), root->m_area.w() * 2, root->m_area.h() * 2);
 
     CellsQuadTreeNodeShPtr newRoot = std::shared_ptr<CellsQuadTreeNode>(
       new CellsQuadTreeNode(
-        area, root->m_ruleset, nullptr, Child::None, false
+        world, root->m_ruleset, nullptr, Child::None, m_minSize
       )
     );
 
-    log("Allocating root with area " + area.toString());
+    log("Allocating root with area " + world.toString());
 
     // Create the children of the new root: they will either be complex node if
     // the root itself is a complex node (i.e. with a depth bigger than `1`) or
@@ -406,58 +356,17 @@ namespace cellulator {
     // nodes should be allocated.
     // Note also that the node are added to the root but their alive cells count
     // is kept for when the data has actually been allocated.
-    area = utils::Boxi(-world.w() / 2, world.h() / 2, world.w(), world.h());
-    CellsQuadTreeNodeShPtr nw = std::shared_ptr<CellsQuadTreeNode>(
-      new CellsQuadTreeNode(
-        area,
-        root->m_ruleset,
-        newRoot.get(),
-        Child::NorthWest,
-        root->isLeaf()
-      )
-    );
-    log("Creating north west with " + area.toString());
+    CellsQuadTreeNodeShPtr nw = createChild(Child::NorthWest, newRoot.get());
+    log("Creating north west with " + nw->m_area.toString());
 
-    area = utils::Boxi(world.w() / 2, world.h() / 2, world.w(), world.h());
-    CellsQuadTreeNodeShPtr ne = std::shared_ptr<CellsQuadTreeNode>(
-      new CellsQuadTreeNode(
-        area,
-        root->m_ruleset,
-        newRoot.get(),
-        Child::NorthEast,
-        root->isLeaf()
-      )
-    );
-    log("Creating north east with " + area.toString());
+    CellsQuadTreeNodeShPtr ne = createChild(Child::NorthEast, newRoot.get());
+    log("Creating north east with " + ne->m_area.toString());
 
-    area = utils::Boxi(-world.w() / 2, -world.h() / 2, world.w(), world.h());
-    CellsQuadTreeNodeShPtr sw = std::shared_ptr<CellsQuadTreeNode>(
-      new CellsQuadTreeNode(
-        area,
-        root->m_ruleset,
-        newRoot.get(),
-        Child::SouthWest,
-        root->isLeaf()
-      )
-    );
-    log("Creating south west with " + area.toString());
+    CellsQuadTreeNodeShPtr sw = createChild(Child::SouthWest, newRoot.get());
+    log("Creating south west with " + sw->m_area.toString());
 
-    area = utils::Boxi(world.w() / 2, -world.h() / 2, world.w(), world.h());
-    CellsQuadTreeNodeShPtr se = std::shared_ptr<CellsQuadTreeNode>(
-      new CellsQuadTreeNode(
-        area,
-        root->m_ruleset,
-        newRoot.get(),
-        Child::SouthEast,
-        root->isLeaf()
-      )
-    );
-    log("Creating south east with " + area.toString());
-
-    newRoot->m_children[Child::NorthWest] = nw;
-    newRoot->m_children[Child::NorthEast] = ne;
-    newRoot->m_children[Child::SouthWest] = sw;
-    newRoot->m_children[Child::SouthEast] = se;
+    CellsQuadTreeNodeShPtr se = createChild(Child::SouthEast, newRoot.get());
+    log("Creating south east with " + se->m_area.toString());
 
     // Now determine what we need to do to populate the children nodes of the
     // `newRoot`. In case the root has a depth greater than `1` we want to copy
@@ -492,12 +401,13 @@ namespace cellulator {
       // The root is a leaf node: we need to split up the data and populate each
       // bit in the corresponding children.
       CellsQuadTreeNode* n = nullptr;
+      utils::Boxi oldWorld = root->m_area;
       int uB = world.area();
 
-      for (int y = 0 ; y < world.h() ; ++y) {
-        int offset = y * world.w();
+      for (int y = 0 ; y < oldWorld.h() ; ++y) {
+        int offset = y * oldWorld.w();
 
-        for (int x = 0 ; x < world.w() ; ++x) {
+        for (int x = 0 ; x < oldWorld.w() ; ++x) {
           // Fetch values.
           Cell c = root->m_cells[offset + x];
           unsigned a = root->m_adjacency[offset + x];
@@ -508,33 +418,37 @@ namespace cellulator {
           // south to north.
           int coord = -1;
 
-          if (y < world.h() / 2) {
-            if (x < world.w() / 2) {
+          if (y < oldWorld.h() / 2) {
+            if (x < oldWorld.w() / 2) {
               // South west child.
               n = sw.get();
-              coord = (y + world.h() / 2) * world.w() + (x + world.w() / 2);
+              coord = (y + oldWorld.h() / 2) * oldWorld.w() + (x + oldWorld.w() / 2);
             }
             else {
               // South east child.
               n = se.get();
-              coord = (y + world.h() / 2) * world.w() + (x - world.w() / 2);
+              coord = (y + oldWorld.h() / 2) * oldWorld.w() + (x - oldWorld.w() / 2);
             }
           }
           else {
-            if (x < world.w() / 2) {
+            if (x < oldWorld.w() / 2) {
               // North west child.
               n = nw.get();
-              coord = (y - world.h() / 2) * world.w() + (x + world.w() / 2);
+              coord = (y - oldWorld.h() / 2) * oldWorld.w() + (x + oldWorld.w() / 2);
             }
             else {
               // North east child.
               n = ne.get();
-              coord = (y - world.h() / 2) * world.w() + (x - world.w() / 2);
+              coord = (y - oldWorld.h() / 2) * oldWorld.w() + (x - oldWorld.w() / 2);
             }
           }
 
           // Assign values.
+          log("Adding coord " + std::to_string(coord) + " from " + std::to_string(x) + "x" + std::to_string(y) + " in " + std::to_string(uB) + " old world was " + oldWorld.toString());
           if (coord >= 0 && coord < uB && n != nullptr) {
+
+            log("Data is " + std::to_string(n->m_cells.size()));
+
             n->m_cells[coord] = c;
             n->m_adjacency[coord] = a;
             n->m_nextAdjacency[coord] = na;
@@ -573,40 +487,328 @@ namespace cellulator {
   }
 
   void
+  CellsQuadTreeNode::split() {
+    // We consider that if the input size is larger than the current
+    // size of the node we don't need to do anything.
+    if (m_minSize.contains(m_area.toSize())) {
+      return;
+    }
+
+    // Also if some children are already available, this is a problem.
+    if (!isLeaf()) {
+      error(
+        std::string("Could not split quadtree node to reach ") + m_minSize.toString(),
+        std::string("Node is already splitted")
+      );
+    }
+
+    // Check whether the input size is a perfect divisor of the internal
+    // size. Otherwise we won't be able to split the node into sub-nodes
+    // while still keeping equal size: we could try to determine a size
+    // that divides best the input size but what about prime numbers ?
+    // So better not try anything.
+    if (m_area.w() % m_minSize.w() != 0 || m_area.h() % m_minSize.h() != 0) {
+      error(
+        std::string("Could not split quadtree node to reach ") + m_minSize.toString(),
+        std::string("Internal size ") + m_area.toSize().toString() +
+        " is not a multiple of it"
+      );
+    }
+
+    // The dimensions of the child nodes are the dimensions of the parent
+    // divided by 2. Indeed we want to create 4 children nodes. If the
+    // dimensions are not even, we will declare a failure as we can't do
+    // much with integer arithmetic.
+    if (m_area.w() % 2 != 0 || m_area.h() % 2 != 0) {
+      error(
+        std::string("Could not split quadtree node to reach ") + m_minSize.toString(),
+        std::string("Internal size ") + m_area.toSize().toString() + " cannot be divided evenly"
+      );
+    }
+
+    // Create children.
+    createChild(Child::NorthWest, this);
+    createChild(Child::NorthEast, this);
+    createChild(Child::SouthWest, this);
+    createChild(Child::SouthEast, this);
+
+    // Split children nodes in case we need more than one split operation.
+    for (ChildrenMap::const_iterator it = m_children.cbegin() ;
+         it != m_children.cend() ;
+         ++it)
+    {
+      it->second->split();
+    }
+
+    // Clear the internal data.
+    m_aliveCount = 0u;
+  }
+
+  void
   CellsQuadTreeNode::updateAdjacencyFor(const utils::Vector2i& coord,
                                         bool alive,
                                         bool makeCurrent)
   {
-    // We need to update the internal adjacency values with the alive data.
-    for (int y = coord.y() - 1 ; y <= coord.y() + 1 ; ++y) {
-      // Check whether the coordinate lies inside the boundaries.
-      if (y < 0 || y > m_area.h() - 1) {
-        continue;
+    // To update the adjacency we need to update the corresponding entries in
+    // the `m_nextAdjacency` array. This can either mean updating the internal
+    // arrays (in the case this node is a leaf) or calling the adequate method
+    // on the relevant child.
+    // We could also need to create the node if needed (i.e. if the relevant
+    // child does not exist).
+
+    // No need to update anything if the status is `Dead`.
+    if (!alive) {
+      return;
+    }
+
+    // Check whether the node is a leaf first: in this case it is quite easy
+    // because we can direcly handle the modification of the internal data.
+    // Note that in case we hit a boundary we will not attempt to update the
+    // siblings: instead we will assume that the process will somehow call the
+    // method on the sibling elsewhere.
+    if (isLeaf()) {
+      // Convert the coord to local array coordinates.
+      int lXMin = (coord.x() - 1) - m_area.getLeftBound();
+      int lYMin = (coord.y() - 1) - m_area.getBottomBound();
+      int lXMax = lXMin + 2;
+      int lYMax = lYMin + 2;
+
+      int xTgt = lXMin + 1;
+      int yTgt = lYMin + 1;
+
+      for (int y = lYMin ; y <= lYMax ; ++y) {
+        // Check whether the coordinate lies inside the boundaries.
+        if (y < 0 || y > m_area.h() - 1) {
+          continue;
+        }
+
+        int offset = y * m_area.w();
+
+        for(int x = lXMin ; x <= lXMax ; ++x) {
+          // Check consistency of the coordinates.
+          if (x < 0 || x > m_area.w() - 1) {
+            continue;
+          }
+
+          // Do not update the count for this cell.
+          if (y == yTgt && x == xTgt) {
+            continue;
+          }
+
+          if (alive) {
+            if (makeCurrent) {
+              ++m_adjacency[offset + x];
+            }
+            else {
+              ++m_nextAdjacency[offset + x];
+            }
+          }
+        }
       }
 
-      int offset = y * m_area.w();
+      return;
+    }
 
-      for(int x = coord.x() - 1 ; x <= coord.x() + 1 ; ++x) {
-        // Check consistency of the coordinates.
-        if (x < 0 || x > m_area.w() - 1) {
-          continue;
-        }
+    // This node is not a leaf: we need to call the method on the
+    // relevant children if they contain the coordinate. Note that
+    // this include creating the node if needed.
+    utils::Boxi aoe(coord.x(), coord.y(), 2, 2);
 
-        // Do not update the count for this cell.
-        if (y == coord.y() && x == coord.x()) {
-          continue;
-        }
+    utils::Boxi nw = getBoxForChild(m_area, Child::NorthWest);
+    ChildrenMap::const_iterator nwIt = m_children.find(Child::NorthWest);
 
-        if (alive) {
-          if (makeCurrent) {
-            ++m_adjacency[offset + x];
-          }
-          else {
-            ++m_nextAdjacency[offset + x];
-          }
-        }
+    utils::Boxi ne = getBoxForChild(m_area, Child::NorthEast);
+    ChildrenMap::const_iterator neIt = m_children.find(Child::NorthEast);
+
+    utils::Boxi sw = getBoxForChild(m_area, Child::SouthWest);
+    ChildrenMap::const_iterator swIt = m_children.find(Child::SouthWest);
+
+    utils::Boxi se = getBoxForChild(m_area, Child::SouthEast);
+    ChildrenMap::const_iterator seIt = m_children.find(Child::SouthEast);
+
+    // Check whether the area of effect of the adjacency will impact the node.
+    // If this is the case we either need to update the node directly if it
+    // already exists or create it (as we are sure that we will have an alive
+    // neighbor for one of the cell of the node).
+    CellsQuadTreeNode* child = nullptr;
+
+    if (nw.intersects(aoe)) {
+      if (nwIt != m_children.cend()) {
+        child = nwIt->second.get();
+      }
+      else {
+        // Create the node.
+        // TODO: We should find a way to determine the desired minimum size of the 
+        CellsQuadTreeNodeShPtr c = createChild(Child::NorthWest, this);
+        log("Creating 2 north west with " + c->m_area.toString());
+
+        child = c.get();
       }
     }
+
+    if (ne.intersects(aoe)) {
+      if (neIt != m_children.cend()) {
+        child = neIt->second.get();
+      }
+      else {
+        // Create the node.
+        CellsQuadTreeNodeShPtr c = createChild(Child::NorthEast, this);
+        log("Creating 2 north east with " + c->m_area.toString());
+
+        child = c.get();
+      }
+    }
+
+    if (sw.intersects(aoe)) {
+      if (swIt != m_children.cend()) {
+        child = swIt->second.get();
+      }
+      else {
+        // Create the node.
+        CellsQuadTreeNodeShPtr c = createChild(Child::SouthWest, this);
+        log("Creating 2 south west with " + c->m_area.toString());
+
+        child = c.get();
+      }
+    }
+
+    if (se.intersects(aoe)) {
+      if (seIt != m_children.cend()) {
+        child = seIt->second.get();
+      }
+      else {
+        // Create the node.
+        CellsQuadTreeNodeShPtr c = createChild(Child::SouthEast, this);
+        log("Creating 2 south east with " + c->m_area.toString());
+
+        child = c.get();
+      }
+    }
+
+    // Update the adjacency on the relevant node.
+    child->updateAdjacencyFor(coord, alive, makeCurrent);
+  }
+
+  Cell*
+  CellsQuadTreeNode::at(const utils::Vector2i& coord,
+                        unsigned& alive,
+                        bool& inside,
+                        bool& created) noexcept
+  {
+    // Assume the cell is not inside the node.
+    inside = false;
+    created = false;
+    alive = 0u;
+
+    // Check whether the coordinates are inside the area defined for the node.
+    if (!m_area.contains(coord)) {
+      return nullptr;
+    }
+
+    // The cell is inside the node: either this node is a leaf in which case
+    // we can retrieve the corresponding cell. Otherwise we need to call the
+    // method on the correct child.
+    inside = true;
+
+    // Convert the coordinate to reach the cell in the internal array.
+    int x = coord.x() - m_area.getLeftBound();
+    int y = coord.y() - m_area.getBottomBound();
+
+    if (isLeaf()) {
+      created = true;
+
+      int offset = y * m_area.w();
+      alive = m_adjacency[offset + x];
+
+      return &m_cells[offset + x];
+    }
+
+    // The cell is in one of the children: determine which one and either
+    // call this method on it or indicate the the cell has not yet been
+    // created.
+    Child orientation = Child::None;
+    if (y < m_area.h() / 2) {
+      if (x < m_area.w() / 2) {
+        orientation = Child::SouthWest;
+      }
+      else {
+        orientation = Child::SouthEast;
+      }
+    }
+    else {
+      if (x < m_area.w() / 2) {
+        orientation = Child::NorthWest;
+      }
+      else {
+        orientation = Child::NorthEast;
+      }
+    }
+
+    // Try to fetch the corresponding child.
+    ChildrenMap::const_iterator it = m_children.find(orientation);
+
+    if (it == m_children.cend()) {
+      // If the child does not exist, notify the caller.
+      return nullptr;
+    }
+
+    return it->second->at(coord, alive, inside, created);
+  }
+
+  bool
+  CellsQuadTreeNode::evolveBoundaryElement(const utils::Vector2i& coord) {
+    // Retrieve information about the cell.
+    unsigned neighbors;
+    bool inside, created;
+
+    Cell* c = at(coord, neighbors, inside, created);
+
+    bool alive = false;
+
+    // Check consistency for bottom row.
+    if (!inside) {
+      log(
+        std::string("Could not compute boundary at ") + coord.toString() + " (somehow outside of boundaries)",
+        utils::Level::Error
+      );
+    }
+    else if (c == nullptr) {
+      log(
+        std::string("Could not fetch element at ") + coord.toString() + " (cell is null)",
+        utils::Level::Error
+      );
+    }
+    else if (!created) {
+      // The cell is not created yet: check whether a cell would be created given
+      // the number of neighbors: if this is the case we will need to create the
+      // corresponding child, otherwise everything is fine.
+      Cell c(State::Dead, m_ruleset);
+      State s = c.update(neighbors);
+
+      // Only react if the produced state would not be a `Dead` cell.
+      if (s != State::Dead) {
+        if (s == State::Dying) {
+          log(
+            std::string("Created dying cell from dead cell at ") + coord.toString(),
+            utils::Level::Warning
+          );
+        }
+
+        alive = s == State::Alive || s == State::Newborn;
+        updateAdjacencyFor(coord, alive);
+        // TODO: Update the cell itself: we need to copy the `c` into the created data.
+      }
+    }
+    else {
+      // The cell already exists, evolve it.
+      State s = c->update(neighbors);
+      alive = s == State::Alive || s == State::Newborn;
+      updateAdjacencyFor(coord, alive);
+
+      log(std::string("Cell at ") + coord.toString() + " with " + std::to_string(neighbors) + " neighbor(s) is now " + (alive ? "alive": "dead"));
+    }
+
+    return alive;
   }
 
 }
