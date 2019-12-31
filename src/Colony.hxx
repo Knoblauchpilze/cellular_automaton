@@ -12,9 +12,9 @@ namespace cellulator {
   }
 
   inline
-  utils::Sizei
-  Colony::getSize() noexcept {
-    return m_cells->getSize();
+  utils::Boxi
+  Colony::getArea() noexcept {
+    return m_cells->getLiveArea();
   }
 
   inline

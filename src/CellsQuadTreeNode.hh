@@ -128,11 +128,16 @@ namespace cellulator {
        *          Note that in case the provided node does not need to be expanded, it will be
        *          returned as is. This allows to entirely rely on this method to handle the
        *          logic of expansion and call it no matter the real data contained in the tree.
+       *          This method returns the live area occupied by the colony. This is the smallest
+       *          area that encompasses all the living cells of the quadtree.
        * @param root - the node to expand.
+       * @param liveArea - output argument allowing to retrieve the minimum area encompassing
+       *                   all living cells.
        * @return - the expanded version of the input `root` node.
        */
       CellsQuadTreeNodeShPtr
-      expand(CellsQuadTreeNodeShPtr root);
+      expand(CellsQuadTreeNodeShPtr root,
+             utils::Boxi& liveArea);
 
     private:
 

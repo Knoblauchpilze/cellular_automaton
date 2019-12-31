@@ -14,6 +14,7 @@ namespace cellulator {
     m_ruleset(ruleset),
     m_nodesSize(nodeDims),
     m_size(),
+    m_liveArea(),
 
     m_root(nullptr)
   {
@@ -73,6 +74,7 @@ namespace cellulator {
     }
 
     m_size = evenized;
+    m_liveArea = utils::Boxi::fromSize(m_size, true);
 
     // Create the root node: we want to create a node which is at least
     // the size of `m_nodesSize`, even if it is larger than the desired

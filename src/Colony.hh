@@ -39,14 +39,14 @@ namespace cellulator {
       ~Colony();
 
       /**
-       * @brief - Used to retrieve the size of the colony as of now. This includes
-       *          all the tiles generated so far even though they might not be
-       *          rendered yet (or visible for that matter).
+       * @brief - Used to retrieve the area encompassing all living cells in the
+       *          colony. This only includes the tiles that contain at least one
+       *          living cell.
        *          The size is expressed in terms of cells.
-       * @return - the size of the colony.
+       * @return - the living area occupied by the colony.
        */
-      utils::Sizei
-      getSize() noexcept;
+      utils::Boxi
+      getArea() noexcept;
 
       /**
        * @brief - Used to retrieve the cells from the area described in input into
