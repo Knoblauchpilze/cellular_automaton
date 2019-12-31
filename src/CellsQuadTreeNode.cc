@@ -170,6 +170,8 @@ namespace cellulator {
       int y = id / m_area.w();
 
       // Prevent generation of random values on the boundary.
+      // TODO: We should refine boundaries to only consider part of the
+      // border (like boundary on the left side, etc.).
       if (!generateOnBoundaries &&
           (x == 0 || x == m_area.w() - 1 || y == 0 || y == m_area.h() - 1))
       {
@@ -190,7 +192,12 @@ namespace cellulator {
           break;
       }
 
-      updateAdjacencyFor(utils::Vector2i(x - xOffset, y - yOffset), alive, true);
+      utils::Vector2i coord(
+        m_area.x() + x - xOffset,
+        m_area.y() + y - yOffset
+      );
+
+      updateAdjacencyFor(coord, alive, true);
     }
   }
 
@@ -272,7 +279,12 @@ namespace cellulator {
         State s = m_cells[offset + x].update(m_adjacency[offset + x]);
         bool alive = (s == State::Alive || s == State::Newborn);
 
-        updateAdjacencyFor(utils::Vector2i(x - xOffset, y - yOffset), alive);
+        utils::Vector2i coord(
+          m_area.x() + x - xOffset,
+          m_area.y() + y - yOffset
+        );
+
+        updateAdjacencyFor(coord, alive);
       }
     }
   }
@@ -614,7 +626,6 @@ namespace cellulator {
          it != m_children.cend() ;
          ++it)
     {
-      log("Splitting child " + it->second->m_area.toString());
       it->second->split();
     }
 
@@ -715,8 +726,7 @@ namespace cellulator {
         child = nwIt->second.get();
       }
       else {
-        // Create the node.
-        // TODO: We should find a way to determine the desired minimum size of the 
+        // Create the node. 
         CellsQuadTreeNodeShPtr c = createChild(Child::NorthWest, this);
         log("Creating 2 north west with " + c->m_area.toString());
 
