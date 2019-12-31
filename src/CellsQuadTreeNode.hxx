@@ -166,7 +166,13 @@ namespace cellulator {
 
     // If the parent does not have a valid path for its own orientation
     // we can't find a path for this one.
-    if (!m_parent->isBoundary()) {
+    if (!isBoundary()) {
+      return false;
+    }
+
+    // Check whether the parent is valid for the input orientation: indeed
+    // the chain must remain valid if we cut any part of it.
+    if (!m_parent->validFor(orientation)) {
       return false;
     }
 
