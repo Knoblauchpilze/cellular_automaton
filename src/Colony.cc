@@ -177,16 +177,19 @@ namespace cellulator {
     if (m_taskProgress == m_taskTotal) {
       ++m_generation;
 
-      onGenerationComputed.safeEmit(
-        std::string("onGenerationComputed(") + std::to_string(m_generation) + ")",
-        m_generation
-      );
-
       // Step up all the cells to their next state.
       m_cells->step();
 
       // Expand the tree if needed.
       m_cells->expand();
+
+      // TODO: When we handle a tile we have an issue where the repaint might not be
+      // up to date.
+
+      onGenerationComputed.safeEmit(
+        std::string("onGenerationComputed(") + std::to_string(m_generation) + ")",
+        m_generation
+      );
 
       // Check whether we should schedule a new generation based on the status of
       // the simulation. We will also update the simulation state accordingly.
