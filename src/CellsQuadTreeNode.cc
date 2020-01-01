@@ -407,7 +407,7 @@ namespace cellulator {
       int yMax = m_area.h() - 1;
       for (int y = 1 ; y < yMax ; ++y) {
         // Account for cells which are both in the horizontal and vertical parts.
-        if (coord1.y() != 0 && coord1.y() != -1) {
+        if (coord1.y() != m_area.y() && coord1.y() != m_area.y() - 1) {
           evolveBoundaryElement(coord1);
           evolveBoundaryElement(coord2);
         }
@@ -930,10 +930,28 @@ namespace cellulator {
       );
     }
     else if (!created) {
-      log(
-        std::string("Could not fetch element at ") + coord.toString() + " (cell is not created)",
-        utils::Level::Error
-      );
+      // The cell is not created yet: check whether a cell would be created given
+      // the number of neighbors: if this is the case we will need to create the
+      // corresponding child, otherwise everything is fine.
+      Cell c(State::Dead, m_ruleset);
+      State s = c.update(neighbors);
+
+      // Only react if the produced state would not be a `Dead` cell.
+      if (s != State::Dead) {
+        if (s == State::Dying) {
+          log(
+            std::string("Created dying cell from dead cell at ") + coord.toString(),
+            utils::Level::Warning
+          );
+        }
+
+        log(
+          std::string("Should have created element to hold cell at ") + coord.toString(),
+          utils::Level::Error
+        );
+
+        alive = (s == State::Alive || s == State::Newborn);
+      }
     }
     else {
       // The cell already exists, evolve it.
