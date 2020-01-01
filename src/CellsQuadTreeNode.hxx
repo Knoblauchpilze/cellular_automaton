@@ -217,7 +217,7 @@ namespace cellulator {
   {
     // If this quadtree node is a leaf, add it to the input list and return early.
     // We also care about the `includeEmpty` input boolean.
-    if (isLeaf() && (hasLiveCells() || includeEmpty)) {
+    if (isLeaf() && (hasLiveCells() || includeEmpty) && isBoundary()) {
       nodes.push_back(this);
 
       return;
@@ -234,6 +234,85 @@ namespace cellulator {
         it->second->collectBoundaries(nodes, includeEmpty);
       }
     }
+  }
+
+  inline
+  bool
+  CellsQuadTreeNode::attach(CellsQuadTreeNodeShPtr child,
+                            const Child& orientation) noexcept
+  {
+    // Check consistency.
+    if (child == nullptr) {
+      log(std::string("Trying to attach invalid null child to ") + getName());
+      return false;
+    }
+
+    // Check whether the parent already has a child with the specified orientation.
+    ChildrenMap::const_iterator ex = m_children.find(orientation);
+    if (ex != m_children.cend()) {
+      log(
+        std::string("Could not attach ") + child->getName() + " to " + getName() +
+        ", child " + ex->second->getName() + " is already occuying the spot",
+        utils::Level::Error
+      );
+
+      return false;
+    }
+
+    // Attach the child to this node.
+    bool check = child->attachTo(this, orientation);
+    if (!check) {
+      log(
+        std::string("Could not attach ") + child->getName() + " to " + getName(),
+        utils::Level::Error
+      );
+
+      return false;
+    }
+
+    // Register this child in the internal list.
+    m_children[orientation] = child;
+
+    return true;
+  }
+
+  inline
+  bool
+  CellsQuadTreeNode::attachTo(CellsQuadTreeNode* parent,
+                              const Child& orientation) noexcept
+  {
+    // Check consistency.
+    if (parent == nullptr) {
+      log(std::string("Trying to attach ") + getName() + " to invalid null parent", utils::Level::Error);
+      return false;
+    }
+
+    // Detach from current parent.
+    if (m_parent != nullptr) {
+      log(
+        std::string("Reparenting ") + getName() + " from " + m_parent->getName() + " to " + parent->getName(),
+        utils::Level::Verbose
+      );
+
+      std::size_t check = m_parent->m_children.erase(m_orientation);
+
+      if (check == 0u) {
+        log(
+          std::string("Could not find child ") + getName() + " in parent " + m_parent->getName(),
+          utils::Level::Error
+        );
+      }
+
+      // Decrement the alive count with the count brought by this node.
+      m_parent->m_aliveCount -= m_aliveCount;
+    }
+
+    // Attach to the new parent and reset information.
+    m_parent = parent;
+    m_orientation = orientation;
+    m_parent->m_aliveCount += m_aliveCount;
+
+    return true;
   }
 
 }
