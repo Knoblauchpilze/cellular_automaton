@@ -366,6 +366,34 @@ namespace cellulator {
       bool
       evolveBoundaryElement(const utils::Vector2i& coord);
 
+      /**
+       * @brief - Used to register this child as the `orientation` element for `this` node.
+       *          Internally calls the `attachTo` method to perform the needed operation in
+       *          the `child` node.
+       *          Checks are performed to guarantee the consistency of the operation.
+       * @param child - the child to attach to `this` node.
+       * @param orientation - the orientation to assign to the child.
+       * @return - `true` if the child has successfully been attached and `false` otherwise.
+       */
+      bool
+      attach(CellsQuadTreeNodeShPtr child,
+             const Child& orientation) noexcept;
+
+      /**
+       * @brief - Used to attach this node to the specified parent with the provided orientation.
+       *          Checks are performed to verify that the parent is valid and that it does not
+       *          lead to erasing an existing node.
+       *          Note that the child is also detached from its current parent if any.
+       *          Note however that `this` is *not* inserted into the `parent->m_children` map.
+       *          In order to do so one should call the `attach` method.
+       * @param parent - the parent that this node should be attached to.
+       * @param orientation - the desired orientation for this node within the parent node.
+       * @return - `true` if this node was successfully attached to the parent node.
+       */
+      bool
+      attachTo(CellsQuadTreeNode* parent,
+               const Child& orientation) noexcept;
+
     private:
 
       /**

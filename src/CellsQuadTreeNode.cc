@@ -441,6 +441,7 @@ namespace cellulator {
     );
 
     log("Allocating root with area " + world.toString());
+    unsigned saveAlive = root->m_aliveCount;
 
     // Create the children of the new root: they will either be complex node if
     // the root itself is a complex node (i.e. with a depth bigger than `1`) or
@@ -468,26 +469,22 @@ namespace cellulator {
       // Assign children of this root node to their new parent if any.
       ChildrenMap::const_iterator it = root->m_children.find(Child::NorthWest);
       if (it != root->m_children.cend()) {
-        nw->m_children[Child::SouthEast] = it->second;
-        nw->m_aliveCount += it->second->m_aliveCount;
+        nw->attach(it->second, Child::SouthEast);
       }
 
       it = root->m_children.find(Child::NorthEast);
       if (it != root->m_children.cend()) {
-        ne->m_children[Child::SouthWest] = it->second;
-        ne->m_aliveCount += it->second->m_aliveCount;
+        ne->attach(it->second, Child::SouthWest);
       }
 
       it = root->m_children.find(Child::SouthWest);
       if (it != root->m_children.cend()) {
-        sw->m_children[Child::NorthEast] = it->second;
-        sw->m_aliveCount += it->second->m_aliveCount;
+        sw->attach(it->second, Child::NorthEast);
       }
 
       it = root->m_children.find(Child::SouthEast);
       if (it != root->m_children.cend()) {
-        se->m_children[Child::NorthWest] = it->second;
-        se->m_aliveCount += it->second->m_aliveCount;
+        se->attach(it->second, Child::NorthWest);
       }
     }
     else {
@@ -564,7 +561,7 @@ namespace cellulator {
     newRoot->m_aliveCount += sw->getAliveCellsCount();
     newRoot->m_aliveCount += se->getAliveCellsCount();
 
-    log("Old root had " + std::to_string(root->m_aliveCount) + " alive cell(s), new one has " + std::to_string(newRoot->m_aliveCount));
+    log("Old root had " + std::to_string(saveAlive) + " alive cell(s), new one has " + std::to_string(newRoot->m_aliveCount));
     log(
       "nw: " + std::to_string(nw->getAliveCellsCount()) +
       ", ne: " + std::to_string(ne->getAliveCellsCount()) +
