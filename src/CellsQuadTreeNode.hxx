@@ -19,10 +19,17 @@ namespace cellulator {
   }
 
   inline
+  unsigned
+  CellsQuadTreeNode::getDyingCellsCount() const noexcept {
+    return m_dyingCount;
+  }
+
+  inline
   void
   CellsQuadTreeNode::step() {
     // If this node is not a leaf; call the adequate method for all children.
     m_aliveCount = 0u;
+    m_dyingCount = 0u;
 
     if (!isLeaf()) {
 
@@ -31,7 +38,8 @@ namespace cellulator {
            ++it)
       {
         it->second->step();
-        m_aliveCount += it->second->m_aliveCount;
+        m_aliveCount += it->second->getAliveCellsCount();
+        m_dyingCount += it->second->getDyingCellsCount();
       }
 
       return;
@@ -42,6 +50,9 @@ namespace cellulator {
       State s = m_cells[id].step();
       if (s == State::Alive || s == State::Newborn) {
         ++m_aliveCount;
+      }
+      if (s == State::Dying) {
+        ++m_dyingCount;
       }
     }
 
@@ -204,6 +215,12 @@ namespace cellulator {
   }
 
   inline
+  bool
+  CellsQuadTreeNode::isDying() const noexcept {
+    return hasLiveCells() || getDyingCellsCount() > 0;
+  }
+
+  inline
   void
   CellsQuadTreeNode::collectBoundaries(std::vector<CellsQuadTreeNode*>& nodes,
                                        bool includeEmpty) noexcept
@@ -298,11 +315,13 @@ namespace cellulator {
 
       // Decrement the alive count with the count brought by this node.
       m_parent->m_aliveCount -= m_aliveCount;
+      m_parent->m_dyingCount -= m_dyingCount;
     }
 
     // Attach to the new parent and reset information.
     m_parent = parent;
-    m_parent->m_aliveCount += m_aliveCount;
+    m_parent->m_aliveCount += getAliveCellsCount();
+    m_parent->m_dyingCount += getDyingCellsCount();
     m_direction = direction;
     assignOrientationFromDirection();
 

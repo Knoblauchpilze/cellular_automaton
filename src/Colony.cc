@@ -183,9 +183,6 @@ namespace cellulator {
       // Expand the tree if needed.
       m_cells->expand();
 
-      // TODO: When we handle a tile we have an issue where the repaint might not be
-      // up to date.
-
       onGenerationComputed.safeEmit(
         std::string("onGenerationComputed(") + std::to_string(m_generation) + ")",
         m_generation

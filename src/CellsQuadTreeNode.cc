@@ -18,6 +18,7 @@ namespace cellulator {
     m_nextAdjacency(),
 
     m_aliveCount(0u),
+    m_dyingCount(0u),
 
     m_parent(nullptr),
     m_direction(borders::Name::None),
@@ -59,6 +60,7 @@ namespace cellulator {
     m_nextAdjacency(),
 
     m_aliveCount(0u),
+    m_dyingCount(0u),
 
     m_parent(parent),
     m_direction(direction),
@@ -83,7 +85,7 @@ namespace cellulator {
                                 const utils::Boxi& area)
   {
     // If no cells are available, we can return early.
-    if (isDead()) {
+    if (!isDying()) {
       return;
     }
 
@@ -143,9 +145,9 @@ namespace cellulator {
   CellsQuadTreeNode::randomize(const utils::Boxi& area) {
     // Randomize each cell. In case children are available, we need
     // to call the randomization method on them.
-
     if (!isLeaf()) {
       m_aliveCount = 0u;
+      m_dyingCount = 0u;
 
       for (ChildrenMap::const_iterator it = m_children.cbegin() ;
            it != m_children.cend() ;
@@ -154,6 +156,7 @@ namespace cellulator {
         if (area.intersectsBottomLeft(it->second->m_area)) {
           it->second->randomize(area);
           m_aliveCount += it->second->getAliveCellsCount();
+          m_dyingCount += it->second->getDyingCellsCount();
         }
       }
 
@@ -188,8 +191,11 @@ namespace cellulator {
       switch (s) {
         case State::Newborn:
         case State::Alive:
-          ++m_aliveCount;
           alive = true;
+          ++m_aliveCount;
+          break;
+        case State::Dying:
+          ++m_dyingCount;
           break;
         default:
           // Do not consider the cell alive by default.
@@ -612,6 +618,11 @@ namespace cellulator {
     newRoot->m_aliveCount += ne->getAliveCellsCount();
     newRoot->m_aliveCount += sw->getAliveCellsCount();
     newRoot->m_aliveCount += se->getAliveCellsCount();
+
+    newRoot->m_dyingCount += nw->getDyingCellsCount();
+    newRoot->m_dyingCount += ne->getDyingCellsCount();
+    newRoot->m_dyingCount += sw->getDyingCellsCount();
+    newRoot->m_dyingCount += se->getDyingCellsCount();
 
     log("Old root had " + std::to_string(saveAlive) + " alive cell(s), new one has " + std::to_string(newRoot->m_aliveCount));
     log(
