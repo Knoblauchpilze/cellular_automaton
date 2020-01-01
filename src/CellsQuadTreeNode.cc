@@ -266,6 +266,7 @@ namespace cellulator {
       return;
     }
 
+
     // Do not waste processing time if there's no live cells: the only evolution
     // that could happen comes from the boundaries and it is not handled in this
     // method.
@@ -493,7 +494,7 @@ namespace cellulator {
       )
     );
 
-    log("Allocating root with area " + world.toString());
+    log("Allocating root with area " + world.toString(), utils::Level::Info);
     unsigned saveAlive = root->m_aliveCount;
 
     // Create the children of the new root: they will either be complex node if
