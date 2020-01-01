@@ -216,22 +216,16 @@ namespace cellulator {
     // In the case this node is a leaf, we only need to register a single
     // tile corresponding to the internal data of this node. Otherwise we
     // will transmit the request to the children if any.
-    // We should also create a boundary job for this node. This operation
-    // is needed no matter whether the job is a leaf or not.
+    // We should also create a boundary job for this node in the case the
+    // node is not a leaf node: this will allow the processing of cells
+    // that are on the boundaries of children and thus require information
+    // from sibling nodes to be processed.
     // Note that we try to minimize the number of tiles to create by not
     // registering anything if the node is `dead` (meaning that no live
     // cell can be found in it).
     if (isDead()) {
       return;
     }
-
-    tiles.push_back(
-      std::make_shared<ColonyTile>(
-        m_area,
-        this,
-        ColonyTile::Type::Border
-      )
-    );
 
     if (isLeaf()) {
       log("Registering job for area " + m_area.toString() + " (already " + std::to_string(tiles.size()) + " registered)", utils::Level::Verbose);
@@ -245,6 +239,15 @@ namespace cellulator {
       );
 
       return;
+    }
+    else {
+      tiles.push_back(
+        std::make_shared<ColonyTile>(
+          m_area,
+          this,
+          ColonyTile::Type::Border
+        )
+      );
     }
 
     // Register the jobs needed to update the children of this node.
@@ -301,7 +304,6 @@ namespace cellulator {
 
   void
   CellsQuadTreeNode::evolveBoundaries() {
-    return;
     // This method aims at providing an evolution for the cells that are
     // on the boundaries of data nodes (i.e. leaves). We have two kind of
     // boundaries:
@@ -370,11 +372,15 @@ namespace cellulator {
         ++coord2.y();
       }
 
-      log(
-        std::string("Exterior boundaries contained [r: ") + std::to_string(countR) + " u: " + std::to_string(countU) +
-        " l: " + std::to_string(countL) + " b: " + std::to_string(countB) + "]",
-        utils::Level::Debug
-      );
+      // Given the generation and scheduling process we should never have any alive
+      // cells in the boundaries of the root node.
+      if (countR > 0 || countU > 0 || countL > 0 || countB > 0) {
+        log(
+          std::string("Exterior boundaries contained [r: ") + std::to_string(countR) + " u: " + std::to_string(countU) +
+          " l: " + std::to_string(countL) + " b: " + std::to_string(countB) + "]",
+          utils::Level::Warning
+        );
+      }
     }
 
     // Handle interior boundaries if the node has at least one living cell.
@@ -867,7 +873,7 @@ namespace cellulator {
         utils::Level::Error
       );
     }
-    else if (c == nullptr) {
+    else if (c == nullptr && created) {
       log(
         std::string("Could not fetch element at ") + coord.toString() + " (cell is null)",
         utils::Level::Error
@@ -891,6 +897,7 @@ namespace cellulator {
 
         alive = s == State::Alive || s == State::Newborn;
         updateAdjacencyFor(coord, alive);
+        log("Should create additional node to contain cell " + coord.toString());
         // TODO: Update the cell itself: we need to copy the `c` into the created data.
       }
     }
