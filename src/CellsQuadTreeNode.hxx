@@ -40,7 +40,6 @@ namespace cellulator {
     // If this node is a leaf, update all the internal cells.
     for (unsigned id = 0u ; id < m_cells.size() ; ++id) {
       State s = m_cells[id].step();
-
       if (s == State::Alive || s == State::Newborn) {
         ++m_aliveCount;
       }
@@ -117,7 +116,6 @@ namespace cellulator {
     // (i.e. if we can't subdivide this node any further).
     if (m_area.w() <= m_minSize.w() && m_area.h() <= m_minSize.h()) {
       // Create the internal array of cells.
-      log("Allocating child " + m_area.toString(), utils::Level::Info);
       m_cells.resize(m_area.area(), Cell(state, m_ruleset));
 
       // Update the adjacency elements.

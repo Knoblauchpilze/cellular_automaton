@@ -439,6 +439,11 @@ namespace cellulator {
     }
 
     // Update maximum boundaries.
+    // TODO: This does not work: we only get boundaries but some non-boundaries node
+    // might describe some more extreme live cells. We should instead traverse the
+    // tree and detect the extreme cells. This could maybe be saved as a property of
+    // each quadtree node so that we can get this quickly. It could be introduced when
+    // handling `improve dead areas` statement.
     utils::Vector2i rX = utils::Vector2i::maxmin();
     utils::Vector2i rY = utils::Vector2i::maxmin();
 
