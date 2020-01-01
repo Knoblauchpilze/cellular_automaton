@@ -108,7 +108,7 @@ namespace cellulator {
   inline
   utils::Boxf
   ColonyRenderer::getDefaultRenderingArea() noexcept {
-    return utils::Boxf(0.0f, 0.0f, 256.0f, 128.0f);
+    return utils::Boxf(0.0f, 0.0f, 32.0f, 16.0f);
   }
 
   inline
