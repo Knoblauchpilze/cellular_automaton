@@ -19,19 +19,25 @@ namespace cellulator {
     // Protect from concurrent accesses
     Guard guard(m_propsLocker);
 
-    // Request the size of the colony and use this as the rendering window.
-    // We need to account for the current aspect ratio and keep it though.
+    // We want the entire colony to fit inside the screen. We also want to
+    // keep the best aspect ratio given the colony's size.
+    utils::Sizef env = LayoutItem::getRenderingArea().toSize();
     utils::Boxi cArea = m_colony->getArea();
-    float aspectRatio = m_settings.area.w() / m_settings.area.h();
 
-    float w = (aspectRatio < 1.0f ? cArea.w() : cArea.w() * aspectRatio);
-    float h = (aspectRatio < 1.0f ? cArea.h() * aspectRatio : cArea.h());
+    // Determine the dimension of a cell in pixel's coordinate frame for
+    // each axis.
+    float cW = env.w() / cArea.w();
+    float cH = env.h() / cArea.h();
 
-    utils::Boxf area(cArea.x(), cArea.y(), w, h);
+    // We will use the smallest of the two values to scale the colony: this
+    // will guarantee that the smallest dimensions get the best out of the
+    // available space and the second one still gets not too stretched.
+    float ratio = std::min(cW, cH);
+    utils::Boxf area(cArea.x(), cArea.y(), env.w() / ratio, env.h() / ratio);
 
     log(
       "Changing rendering area from " + m_settings.area.toString() + " to " + area.toString() + " (colony is " +
-      cArea.toSize().toString() + ", ratio: " + std::to_string(aspectRatio) + ")",
+      cArea.toSize().toString() + ")",
       utils::Level::Verbose
     );
 
