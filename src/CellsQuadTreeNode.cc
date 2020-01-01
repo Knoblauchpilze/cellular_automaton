@@ -140,9 +140,10 @@ namespace cellulator {
   }
 
   void
-  CellsQuadTreeNode::randomize() {
+  CellsQuadTreeNode::randomize(const utils::Boxi& area) {
     // Randomize each cell. In case children are available, we need
     // to call the randomization method on them.
+
     if (!isLeaf()) {
       m_aliveCount = 0u;
 
@@ -150,8 +151,10 @@ namespace cellulator {
            it != m_children.cend() ;
            ++it)
       {
-        it->second->randomize();
-        m_aliveCount += it->second->getAliveCellsCount();
+        if (area.intersectsBottomLeft(it->second->m_area)) {
+          it->second->randomize(area);
+          m_aliveCount += it->second->getAliveCellsCount();
+        }
       }
 
       return;
@@ -164,28 +167,19 @@ namespace cellulator {
     int xOffset = m_area.w() / 2;
     int yOffset = m_area.h() / 2;
 
-    bool boundary = isBoundary();
-
     int uB = m_cells.size();
     for (int id = 0 ; id < uB ; ++id) {
       int x = id % m_area.w();
       int y = id / m_area.w();
 
-      // Prevent generation of random values on the boundary if needed.
-      if (boundary) {
-        if (x == 0 && m_orientation.isSet(borders::Direction::West)) {
-          continue;
-        }
-        if (x == m_area.w() - 1 && m_orientation.isSet(borders::Direction::East)) {
-          continue;
-        }
+      utils::Vector2i coord(
+        m_area.x() + x - xOffset,
+        m_area.y() + y - yOffset
+      );
 
-        if (y == 0 && m_orientation.isSet(borders::Direction::South)) {
-          continue;
-        }
-        if (y == m_area.h() - 1 && m_orientation.isSet(borders::Direction::North)) {
-          continue;
-        }
+      // Prevent generation of random values on the boundary if needed.
+      if (!area.contains(coord)) {
+        continue;
       }
 
       State s = m_cells[id].randomize();
@@ -201,11 +195,6 @@ namespace cellulator {
           // Do not consider the cell alive by default.
           break;
       }
-
-      utils::Vector2i coord(
-        m_area.x() + x - xOffset,
-        m_area.y() + y - yOffset
-      );
 
       updateAdjacencyFor(coord, alive, true);
     }
@@ -427,8 +416,6 @@ namespace cellulator {
         ++coord2.y();
       }
     }
-
-    // TODO: Implementation.
   }
 
   CellsQuadTreeNodeShPtr
@@ -520,9 +507,6 @@ namespace cellulator {
     // Now determine what we need to do to populate the children nodes of the
     // `newRoot`. In case the root has a depth greater than `1` we want to copy
     // the children to their respective parents.
-    // TODO: In case we're creating some more nodes, we should probably also try
-    // to create the relevant children as needing to create a child probably means
-    // that some cells will become alive there in the next iteration.
     if (!root->isLeaf()) {
       // Assign children of this root node to their new parent if any.
       ChildrenMap::const_iterator it = root->m_children.find(borders::Name::NorthWest);
@@ -611,6 +595,11 @@ namespace cellulator {
         }
       }
 
+    }
+
+    // Loop through leaves and create their siblings.
+    for (unsigned id = 0u ; id < nodes.size() ; ++id) {
+      newRoot->createSiblings(nodes[id]);
     }
 
     // Finally assign the alive cells count for the new root.
@@ -841,6 +830,14 @@ namespace cellulator {
         c->updateAdjacencyFor(coord, alive, makeCurrent, this);
       }
     }
+
+    // Transmit to the parent as well: we need to propagate as far as needed which
+    // can be quite far if the colony is large and the number of elements in the
+    // tree is large: very close cells might be in very different parts of the tree
+    // hierarchy.
+    if (!isRoot() && m_parent != ignore) {
+      m_parent->updateAdjacencyFor(coord, alive, makeCurrent, this);
+    }
   }
 
   Cell*
@@ -933,33 +930,16 @@ namespace cellulator {
       );
     }
     else if (!created) {
-      // The cell is not created yet: check whether a cell would be created given
-      // the number of neighbors: if this is the case we will need to create the
-      // corresponding child, otherwise everything is fine.
-      Cell c(State::Dead, m_ruleset);
-      State s = c.update(neighbors);
-
-      // Only react if the produced state would not be a `Dead` cell.
-      if (s != State::Dead) {
-        if (s == State::Dying) {
-          log(
-            std::string("Created dying cell from dead cell at ") + coord.toString(),
-            utils::Level::Warning
-          );
-        }
-
-        alive = (s == State::Alive || s == State::Newborn);
-        updateAdjacencyFor(coord, alive);
-        log("Should create additional node to contain cell " + coord.toString());
-        // TODO: Update the cell itself: we need to copy the `c` into the created data.
-      }
+      log(
+        std::string("Could not fetch element at ") + coord.toString() + " (cell is not created)",
+        utils::Level::Error
+      );
     }
     else {
       // The cell already exists, evolve it.
       State s = c->update(neighbors);
       alive = (s == State::Alive || s == State::Newborn);
 
-      // log("Updating adjacency for " + coord.toString() + " from " + std::to_string(neighbors) + " with status " + std::to_string(alive));
       updateAdjacencyFor(coord, alive);
     }
 

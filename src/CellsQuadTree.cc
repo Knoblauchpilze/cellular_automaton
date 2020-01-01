@@ -86,14 +86,17 @@ namespace cellulator {
       );
     }
 
-    m_size = evenized;
-    m_liveArea = utils::Boxi::fromSize(m_size, true);
+    // Account for some security buffer space around the real colony.
+    // This will allow for cells to be generated on the whole area and
+    // still be able to grow even in the first step.
+    m_size = utils::Sizei(evenized.w() * 2, evenized.h() * 2);
+    m_liveArea = utils::Boxi::fromSize(evenized, true);
 
     // Create the root node: we want to create a node which is at least
     // the size of `m_nodesSize`, even if it is larger than the desired
     // dimensions.
-    int w = static_cast<int>(std::ceil(1.0f * dims.w() / m_nodesSize.w())) * m_nodesSize.w();
-    int h = static_cast<int>(std::ceil(1.0f * dims.h() / m_nodesSize.h())) * m_nodesSize.h();
+    int w = static_cast<int>(std::ceil(1.0f * m_size.w() / m_nodesSize.w())) * m_nodesSize.w();
+    int h = static_cast<int>(std::ceil(1.0f * m_size.h() / m_nodesSize.h())) * m_nodesSize.h();
 
     utils::Boxi area(0, 0, w, h);
 

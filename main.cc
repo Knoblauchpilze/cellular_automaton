@@ -19,10 +19,10 @@
 # include "ColonyRenderer.hh"
 
 // TODO: Multiple rulesets ? See here: https://en.wikipedia.org/wiki/Cyclic_cellular_automaton
-// TODO: Handle boundaries.
 // TODO: Improve dead areas.
 // TODO: Add brushes.
 // TODO: Add grid.
+// TODO: Fix bugs while evolving colony.
 
 int main(int /*argc*/, char** /*argv*/) {
   // Create the logger.
