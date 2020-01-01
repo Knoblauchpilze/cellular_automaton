@@ -20,7 +20,8 @@ namespace cellulator {
     m_aliveCount(0u),
 
     m_parent(nullptr),
-    m_orientation(Child::None),
+    m_direction(borders::Name::None),
+    m_orientation(),
     m_children()
   {
     setService("node");
@@ -44,7 +45,7 @@ namespace cellulator {
   CellsQuadTreeNode::CellsQuadTreeNode(const utils::Boxi& area,
                                        const rules::Type& ruleset,
                                        CellsQuadTreeNode* parent,
-                                       const Child& orientation,
+                                       const borders::Name& direction,
                                        const utils::Sizei& minSize):
     utils::CoreObject(std::string("quadtree_node_") + area.toString()),
 
@@ -60,7 +61,8 @@ namespace cellulator {
     m_aliveCount(0u),
 
     m_parent(parent),
-    m_orientation(parent == nullptr ? Child::None : orientation),
+    m_direction(direction),
+    m_orientation(),
     m_children()
   {
     setService("node");
@@ -162,20 +164,28 @@ namespace cellulator {
     int xOffset = m_area.w() / 2;
     int yOffset = m_area.h() / 2;
 
-    bool generateOnBoundaries = !isBoundary();
+    bool boundary = isBoundary();
 
     int uB = m_cells.size();
     for (int id = 0 ; id < uB ; ++id) {
       int x = id % m_area.w();
       int y = id / m_area.w();
 
-      // Prevent generation of random values on the boundary.
-      // TODO: We should refine boundaries to only consider part of the
-      // border (like boundary on the left side, etc.).
-      if (!generateOnBoundaries &&
-          (x == 0 || x == m_area.w() - 1 || y == 0 || y == m_area.h() - 1))
-      {
-        continue;
+      // Prevent generation of random values on the boundary if needed.
+      if (boundary) {
+        if (x == 0 && m_orientation.isSet(borders::Direction::West)) {
+          continue;
+        }
+        if (x == m_area.w() - 1 && m_orientation.isSet(borders::Direction::East)) {
+          continue;
+        }
+
+        if (y == 0 && m_orientation.isSet(borders::Direction::South)) {
+          continue;
+        }
+        if (y == m_area.h() - 1 && m_orientation.isSet(borders::Direction::North)) {
+          continue;
+        }
       }
 
       State s = m_cells[id].randomize();
@@ -436,7 +446,7 @@ namespace cellulator {
 
     CellsQuadTreeNodeShPtr newRoot = std::shared_ptr<CellsQuadTreeNode>(
       new CellsQuadTreeNode(
-        world, root->m_ruleset, nullptr, Child::None, m_minSize
+        world, root->m_ruleset, nullptr, borders::Name::None, m_minSize
       )
     );
 
@@ -450,16 +460,16 @@ namespace cellulator {
     // nodes should be allocated.
     // Note also that the node are added to the root but their alive cells count
     // is kept for when the data has actually been allocated.
-    CellsQuadTreeNodeShPtr nw = createChild(Child::NorthWest, newRoot.get());
+    CellsQuadTreeNodeShPtr nw = createChild(borders::Name::NorthWest, newRoot.get());
     log("Creating north west with " + nw->m_area.toString());
 
-    CellsQuadTreeNodeShPtr ne = createChild(Child::NorthEast, newRoot.get());
+    CellsQuadTreeNodeShPtr ne = createChild(borders::Name::NorthEast, newRoot.get());
     log("Creating north east with " + ne->m_area.toString());
 
-    CellsQuadTreeNodeShPtr sw = createChild(Child::SouthWest, newRoot.get());
+    CellsQuadTreeNodeShPtr sw = createChild(borders::Name::SouthWest, newRoot.get());
     log("Creating south west with " + sw->m_area.toString());
 
-    CellsQuadTreeNodeShPtr se = createChild(Child::SouthEast, newRoot.get());
+    CellsQuadTreeNodeShPtr se = createChild(borders::Name::SouthEast, newRoot.get());
     log("Creating south east with " + se->m_area.toString());
 
     // Now determine what we need to do to populate the children nodes of the
@@ -467,24 +477,24 @@ namespace cellulator {
     // the children to their respective parents.
     if (!root->isLeaf()) {
       // Assign children of this root node to their new parent if any.
-      ChildrenMap::const_iterator it = root->m_children.find(Child::NorthWest);
+      ChildrenMap::const_iterator it = root->m_children.find(borders::Name::NorthWest);
       if (it != root->m_children.cend()) {
-        nw->attach(it->second, Child::SouthEast);
+        nw->attach(it->second, borders::Name::SouthEast);
       }
 
-      it = root->m_children.find(Child::NorthEast);
+      it = root->m_children.find(borders::Name::NorthEast);
       if (it != root->m_children.cend()) {
-        ne->attach(it->second, Child::SouthWest);
+        ne->attach(it->second, borders::Name::SouthWest);
       }
 
-      it = root->m_children.find(Child::SouthWest);
+      it = root->m_children.find(borders::Name::SouthWest);
       if (it != root->m_children.cend()) {
-        sw->attach(it->second, Child::NorthEast);
+        sw->attach(it->second, borders::Name::NorthEast);
       }
 
-      it = root->m_children.find(Child::SouthEast);
+      it = root->m_children.find(borders::Name::SouthEast);
       if (it != root->m_children.cend()) {
-        se->attach(it->second, Child::NorthWest);
+        se->attach(it->second, borders::Name::NorthWest);
       }
     }
     else {
@@ -613,10 +623,10 @@ namespace cellulator {
     }
 
     // Create children.
-    createChild(Child::NorthWest, this);
-    createChild(Child::NorthEast, this);
-    createChild(Child::SouthWest, this);
-    createChild(Child::SouthEast, this);
+    createChild(borders::Name::NorthWest, this);
+    createChild(borders::Name::NorthEast, this);
+    createChild(borders::Name::SouthWest, this);
+    createChild(borders::Name::SouthEast, this);
 
     // Split children nodes in case we need more than one split operation.
     for (ChildrenMap::const_iterator it = m_children.cbegin() ;
@@ -700,17 +710,17 @@ namespace cellulator {
     // this include creating the node if needed.
     utils::Boxi aoe(coord.x(), coord.y(), 2, 2);
 
-    utils::Boxi nw = getBoxForChild(m_area, Child::NorthWest);
-    ChildrenMap::const_iterator nwIt = m_children.find(Child::NorthWest);
+    utils::Boxi nw = getBoxForChild(m_area, borders::Name::NorthWest);
+    ChildrenMap::const_iterator nwIt = m_children.find(borders::Name::NorthWest);
 
-    utils::Boxi ne = getBoxForChild(m_area, Child::NorthEast);
-    ChildrenMap::const_iterator neIt = m_children.find(Child::NorthEast);
+    utils::Boxi ne = getBoxForChild(m_area, borders::Name::NorthEast);
+    ChildrenMap::const_iterator neIt = m_children.find(borders::Name::NorthEast);
 
-    utils::Boxi sw = getBoxForChild(m_area, Child::SouthWest);
-    ChildrenMap::const_iterator swIt = m_children.find(Child::SouthWest);
+    utils::Boxi sw = getBoxForChild(m_area, borders::Name::SouthWest);
+    ChildrenMap::const_iterator swIt = m_children.find(borders::Name::SouthWest);
 
-    utils::Boxi se = getBoxForChild(m_area, Child::SouthEast);
-    ChildrenMap::const_iterator seIt = m_children.find(Child::SouthEast);
+    utils::Boxi se = getBoxForChild(m_area, borders::Name::SouthEast);
+    ChildrenMap::const_iterator seIt = m_children.find(borders::Name::SouthEast);
 
     // Check whether the area of effect of the adjacency will impact the node.
     // If this is the case we either need to update the node directly if it
@@ -724,7 +734,7 @@ namespace cellulator {
       }
       else {
         // Create the node. 
-        CellsQuadTreeNodeShPtr c = createChild(Child::NorthWest, this);
+        CellsQuadTreeNodeShPtr c = createChild(borders::Name::NorthWest, this);
         log("Creating 2 north west with " + c->m_area.toString());
 
         child = c.get();
@@ -737,7 +747,7 @@ namespace cellulator {
       }
       else {
         // Create the node.
-        CellsQuadTreeNodeShPtr c = createChild(Child::NorthEast, this);
+        CellsQuadTreeNodeShPtr c = createChild(borders::Name::NorthEast, this);
         log("Creating 2 north east with " + c->m_area.toString());
 
         child = c.get();
@@ -750,7 +760,7 @@ namespace cellulator {
       }
       else {
         // Create the node.
-        CellsQuadTreeNodeShPtr c = createChild(Child::SouthWest, this);
+        CellsQuadTreeNodeShPtr c = createChild(borders::Name::SouthWest, this);
         log("Creating 2 south west with " + c->m_area.toString());
 
         child = c.get();
@@ -763,7 +773,7 @@ namespace cellulator {
       }
       else {
         // Create the node.
-        CellsQuadTreeNodeShPtr c = createChild(Child::SouthEast, this);
+        CellsQuadTreeNodeShPtr c = createChild(borders::Name::SouthEast, this);
         log("Creating 2 south east with " + c->m_area.toString());
 
         child = c.get();
@@ -811,21 +821,21 @@ namespace cellulator {
     // The cell is in one of the children: determine which one and either
     // call this method on it or indicate the the cell has not yet been
     // created.
-    Child orientation = Child::None;
+    borders::Name orientation = borders::Name::None;
     if (y < m_area.h() / 2) {
       if (x < m_area.w() / 2) {
-        orientation = Child::SouthWest;
+        orientation = borders::Name::SouthWest;
       }
       else {
-        orientation = Child::SouthEast;
+        orientation = borders::Name::SouthEast;
       }
     }
     else {
       if (x < m_area.w() / 2) {
-        orientation = Child::NorthWest;
+        orientation = borders::Name::NorthWest;
       }
       else {
-        orientation = Child::NorthEast;
+        orientation = borders::Name::NorthEast;
       }
     }
 

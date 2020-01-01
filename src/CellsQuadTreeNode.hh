@@ -8,6 +8,7 @@
 # include <maths_utils/Box.hh>
 # include "Cell.hh"
 # include "ColonyTile.hh"
+# include "CellsQuadTreeNode_border.hh"
 
 namespace cellulator {
 
@@ -145,48 +146,37 @@ namespace cellulator {
     private:
 
       /**
-       * @brief - Used to identify a child based on its location in the parent area.
-       */
-      enum class Child {
-        NorthWest,
-        NorthEast,
-        SouthWest,
-        SouthEast,
-        None
-      };
-
-      /**
        * @brief - Used to retrieve the bounding box for the children given the parent
-       *          area and its orientation. Note that in case the input bounding box
+       *          area and its direction. Note that in case the input bounding box
        *          is not even (any of the dimensions) the user will run into undefined
        *          behavior.
-       *          Note that providing an orientation of `None` will return the input
+       *          Note that providing an direction of `None` will return the input
        *          area without any modifications (this should not happen).
        * @param world - the area of the parent node. Note that the dimensions should be
        *                even for this method to work correctly.
-       * @param orientation - the orientation of the child to compute.
-       * @return - the area associated to the child with the specified orientation.
+       * @param direction - the direction of the child to compute.
+       * @return - the area associated to the child with the specified direction.
        */
       static
       utils::Boxi
       getBoxForChild(const utils::Boxi& world,
-                     const Child& orientation) noexcept;
+                     const borders::Name& direction) noexcept;
 
       /**
        * @brief - Perform the creation of a quadtree node with the specified parent and
-       *          orientation. The ruleset is derived from the parent along with the
+       *          direction. The ruleset is derived from the parent along with the
        *          required area and the initialization status (i.e. whether internal data
        *          should be created for the node).
        *          Note that this method is thus not suited to create root nodes. Failure
        *          to provide a valid node as `parent` will result in undefined behavior.
-       * @param orientation - the orientation of the child node to create.
+       * @param direction - the direction of the child node to create.
        * @param parent - the parent node of the child.
        * @return - the pointer to the created child (already parented and initialized) if
        *           the `parent` is valid or `null` if the `parent` is not valid.
        */
       static
       CellsQuadTreeNodeShPtr
-      createChild(const Child& orientation,
+      createChild(const borders::Name& direction,
                   CellsQuadTreeNode* parent) noexcept;
 
       /**
@@ -197,13 +187,13 @@ namespace cellulator {
        *          The node can be marked for initialization or not. This will create internal
        *          arrays containing cells and adjacency data (so usually because the node will
        *          be a leaf) or not if the node is meant to be an intermediary node.
-       *          Note that an orientation should be provided to indicate which role this node
+       *          Note that a direction should be provided to indicate which role this node
        *          has in the parent's children.
        * @param area - the area of the node.
        * @param ruleset - the set of rules to use to update the cells to
        *                  the next iteration.
        * @param parent - the parent node to this quadtree node.
-       * @param orientation - the role of this child within the parent's children.
+       * @param direction - the role of this child within the parent's children.
        * @param minSize - the minimum dimensions of any children node for
        *                  this tree. Will stop the subdivision process as
        *                  soon as the dimensions of a child reach this size.
@@ -211,7 +201,7 @@ namespace cellulator {
       CellsQuadTreeNode(const utils::Boxi& area,
                         const rules::Type& ruleset,
                         CellsQuadTreeNode* parent,
-                        const Child& orientation,
+                        const borders::Name& direction,
                         const utils::Sizei& minSize);
 
       /**
@@ -230,6 +220,15 @@ namespace cellulator {
       void
       initialize(const utils::Boxi& area,
                  const State& state);
+
+      /**
+       * @brief - Parse the `m_direction` field to extract a consistent `m_orientation`.
+       *          This method should be called upon initializing the node (usually in the
+       *          `initialize` method) and as soon as the direction changes. This usually
+       *          happens during a reparenting of the node.
+       */
+      void
+      assignOrientationFromDirection();
 
       /**
        * @brief - Used to split this node into sub-nodes until the node size reaches
@@ -262,16 +261,6 @@ namespace cellulator {
        */
       bool
       isBoundary() const noexcept;
-
-      /**
-       * @brief - Allows to determine whether a path which follows the general direction
-       *          indicated by `orientation` exists to reach this node from the root.
-       * @param orientation - the orientation to check.
-       * @return - `true` if a path following the general direction of `orientation`
-       *           exists from the root node.
-       */
-      bool
-      validFor(const Child& orientation) const noexcept;
 
       /**
        * @brief - Used to determine whether this node has at least one live cell in
@@ -367,39 +356,39 @@ namespace cellulator {
       evolveBoundaryElement(const utils::Vector2i& coord);
 
       /**
-       * @brief - Used to register this child as the `orientation` element for `this` node.
+       * @brief - Used to register this child as the `direction` element for `this` node.
        *          Internally calls the `attachTo` method to perform the needed operation in
        *          the `child` node.
        *          Checks are performed to guarantee the consistency of the operation.
        * @param child - the child to attach to `this` node.
-       * @param orientation - the orientation to assign to the child.
+       * @param direction - the direction to assign to the child.
        * @return - `true` if the child has successfully been attached and `false` otherwise.
        */
       bool
       attach(CellsQuadTreeNodeShPtr child,
-             const Child& orientation) noexcept;
+             const borders::Name& direction) noexcept;
 
       /**
-       * @brief - Used to attach this node to the specified parent with the provided orientation.
+       * @brief - Used to attach this node to the specified parent with the provided direction.
        *          Checks are performed to verify that the parent is valid and that it does not
        *          lead to erasing an existing node.
        *          Note that the child is also detached from its current parent if any.
        *          Note however that `this` is *not* inserted into the `parent->m_children` map.
        *          In order to do so one should call the `attach` method.
        * @param parent - the parent that this node should be attached to.
-       * @param orientation - the desired orientation for this node within the parent node.
+       * @param direction - the desired direction for this node within the parent node.
        * @return - `true` if this node was successfully attached to the parent node.
        */
       bool
       attachTo(CellsQuadTreeNode* parent,
-               const Child& orientation) noexcept;
+               const borders::Name& direction) noexcept;
 
     private:
 
       /**
        * @brief - Convenience define to refer to the map of children.
        */
-      using ChildrenMap = std::unordered_map<Child, CellsQuadTreeNodeShPtr>;
+      using ChildrenMap = std::unordered_map<borders::Name, CellsQuadTreeNodeShPtr>;
 
       /**
        * @brief - The area represented by this quad tree node. The area is expressed
@@ -464,12 +453,27 @@ namespace cellulator {
       CellsQuadTreeNode* m_parent;
 
       /**
-       * @brief - Used to hold the orientation of this child relatively to its parent.
+       * @brief - Used to hold the direction of this child relatively to its parent.
        *          This indicates under which key this node can be found in the parent
-       *          quadtree node. If the node has no parent, the orientation is set to
+       *          quadtree node. If the node has no parent, the direction is set to
        *          `None`.
        */
-      Child m_orientation;
+      borders::Name m_direction;
+
+      /**
+       * @brief - Used to hold the continuous orientation of this node from the root node.
+       *          Typically the the root starts with a full flag and then children are
+       *          assigned an orientation based on their direction in the parent. The first
+       *          `SouthWest` child will have both `South` and `West` flag set but `North`
+       *          and `East` removed in this attribute. Its own `SouthWest` child as well.
+       *          Its `NorthWest` child will only have the `West` bit and so on.
+       *          This allows for very easy checks of whether a node is a border by just
+       *          verifying the internal orientation still has the right bit set: if this
+       *          is the case it means that it exists a continuous path in this direction
+       *          from the root node and thus that it is a boundary. Otherwise it means
+       *          that at some point we go away from the boundary.
+       */
+      Border m_orientation;
 
       /**
        * @brief - Contains the children of this node. This vector can either be empty
