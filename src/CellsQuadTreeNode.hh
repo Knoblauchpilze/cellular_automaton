@@ -56,9 +56,10 @@ namespace cellulator {
        *          case the node is a boundary, we will not assign random values
        *          to the exterior of the node, as to keep some buffer space in
        *          the node for cells to grow.
+       * @param area - the area to randomize.
        */
       void
-      randomize();
+      randomize(const utils::Boxi& area);
 
       /**
        * @brief - Used to retrieve the cells from the area described in input into
@@ -393,6 +394,19 @@ namespace cellulator {
       bool
       attachTo(CellsQuadTreeNode* parent,
                const borders::Name& direction) noexcept;
+
+      /**
+       * @brief - Used to allocate the siblings of the specified child with dead cells. This is
+       *          usually associated with an `attach` operation where we want to make sure that
+       *          the evolution of the colony will be possible in the best conditions: to do so
+       *          we need to update the structure of the quadtree to allow the fetching of the
+       *          cells close to the ones defined by `child`.
+       *          This method will transmit the call to the required parent.
+       *          Note that if the `child` is `null` undefined behavior will arise.
+       * @param child - the child for which siblings should be created.
+       */
+      void
+      createSiblings(CellsQuadTreeNode* child);
 
     private:
 

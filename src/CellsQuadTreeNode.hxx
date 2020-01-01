@@ -117,6 +117,7 @@ namespace cellulator {
     // (i.e. if we can't subdivide this node any further).
     if (m_area.w() <= m_minSize.w() && m_area.h() <= m_minSize.h()) {
       // Create the internal array of cells.
+      log("Allocating child " + m_area.toString(), utils::Level::Info);
       m_cells.resize(m_area.area(), Cell(state, m_ruleset));
 
       // Update the adjacency elements.
@@ -308,6 +309,76 @@ namespace cellulator {
     assignOrientationFromDirection();
 
     return true;
+  }
+
+  inline
+  void
+  CellsQuadTreeNode::createSiblings(CellsQuadTreeNode* child) {
+    // Speed up.
+    if (isLeaf()) {
+      return;
+    }
+    if (!m_area.contains(child->m_area)) {
+      return;
+    }
+
+    // Check whether we could find the input node as a child of this
+    // element. If this is the case, we need to create the siblings
+    // of it. Otherwise we need to transmit the data to the child
+    // containing it.
+    CellsQuadTreeNode* n = nullptr;
+    ChildrenMap::const_iterator it = m_children.cbegin();
+
+    while (it != m_children.cend() && it->second.get() != child) {
+      // Save the child containing the box of the input element.
+      if (it->second->m_area.contains(child->m_area)) {
+        n = it->second.get();
+      }
+
+      ++it;
+    }
+
+    // Check whether we could find the input node in the children
+    // here.
+    if (it == m_children.cend()) {
+      // Transmit to the best child if any.
+      if (n == nullptr) {
+        log(
+          std::string("Could not create sibling for ") + child->m_area.toString() +
+          ", no child spans this area in " + m_area.toString(),
+          utils::Level::Error
+        );
+
+        return;
+      }
+
+      n->createSiblings(child);
+
+      return;
+    }
+
+    // The child is a direct child of this node. We can allocate all the
+    // missing nodes. The allocation in itself will be handled directly
+    // by checking the size of the node: if `child` is a leaf node (which
+    // should be the case) the allocation will occur (see the `initialize
+    // method for further details).
+    bool hasNW = m_children.find(borders::Name::NorthWest) != m_children.cend();
+    bool hasNE = m_children.find(borders::Name::NorthEast) != m_children.cend();
+    bool hasSW = m_children.find(borders::Name::SouthWest) != m_children.cend();
+    bool hasSE = m_children.find(borders::Name::SouthEast) != m_children.cend();
+
+    if (child->m_direction != borders::Name::NorthWest && !hasNW) {
+      createChild(borders::Name::NorthWest, this);
+    }
+    if (child->m_direction != borders::Name::NorthEast && !hasNE) {
+      createChild(borders::Name::NorthEast, this);
+    }
+    if (child->m_direction != borders::Name::SouthWest && !hasSW) {
+      createChild(borders::Name::SouthWest, this);
+    }
+    if (child->m_direction != borders::Name::SouthEast && !hasSE) {
+      createChild(borders::Name::SouthEast, this);
+    }
   }
 
 }

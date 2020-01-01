@@ -29,7 +29,7 @@ namespace cellulator {
     // Protect from concurrent accesses.
     Guard guard(m_propsLocker);
 
-    m_root->randomize();
+    m_root->randomize(m_liveArea);
   }
 
   inline
