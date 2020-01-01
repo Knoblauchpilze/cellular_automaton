@@ -717,6 +717,12 @@ namespace cellulator {
     // Note that in case we hit a boundary we will not attempt to update the
     // siblings: instead we will assume that the process will somehow call the
     // method on the sibling elsewhere.
+    // TODO: Imagine the situation of a colony which grows to reach 32x32 and
+    // then one of the internal node (say SE>NW) gros until one of the cell
+    // needs to update the SE>SW. We will allocate the SE>SW and then it will
+    // be a leaf no matter its size (because its children will not be allocated
+    // and thus we will use this check and fail to access the requested cell in
+    // the `m_adjacency` and thus segfault).
     if (isLeaf()) {
       // Convert the coord to local array coordinates.
       int lXMin = (coord.x() - 1) - m_area.getLeftBound();
