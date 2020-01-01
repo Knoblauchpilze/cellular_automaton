@@ -23,6 +23,7 @@
 // TODO: Add brushes.
 // TODO: Add grid.
 // TODO: Fix bugs while evolving colony.
+// TODO: Issue with fit to content.
 
 int main(int /*argc*/, char** /*argv*/) {
   // Create the logger.
