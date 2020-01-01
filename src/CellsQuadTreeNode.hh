@@ -2,6 +2,7 @@
 # define   CELLS_QUAD_TREE_NODE_HH
 
 # include <memory>
+# include <atomic>
 # include <vector>
 # include <unordered_map>
 # include <core_utils/CoreObject.hh>
@@ -306,6 +307,13 @@ namespace cellulator {
        *          Note that the `m_nextAdjacency` will be updated and will not be persisted
        *          to the `m_adjacency` until the `step` method is called: this only holds
        *          as long as the `makeCurrent` boolean is `false`.
+       *          This method can either be called by the parent node to notify children
+       *          nodes of a modification of their adjacency of by the child on the parent
+       *          so that it can report modifications to siblings. In order to avoid stack
+       *          overflow by infinite recursion on a child calling the method on its parent
+       *          which will then transmit it back to the child we provide a `ignore` param
+       *          which (if set) allows the parent to filter the transmission of the event
+       *          to the corresponding child.
        *          Note also that if the coordinates are on the boundaries, this method does
        *          not try to update the contiguous children, we assume that another process
        *          will handle it.
@@ -313,11 +321,14 @@ namespace cellulator {
        * @param alive - `true` if the cell is alive and `false` otherwise.
        * @param makeCurrent - `true` if the adjacency should be updated right away (i.e. if
        *                      the `m_adjacency` array is to be modified).
+       * @param ignore - if not `null` corresponds to a child which will be ignored when
+       *                 transmitting the request to children.
        */
       void
       updateAdjacencyFor(const utils::Vector2i& coord,
                          bool alive,
-                         bool makeCurrent = false);
+                         bool makeCurrent = false,
+                         CellsQuadTreeNode* ignore = nullptr);
 
       /**
        * @brief - Used to retrieve the cell at coordinates `coord`. In case the cell does not

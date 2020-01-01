@@ -331,9 +331,9 @@ namespace cellulator {
     // cells: this allow that we will always have some extra buffer space
     // between the first live cell and the boundaries of the colony.
 
-    // Handle exterior boundaries: top and bottom rows then left and right
-    // rows.
     if (isRoot()) {
+      // Handle exterior boundaries: top and bottom rows then left and right
+      // rows.
       unsigned countB = 0u, countU = 0u, countL = 0u, countR = 0u;
 
       utils::Vector2i coord1(m_area.getLeftBound(), m_area.getBottomBound());
@@ -359,7 +359,6 @@ namespace cellulator {
       coord2.y() = m_area.getBottomBound() + 1;
 
       int yMax = m_area.h() - 1;
-
       for (int y = 1 ; y < yMax ; ++y) {
         if (evolveBoundaryElement(coord1)) {
           ++countL;
@@ -388,8 +387,48 @@ namespace cellulator {
       return;
     }
 
+    // Handle interior boundaries: this can be split up into the vertical
+    // component and the horizontal component. Note that we don't include
+    // the first element of each part because it will be handled by the
+    // parent node (as it requires knowlegds of the boundaries of the grand
+    // parent of this node so out of reach).
+    // Not that in case the dimensions of the area do not allow for any
+    // interior we don't need to go further.
+
+    utils::Vector2i coord1(m_area.getLeftBound() + 1, m_area.y() - 1);
+    utils::Vector2i coord2(m_area.getLeftBound() + 1, m_area.y());
+
+    if (m_area.w() >= 8 && m_area.h() >= 4) {
+      int xMax = m_area.w() - 1;
+      for (int x = 1 ; x < xMax ; ++x) {
+        evolveBoundaryElement(coord1);
+        evolveBoundaryElement(coord2);
+
+        ++coord1.x();
+        ++coord2.x();
+      }
+    }
+
+    if (m_area.w() >= 4 && m_area.h() >= 8) {
+      coord1.x() = m_area.x() - 1;
+      coord1.y() = m_area.getBottomBound() + 1;
+      coord2.x() = m_area.x();
+      coord2.y() = m_area.getBottomBound() + 1;
+
+      int yMax = m_area.h() - 1;
+      for (int y = 1 ; y < yMax ; ++y) {
+        // Account for cells which are both in the horizontal and vertical parts.
+        if (coord1.y() != 0 && coord1.y() != -1) {
+          evolveBoundaryElement(coord1);
+          evolveBoundaryElement(coord2);
+        }
+
+        ++coord1.y();
+        ++coord2.y();
+      }
+    }
+
     // TODO: Implementation.
-    log("Should handle boundaries for node", utils::Level::Warning);
   }
 
   CellsQuadTreeNodeShPtr
@@ -481,6 +520,9 @@ namespace cellulator {
     // Now determine what we need to do to populate the children nodes of the
     // `newRoot`. In case the root has a depth greater than `1` we want to copy
     // the children to their respective parents.
+    // TODO: In case we're creating some more nodes, we should probably also try
+    // to create the relevant children as needing to create a child probably means
+    // that some cells will become alive there in the next iteration.
     if (!root->isLeaf()) {
       // Assign children of this root node to their new parent if any.
       ChildrenMap::const_iterator it = root->m_children.find(borders::Name::NorthWest);
@@ -649,7 +691,8 @@ namespace cellulator {
   void
   CellsQuadTreeNode::updateAdjacencyFor(const utils::Vector2i& coord,
                                         bool alive,
-                                        bool makeCurrent)
+                                        bool makeCurrent,
+                                        CellsQuadTreeNode* ignore)
   {
     // To update the adjacency we need to update the corresponding entries in
     // the `m_nextAdjacency` array. This can either mean updating the internal
@@ -708,6 +751,13 @@ namespace cellulator {
         }
       }
 
+      // Transmit to the parent if any: indeed we need to propagate
+      // modifications of the adjacency to siblings in case we are
+      // updating the adjacency of a boundary cell.
+      if (!isRoot() && m_parent != ignore) {
+        m_parent->updateAdjacencyFor(coord, alive, makeCurrent, this);
+      }
+
       return;
     }
 
@@ -732,62 +782,65 @@ namespace cellulator {
     // If this is the case we either need to update the node directly if it
     // already exists or create it (as we are sure that we will have an alive
     // neighbor for one of the cell of the node).
-    CellsQuadTreeNode* child = nullptr;
-
-    if (nw.intersects(aoe)) {
+    if (nw.intersectsBottomLeft(aoe)) {
       if (nwIt != m_children.cend()) {
-        child = nwIt->second.get();
+        if (nwIt->second.get() != ignore) {
+          nwIt->second->updateAdjacencyFor(coord, alive, makeCurrent, this);
+        }
       }
       else {
-        // Create the node. 
+        // Create the node.
         CellsQuadTreeNodeShPtr c = createChild(borders::Name::NorthWest, this);
-        log("Creating 2 north west with " + c->m_area.toString());
+        log("Creating 2 north west with " + c->m_area.toString() + " from " + coord.toString());
 
-        child = c.get();
+        c->updateAdjacencyFor(coord, alive, makeCurrent, this);
       }
     }
 
-    if (ne.intersects(aoe)) {
+    if (ne.intersectsBottomLeft(aoe)) {
       if (neIt != m_children.cend()) {
-        child = neIt->second.get();
+        if (neIt->second.get() != ignore) {
+          neIt->second->updateAdjacencyFor(coord, alive, makeCurrent, this);
+        }
       }
       else {
         // Create the node.
         CellsQuadTreeNodeShPtr c = createChild(borders::Name::NorthEast, this);
-        log("Creating 2 north east with " + c->m_area.toString());
+        log("Creating 2 north east with " + c->m_area.toString() + " from " + coord.toString());
 
-        child = c.get();
+        c->updateAdjacencyFor(coord, alive, makeCurrent, this);
       }
     }
 
-    if (sw.intersects(aoe)) {
+    if (sw.intersectsBottomLeft(aoe)) {
       if (swIt != m_children.cend()) {
-        child = swIt->second.get();
+        if (swIt->second.get() != ignore) {
+          swIt->second->updateAdjacencyFor(coord, alive, makeCurrent, this);
+        }
       }
       else {
         // Create the node.
         CellsQuadTreeNodeShPtr c = createChild(borders::Name::SouthWest, this);
-        log("Creating 2 south west with " + c->m_area.toString());
+        log("Creating 2 south west with " + c->m_area.toString() + " from " + coord.toString());
 
-        child = c.get();
+        c->updateAdjacencyFor(coord, alive, makeCurrent, this);
       }
     }
 
-    if (se.intersects(aoe)) {
+    if (se.intersectsBottomLeft(aoe)) {
       if (seIt != m_children.cend()) {
-        child = seIt->second.get();
+        if (seIt->second.get() != ignore) {
+          seIt->second->updateAdjacencyFor(coord, alive, makeCurrent, this);
+        }
       }
       else {
         // Create the node.
         CellsQuadTreeNodeShPtr c = createChild(borders::Name::SouthEast, this);
-        log("Creating 2 south east with " + c->m_area.toString());
+        log("Creating 2 south east with " + c->m_area.toString() + " from " + coord.toString());
 
-        child = c.get();
+        c->updateAdjacencyFor(coord, alive, makeCurrent, this);
       }
     }
-
-    // Update the adjacency on the relevant node.
-    child->updateAdjacencyFor(coord, alive, makeCurrent);
   }
 
   Cell*
@@ -895,7 +948,7 @@ namespace cellulator {
           );
         }
 
-        alive = s == State::Alive || s == State::Newborn;
+        alive = (s == State::Alive || s == State::Newborn);
         updateAdjacencyFor(coord, alive);
         log("Should create additional node to contain cell " + coord.toString());
         // TODO: Update the cell itself: we need to copy the `c` into the created data.
@@ -904,7 +957,9 @@ namespace cellulator {
     else {
       // The cell already exists, evolve it.
       State s = c->update(neighbors);
-      alive = s == State::Alive || s == State::Newborn;
+      alive = (s == State::Alive || s == State::Newborn);
+
+      // log("Updating adjacency for " + coord.toString() + " from " + std::to_string(neighbors) + " with status " + std::to_string(alive));
       updateAdjacencyFor(coord, alive);
     }
 
