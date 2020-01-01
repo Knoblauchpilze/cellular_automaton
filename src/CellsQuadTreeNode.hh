@@ -87,6 +87,13 @@ namespace cellulator {
       getAliveCellsCount() const noexcept;
 
       /**
+       * @brief - Similar to `getAliveCellsCount` but returns the number of dying cells.
+       * @return - the number of dying cells in this node.
+       */
+      unsigned
+      getDyingCellsCount() const noexcept;
+
+      /**
        * @brief - Used to register the tiles needed to recompute the cells contained
        *          by this node or its children. Each needed tile is added to the input
        *          provided container. The tiles already contained in the vector are
@@ -283,6 +290,17 @@ namespace cellulator {
       isDead() const noexcept;
 
       /**
+       * @brief - Return `true` if the node at least contains a dying cell. It is
+       *          a bit weaker than the `isDead` assumption but can be used to be
+       *          able to determine whether there's anything to display in this
+       *          node (as we're representing visually dying cells).
+       * @return -  `true` if the node is not composed only of `Dead` cells but at
+       *            least include a single `Dying` cell.
+       */
+      bool
+      isDying() const noexcept;
+
+      /**
        * @brief - Used to colletc the boundaries leaves nodes that are children of
        *          this node's hierarchy. This include this node if it matches (i.e.
        *          if it is a leaf) or all the matching children.
@@ -470,6 +488,14 @@ namespace cellulator {
        *          This count is updated upon each evolution of the colony.
        */
       unsigned m_aliveCount;
+
+      /**
+       * @brief - Describe the number of dying cells in this node. Mostly used for display
+       *          purposes as we also represent a dying cell with some information so we
+       *          don't want to consider the node completely `dead` if there are still some
+       *          dying cells into it.
+       */
+      unsigned m_dyingCount;
 
       /**
        * @brief - A reference to the parent noe of this quadtree element. May be `null`

@@ -22,6 +22,9 @@ namespace cellulator {
   Colony::fetchCells(std::vector<State>& cells,
                      const utils::Boxf& area)
   {
+    // Protect from concurrent accesses.
+    Guard guard(m_propsLocker);
+
     return m_cells->fetchCells(cells, area);
   }
 
