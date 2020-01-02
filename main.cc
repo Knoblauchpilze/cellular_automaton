@@ -23,6 +23,7 @@
 // TODO: Add brushes.
 // TODO: Add grid.
 // TODO: Fix bugs while evolving colony.
+// TODO: Connect the stop button to untoggle the start simulation button0
 
 int main(int /*argc*/, char** /*argv*/) {
   // Create the logger.
