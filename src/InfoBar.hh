@@ -1,14 +1,15 @@
-#ifndef    STATUS_BAR_HH
-# define   STATUS_BAR_HH
+#ifndef    INFO_BAR_HH
+# define   INFO_BAR_HH
 
 # include <sdl_core/SdlWidget.hh>
 # include <maths_utils/Box.hh>
 # include <maths_utils/Vector2.hh>
 # include <sdl_graphic/LabelWidget.hh>
+# include <sdl_graphic/Button.hh>
 
 namespace cellulator {
 
-  class StatusBar: public sdl::core::SdlWidget {
+  class InfoBar: public sdl::core::SdlWidget {
     public:
 
       /**
@@ -20,10 +21,10 @@ namespace cellulator {
        * @param hint - the size hint for this widget.
        * @param parent - the parent of this widget.
        */
-      StatusBar(const utils::Sizef& hint = utils::Sizef(),
-                sdl::core::SdlWidget* parent = nullptr);
+      InfoBar(const utils::Sizef& hint = utils::Sizef(),
+              sdl::core::SdlWidget* parent = nullptr);
 
-      ~StatusBar() = default;
+      ~InfoBar() = default;
 
       /**
        * @brief - Used to receive notification about a generation being computed. This
@@ -40,6 +41,17 @@ namespace cellulator {
        */
       void
       onSelectedCellChanged(utils::Vector2i coords);
+
+      /**
+       * @brief - Used to retrive the grid display button registered in this info bar. This
+       *          method is only meant as a way to connect elements to the `onClick` signal
+       *          of this button, lacking of a better way.
+       *          The method may raise an error in case the grid display button cannot be
+       *          found.
+       * @return - a reference to the grid display button associated to this bar.
+       */
+      sdl::graphic::Button&
+      getDisplayGridButton();
 
     protected:
 
@@ -110,6 +122,16 @@ namespace cellulator {
       getAliveCellsLabelName() noexcept;
 
       /**
+       * @brief - Used to retrieve the default name to associate to the button
+       *          controlling whether the grid is displayed.
+       * @return - a string that should be used to provide consistent naming for
+       *           the grid display button.
+       */
+      static
+      const char*
+      getDisplayGridButtonName() noexcept;
+
+      /**
        * @brief - Used to build the content of this widget so that it can be
        *          readily displayed.
        */
@@ -159,6 +181,6 @@ namespace cellulator {
 
 }
 
-# include "StatusBar.hxx"
+# include "InfoBar.hxx"
 
-#endif    /* STATUS_BAR_HH */
+#endif    /* INFO_BAR_HH */

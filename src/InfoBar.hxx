@@ -1,13 +1,13 @@
-#ifndef    STATUS_BAR_HXX
-# define   STATUS_BAR_HXX
+#ifndef    INFO_BAR_HXX
+# define   INFO_BAR_HXX
 
-# include "StatusBar.hh"
+# include "InfoBar.hh"
 
 namespace cellulator {
 
   inline
   void
-  StatusBar::onGenerationComputed(unsigned generation) {
+  InfoBar::onGenerationComputed(unsigned generation) {
     // Protect from concurrent accesses.
     Guard guard(m_propsLocker);
 
@@ -26,7 +26,7 @@ namespace cellulator {
 
   inline
   void
-  StatusBar::onSelectedCellChanged(utils::Vector2i coords) {
+  InfoBar::onSelectedCellChanged(utils::Vector2i coords) {
     // Protect from concurrent accesses.
     Guard guard(m_propsLocker);
 
@@ -47,64 +47,76 @@ namespace cellulator {
   }
 
   inline
+  sdl::graphic::Button&
+  InfoBar::getDisplayGridButton() {
+    return *getChildAs<sdl::graphic::Button>(getDisplayGridButtonName());
+  }
+
+  inline
   float
-  StatusBar::getStatusMaxHeight() noexcept {
+  InfoBar::getStatusMaxHeight() noexcept {
     return 30.0f;
   }
 
   inline
   const char*
-  StatusBar::getInfoLabelFont() noexcept {
+  InfoBar::getInfoLabelFont() noexcept {
     return "data/fonts/Goodtime.ttf";
   }
 
   inline
   float
-  StatusBar::getGlobalMargins() noexcept {
+  InfoBar::getGlobalMargins() noexcept {
     return 2.0f;
   }
 
   inline
   float
-  StatusBar::getComponentMargins() noexcept {
+  InfoBar::getComponentMargins() noexcept {
     return 7.0f;
   }
 
   inline
   const char*
-  StatusBar::getMouseCoordsLabelName() noexcept {
+  InfoBar::getMouseCoordsLabelName() noexcept {
     return "mouse_coords_label";
   }
 
   inline
   const char*
-  StatusBar::getGenerationLabelName() noexcept {
+  InfoBar::getGenerationLabelName() noexcept {
     return "generation_label";
   }
 
   inline
   const char*
-  StatusBar::getAliveCellsLabelName() noexcept {
+  InfoBar::getAliveCellsLabelName() noexcept {
     return "alive_cells_label";
   }
 
   inline
+  const char*
+  InfoBar::getDisplayGridButtonName() noexcept {
+    return "grid_display_button";
+  }
+
+  inline
   sdl::graphic::LabelWidget*
-  StatusBar::getMouseCoordsLabel() {
+  InfoBar::getMouseCoordsLabel() {
     return getChildAs<sdl::graphic::LabelWidget>(getMouseCoordsLabelName());
   }
 
   inline
   sdl::graphic::LabelWidget*
-  StatusBar::getGenerationLabel() {
+  InfoBar::getGenerationLabel() {
     return getChildAs<sdl::graphic::LabelWidget>(getGenerationLabelName());
   }
 
   sdl::graphic::LabelWidget*
-  StatusBar::getAliveCellsLabel() {
+  InfoBar::getAliveCellsLabel() {
     return getChildAs<sdl::graphic::LabelWidget>(getAliveCellsLabelName());
   }
 
 }
 
-#endif    /* STATUS_BAR_HXX */
+#endif    /* INFO_BAR_HXX */

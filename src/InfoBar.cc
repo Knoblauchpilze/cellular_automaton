@@ -1,12 +1,12 @@
 
-# include "StatusBar.hh"
+# include "InfoBar.hh"
 # include <sdl_graphic/LinearLayout.hh>
 
 namespace cellulator {
 
-  StatusBar::StatusBar(const utils::Sizef& hint,
-                       sdl::core::SdlWidget* parent):
-    sdl::core::SdlWidget(std::string("status_bar"),
+  InfoBar::InfoBar(const utils::Sizef& hint,
+                   sdl::core::SdlWidget* parent):
+    sdl::core::SdlWidget(std::string("info_bar"),
                          hint,
                          parent),
 
@@ -16,11 +16,11 @@ namespace cellulator {
   }
 
   void
-  StatusBar::build() {
+  InfoBar::build() {
     // Set a focus policy which do not allow to hover or click on this widget.
     setFocusPolicy(sdl::core::FocusPolicy());
 
-    // The status bar is composed of a display allowing to display the current
+    // This info bar is composed of a display allowing to display the current
     // coordinates of the mouse cursor in real world frame along with a label
     // displaying the total rendering area.
     sdl::graphic::LinearLayoutShPtr layout = std::make_shared<sdl::graphic::LinearLayout>(
@@ -46,7 +46,7 @@ namespace cellulator {
     );
     if (mouseCoords == nullptr) {
       error(
-        std::string("Could not create status bar"),
+        std::string("Could not create info bar"),
         std::string("Mouse coordinates label not allocated")
       );
     }
@@ -63,7 +63,7 @@ namespace cellulator {
     );
     if (generation == nullptr) {
       error(
-        std::string("Could not create status bar"),
+        std::string("Could not create info bar"),
         std::string("Generation label not allocated")
       );
     }
@@ -80,8 +80,27 @@ namespace cellulator {
     );
     if (aliveCells == nullptr) {
       error(
-        std::string("Could not create status bar"),
+        std::string("Could not create info bar"),
         std::string("Alive cells label not allocated")
+      );
+    }
+
+    sdl::graphic::Button* gridDisplay = new sdl::graphic::Button(
+      getDisplayGridButtonName(),
+      std::string("Grid"),
+      std::string(),
+      getInfoLabelFont(),
+      sdl::graphic::button::Type::Toggle,
+      15u,
+      this,
+      2.0f,
+      utils::Sizef(),
+      sdl::core::engine::Color::NamedColor::Gray
+    );
+    if (gridDisplay == nullptr) {
+      error(
+        std::string("Could nto create info bar"),
+        std::string("Display grid button not allocated")
       );
     }
 
@@ -90,10 +109,13 @@ namespace cellulator {
     generation->setFocusPolicy(sdl::core::FocusPolicy());
     aliveCells->setFocusPolicy(sdl::core::FocusPolicy());
 
+    gridDisplay->setMaxSize(utils::Sizef(60.0f, 60.0f));
+
     // Add each element to the layout.
     layout->addItem(mouseCoords);
     layout->addItem(generation);
     layout->addItem(aliveCells);
+    layout->addItem(gridDisplay);
   }
 
 }
