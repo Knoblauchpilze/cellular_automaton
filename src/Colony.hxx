@@ -8,8 +8,7 @@ namespace cellulator {
   inline
   utils::Boxi
   Colony::getArea() noexcept {
-    // TODO: Restore that.
-    return utils::Boxi();
+    return m_cells->getLiveArea();
   }
 
   inline
@@ -17,9 +16,6 @@ namespace cellulator {
   Colony::fetchCells(std::vector<State>& cells,
                      const utils::Boxf& area)
   {
-    // Protect from concurrent accesses.
-    Guard guard(m_propsLocker);
-
     // TODO: Restore that.
     utils::Boxi iArea(
       static_cast<int>(std::round(area.x())),
@@ -32,6 +28,12 @@ namespace cellulator {
     std::fill(cells.begin(), cells.end(), State::Dead);
 
     return iArea;
+  }
+
+  inline
+  std::pair<State, int>
+  Colony::getCellState(const utils::Vector2i& coord) {
+    return m_cells->getCellStatus(coord);
   }
 
   inline

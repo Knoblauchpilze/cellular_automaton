@@ -235,15 +235,19 @@ namespace cellulator {
       getCellsDims();
 
       /**
-       * @brief - Used to convert the input position expressed in global coordinate frame
-       *          into a position expressed in real world coordinate. This will produce
-       *          the return value in cells coordinate frame.
+       * @brief - Used to convert the input position expressed in a coordinate frame
+       *          specified by the `global` boolean into a position expressed in real
+       *          world coordinate. This will produce the return value in cells coord
+       *          frame.
        *          Note that this method assumes that the locker is already acquired.
-       * @param global - the global coordinate frame position to convert.
+       * @param pos - the position to convert.
+       * @param global - `true` if the position is expressed in global coordinate frame
+       *                 and `false` if it expressed in local coordinate frame.
        * @return - the corresponding position in real world coordinate frame.
        */
       utils::Vector2f
-      convertGlobalToRealWorld(const utils::Vector2f& global);
+      convertPosToRealWorld(const utils::Vector2f& pos,
+                            bool global);
 
       /**
        * @brief - Internal slot used to handle the notification whenever a new generation
@@ -283,6 +287,22 @@ namespace cellulator {
       zoom(const utils::Vector2f& center,
            float factor = 2.0f);
 
+      /**
+       * @brief - Used to perform the notification of the cell's data pointed at assuming
+       *          the mouse is at `pos` coordinates. The position can either be expressed
+       *          in local or global coordinate frame as specified by the `global` input
+       *          boolren.
+       *          This method fetches the cell's data and notify the listeners through the
+       *          dedicated signals.
+       *          Note that we assume that the lock for this object is already acquired.
+       * @param pos - the position pointed to by the mouse.
+       * @param global - `true` if the position is expressed in global coordinate frame and
+       *                 `false` if it is expresssed in local coordinate frame.
+       */
+      void
+      notifyCoordinatePointedTo(const utils::Vector2f& pos,
+                                bool global);
+
     private:
 
       /**
@@ -321,10 +341,16 @@ namespace cellulator {
       bool m_colonyRendered;
 
       /**
-       * @brief - The colony displayed in the renderer. Note that we only keep a wrapper on
-       *          said colony which allows to execute its evolution in a transparent way.
+       * @brief - The colony displayed in the renderer. Note that we still keep a reference
+       *          on the colony itself to be able to access behaviors which are not related
+       *          to the evolution of the colony.
        */
-      ColonySchedulerShPtr m_colony;
+      ColonySchedulerShPtr m_scheduler;
+
+      /**
+       * @brief - The colony itself.
+       */
+      ColonyShPtr m_colony;
 
       /**
        * @brief - Contains the index of the signal registered on the colony to be notified
@@ -333,6 +359,19 @@ namespace cellulator {
        *          and be ready to attach a new one if needed.
        */
       int m_generationComputedSignalID;
+
+      /**
+       * @brief - Used to keep track internally of the last known position of the mouse inside
+       *          this widget. Note that we have to use this in association with the base class
+       *          method `isMouseInside` as we don't know using this value only whether the
+       *          mouse is *still* inside the widget.
+       *          The main reason of this attribute is to be able to update the cell's data to
+       *          display when the user scroll the colony using the keyboard. In this case we
+       *          want to pass on the information about the mouse position to the scrolling
+       *          method which will handle the notification of external listeners.
+       *          This position is saved in global coordinate frame.
+       */
+      utils::Vector2f m_lastKnownMousePos;
 
     public:
 

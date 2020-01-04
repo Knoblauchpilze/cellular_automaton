@@ -60,9 +60,6 @@ namespace cellulator {
 
   std::vector<ColonyTileShPtr>
   Colony::generateSchedule() {
-    // Protect from concurrent accesses.
-    Guard guard(m_propsLocker);
-
     std::vector<ColonyTileShPtr> tiles;
     m_cells->generateSchedule(tiles);
 

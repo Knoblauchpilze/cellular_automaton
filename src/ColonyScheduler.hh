@@ -32,33 +32,6 @@ namespace cellulator {
       ~ColonyScheduler();
 
       /**
-       * @brief - Wrapper to the corresponding method from the `Colony` class. This
-       *          allows to query the current size of the colony based on the extreme
-       *          position reached by cells.
-       *          The size is expressed in terms of cells.
-       * @return - the living area occupied by the colony.
-       */
-      utils::Boxi
-      getArea() noexcept;
-
-      /**
-       * @brief - Used to retrieve the cells from the area described in input into
-       *          the specified vector. Note that any existing data in the vector
-       *          will be erased. Also the area is clamped to match the dimensions
-       *          of the colony if needed. The returned area describes the actual
-       *          content of the `cells` vector.
-       *          The input dimensions are clamped to the lowest which means that
-       *          for example if the box spans `x: 50, w: 25`, the actual cells
-       *          will be `[37; 62]`.
-       * @param cells - output vector where cells will be saved.
-       * @param area - the area for which cells should be retrieved.
-       * @return - the actual box of the cells returned in the `cells` vector.
-       */
-      utils::Boxi
-      fetchCells(std::vector<State>& cells,
-                 const utils::Boxf& area);
-
-      /**
        * @brief - Attempt to start the execution of the colony. Note that if the
        *          colony is already running, nothing happens.
        */

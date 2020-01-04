@@ -18,8 +18,11 @@ namespace cellulator {
     m_settings(),
     m_colonyRendered(true),
 
-    m_colony(std::make_shared<ColonyScheduler>(colony)),
+    m_scheduler(std::make_shared<ColonyScheduler>(colony)),
+    m_colony(colony),
     m_generationComputedSignalID(utils::Signal<unsigned>::NoID),
+
+    m_lastKnownMousePos(),
 
     onGenerationComputed(),
     onCoordChanged()
@@ -28,6 +31,12 @@ namespace cellulator {
 
     // Check consistency.
     if (m_colony == nullptr) {
+      error(
+        std::string("Could not create renderer"),
+        std::string("Invalid null colony")
+      );
+    }
+    if (m_scheduler == nullptr) {
       error(
         std::string("Could not create renderer"),
         std::string("Invalid null colony scheduler")
@@ -50,10 +59,10 @@ namespace cellulator {
   }
 
   bool
-  ColonyRenderer::handleContentScrolling(const utils::Vector2f& /*posToFix*/,
-                          const utils::Vector2f& /*whereTo*/,
-                          const utils::Vector2f& motion,
-                          bool /*notify*/)
+  ColonyRenderer::handleContentScrolling(const utils::Vector2f& posToFix,
+                                         const utils::Vector2f& /*whereTo*/,
+                                         const utils::Vector2f& motion,
+                                         bool /*notify*/)
   {
     // We want to apply a motion of `motion` in local coordinate frame to the
     // underlying support area. In order to do that we need to convert the
@@ -80,8 +89,10 @@ namespace cellulator {
     // Update the rendering area.
     m_settings.area = newArea;
 
-    // TODO: We should update the position and the age of the cell pointed at by the colony
-    // if the mouse is inside the renderer.
+    // Update the position and age of the cell pointed at by the mouse.
+    if (isMouseInside()) {
+      notifyCoordinatePointedTo(posToFix, false);
+    }
 
     // Request a repaint operation.
     setColonyChanged();
@@ -129,7 +140,12 @@ namespace cellulator {
         motion.x() /= cellsDims.w();
         motion.y() /= cellsDims.h();
 
-        center = m_settings.area.getCenter();
+        if (isMouseInside()) {
+          center = m_lastKnownMousePos;
+        }
+        else {
+          center = m_settings.area.getCenter();
+        }
         newCenter = center + motion;
       }
 
@@ -162,7 +178,7 @@ namespace cellulator {
     // Perform the zoom in operation.
     float factor = motion.y() > 0 ? getDefaultZoomInFactor() : getDefaultZoomOutFactor();
 
-    utils::Vector2f conv = convertGlobalToRealWorld(e.getMousePosition());
+    utils::Vector2f conv = convertPosToRealWorld(e.getMousePosition(), true);
 
     zoom(conv, factor);
 
@@ -215,7 +231,7 @@ namespace cellulator {
   void
   ColonyRenderer::build() {
     // Connect to the handler signal.
-    m_generationComputedSignalID = m_colony->onGenerationComputed.connect_member<ColonyRenderer>(
+    m_generationComputedSignalID = m_scheduler->onGenerationComputed.connect_member<ColonyRenderer>(
       this,
       &ColonyRenderer::handleGenerationComputed
     );

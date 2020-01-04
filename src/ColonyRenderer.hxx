@@ -49,22 +49,19 @@ namespace cellulator {
   inline
   void
   ColonyRenderer::start() {
-    // Request to start the simulation.
-    m_colony->start();
+    m_scheduler->start();
   }
 
   inline
   void
   ColonyRenderer::stop() {
-    // Request to stop the simulation.
-    m_colony->stop();
+    m_scheduler->stop();
   }
 
   inline
   void
   ColonyRenderer::nextStep() {
-    // Request a next step.
-    m_colony->step();
+    m_scheduler->step();
   }
 
   inline
@@ -73,22 +70,8 @@ namespace cellulator {
     // Protect from concurrent accesses.
     Guard guard(m_propsLocker);
 
-    // Convert the mouse position to cell coordinates.
-    utils::Vector2f fpC = convertGlobalToRealWorld(e.getMousePosition());
-
-    // Convert this into integer coordinates.
-    utils::Vector2i cell(
-      static_cast<int>(std::floor(fpC.x())),
-      static_cast<int>(std::floor(fpC.y()))
-    );
-
-    // Notify external listeners.
-    // TODO: Should connect the age of the cell.
-    onCoordChanged.safeEmit(
-      std::string("onCoordChanged(") + cell.toString() + ")",
-      cell,
-      -1
-    );
+    // Notify listeners through the dedicated handler.
+    notifyCoordinatePointedTo(e.getMousePosition(), true);
 
     // Use the base handler to provide a return value.
     return sdl::graphic::ScrollableWidget::mouseMoveEvent(e);
@@ -157,7 +140,9 @@ namespace cellulator {
 
   inline
   utils::Vector2f
-  ColonyRenderer::convertGlobalToRealWorld(const utils::Vector2f& global) {
+  ColonyRenderer::convertPosToRealWorld(const utils::Vector2f& pos,
+                                        bool global)
+  {
     // In order to compute the local cells coordinates from the input
     // global data, we need to:
     // - convert it to local coordinate frame.
@@ -165,7 +150,7 @@ namespace cellulator {
     // - compute the floating point coordinates of the cell.
 
     // Convert the input position to local coordinate frame.
-    utils::Vector2f local = mapFromGlobal(global);
+    utils::Vector2f local = (global ? mapFromGlobal(pos) : pos);
 
     // Compute the size of a single cell.
     utils::Sizef env = LayoutItem::getRenderingArea().toSize();
@@ -225,6 +210,36 @@ namespace cellulator {
 
     // Assign it to the internal area.
     m_settings.area = newArea;
+  }
+
+  inline
+  void
+  ColonyRenderer::notifyCoordinatePointedTo(const utils::Vector2f& pos,
+                                            bool global)
+  {
+    // Note that we only want to notify coordinates in case the mouse is inside the
+    // widget otherwise it makes no sense.
+    if (!isMouseInside()) {
+      return;
+    }
+
+    // Convert the mouse position to cell coordinates.
+    utils::Vector2f fpC = convertPosToRealWorld(pos, global);
+
+    // Convert this into integer coordinates.
+    utils::Vector2i cell(
+      static_cast<int>(std::floor(fpC.x())),
+      static_cast<int>(std::floor(fpC.y()))
+    );
+
+    std::pair<State, int> s = m_colony->getCellState(cell);
+
+    // Notify external listeners.
+    onCoordChanged.safeEmit(
+      std::string("onCoordChanged(") + cell.toString() + ")",
+      cell,
+      s.second
+    );
   }
 
 }

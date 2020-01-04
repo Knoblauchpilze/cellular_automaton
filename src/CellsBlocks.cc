@@ -18,7 +18,10 @@ namespace cellulator {
     m_nextStates(),
     m_nextAdjacency(),
 
-    m_blocks()
+    m_blocks(),
+
+    m_totalArea(),
+    m_liveArea()
   {
     setService("blocks");
 
@@ -58,23 +61,16 @@ namespace cellulator {
     // Protect from concurrent accesses.
     Guard guard(m_propsLocker);
 
-    // Clear any existing data and save the current size so that we
-    // can reallocate the colony with a similar size.
-    // TODO: Fetch old area from the quadtree.
-    utils::Boxi old;
-
-    clear();
-
-    // Allocate to reach the old size.
-    allocate(old);
-
+    // We want to randomize only currently active blocks.
     unsigned count = 0u;
 
     // Traverse all the existing nodes and randomize each one.
     for (unsigned id = 0u ; id < m_blocks.size() ; ++id) {
-      makeRandom(m_blocks[id], getDeadCellProbability(), true);
+      if (m_blocks[id].active) {
+        makeRandom(m_blocks[id], getDeadCellProbability(), true);
 
-      count += m_blocks[id].alive;
+        count += m_blocks[id].alive;
+      }
     }
 
     return count;
@@ -146,6 +142,14 @@ namespace cellulator {
       );
     }
 
+    // Prevent empty areas.
+    if (!area.valid()) {
+      error(
+        std::string("Could not allocate cells data"),
+        std::string("Invalid area ") + area.toString()
+      );
+    }
+
     // Register each block.
     int minX = area.getLeftBound() + m_nodesDims.w() / 2;
     int minY = area.getBottomBound() + m_nodesDims.h() / 2;
@@ -160,6 +164,18 @@ namespace cellulator {
 
         registerNewBlock(lArea, state);
       }
+    }
+
+    // Assign the internal areas.
+    m_totalArea = area;
+    switch (state) {
+      case State::Alive:
+        m_liveArea = m_totalArea;
+        break;
+      case State::Dead:
+      default:
+        m_liveArea = utils::Boxi(m_totalArea.getCenter(), 0, 0);
+        break;
     }
   }
 
@@ -250,6 +266,11 @@ namespace cellulator {
       // available ones.
       m_blocks[blockID].active = false;
       m_freeBlocks.push_back(blockID);
+
+      // Deactivate some properties to be on the safe side.
+      m_blocks[blockID].alive = 0u;
+      m_blocks[blockID].nAlive = 0u;
+      m_blocks[blockID].changed = 0u;
     }
 
     return save;

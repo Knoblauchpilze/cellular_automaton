@@ -5,8 +5,9 @@
 # include <memory>
 # include <vector>
 # include <core_utils/CoreObject.hh>
-# include <maths_utils/Size.hh>
 # include <maths_utils/Box.hh>
+# include <maths_utils/Size.hh>
+# include <maths_utils/Vector2.hh>
 
 namespace cellulator {
 
@@ -108,6 +109,27 @@ namespace cellulator {
        */
       void
       generateSchedule(std::vector<ColonyTileShPtr>& tiles);
+
+      /**
+       * @brief - Used to retrieve the current live area for this object. This encompasses any
+       *          live cell in the colony allowing for example to fit to content as tightly as
+       *          possible.
+       *          This area is cached from evolution step and thus is not expensive to retrieve.
+       *          Note that it is only up-to-date as the last call to `step`.
+       * @return - the area covering all live cells for this object.
+       */
+      utils::Boxi
+      getLiveArea() noexcept;
+
+      /**
+       * @brief - Used to retrieve the state and age of the cell at `coord` if any. In case the
+       *          cell is dead or is not part of the colony a `Dead` state and a negative age
+       *          (usually `-1`) will be returned.
+       * @param coord - the coordinate of the cell to retrieve.
+       * @return - the status of the cell at specified coordinate.
+       */
+      std::pair<State, int>
+      getCellStatus(const utils::Vector2i& coord);
 
     private:
 
@@ -245,6 +267,21 @@ namespace cellulator {
       sizeOfBlock() const noexcept;
 
       /**
+       * @brief - Computes the coordinate to access the cell's data in the internal
+       *          arrays from the input coord, given that the coordinates are within
+       *          the block. Failure to guarantee that will cause undefined behavior.
+       * @param block - the block to which the coordinate belongs.
+       * @param coord - the coordinate expressed in absolute coordinate frame. This
+       *                method converts it to local block's coordinate frame and then
+       *                uses it to extract the data index.
+       * @return - an index which can be used in the internal arrays (like `m_state`
+       *           for example) and which corresponds to the cell's data.
+       */
+      int
+      indexFromCoord(const BlockDesc& block,
+                     const utils::Vector2i& coord) const;
+
+      /**
        * @brief - Used to randomize the content of the block described in input. The
        *          cells composing this node will be assigned random state based on
        *          the input probability.
@@ -335,6 +372,25 @@ namespace cellulator {
        *          memory footprint of this object.
        */
       std::vector<unsigned> m_freeBlocks;
+
+      /**
+       * @brief - Represents the total area covered by the block currently allocated. Note
+       *          that this area might not be contiguous in the sense that part of its
+       *          interior can be composed of dead blocks. Also only part of the boundary
+       *          might not be allocate. It is still useful as an upper bound on the size
+       *          reached by the colony.
+       */
+      utils::Boxi m_totalArea;
+
+      /**
+       * @brief - Similar to `m_totalArea` but limits the area to the region where at least
+       *          a live cell can be found. What this area represents is that on any border
+       *          one can find a live cell (i.e. there exists a live cell in the border from
+       *          `m_liveArea.getTopLeft()` and `m_liveArea.getTopRight()` and so on).
+       *          This area is at most equal to the `m_totalArea` and can be useful when a
+       *          fit to content operation needs to be performed.
+       */
+      utils::Boxi m_liveArea;
   };
 
   using CellsBlocksShPtr = std::shared_ptr<CellsBlocks>;
