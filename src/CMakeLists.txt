@@ -6,7 +6,7 @@ set (CMAKE_CXX_STANDARD 14)
 set (CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 set (SOURCES
-  StatusBar.cc
+  InfoBar.cc
   ColonyRenderer.cc
   ColonyStatus.cc
   Cell.cc
