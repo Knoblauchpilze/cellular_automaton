@@ -6,6 +6,50 @@
 namespace cellulator {
 
   inline
+  utils::Boxi
+  CellsBlocks::getLiveArea() noexcept {
+    // Protect from concurrent access.
+    Guard guard(m_propsLocker);
+
+    return m_liveArea;
+  }
+
+  inline
+  std::pair<State, int>
+  CellsBlocks::getCellStatus(const utils::Vector2i& coord) {
+    // Protect from concurrent access.
+    Guard guard(m_propsLocker);
+
+    std::pair<State, int> out = std::make_pair(State::Dead, -1);
+
+    // Eliminate trivial cases where the input coordinate are not in the
+    // live area of the colony.
+    if (!m_liveArea.contains(coord)) {
+      return out;
+    }
+
+    // Traverse the list of blocks and find the one spanning the input
+    // coordinate. If none can be found (or at least none active) the
+    // default value will be returned.
+    unsigned id = 0u;
+    bool found = false;
+
+    while (id < m_blocks.size() && !found) {
+      // Discard inactive blocks.
+      if (m_blocks[id].active && m_blocks[id].area.contains(coord)) {
+        out.first = m_states[indexFromCoord(m_blocks[id], coord)];
+        // TODO: Handle age.
+        out.second = 0;
+        found = true;
+      }
+
+      ++id;
+    }
+
+    return out;
+  }
+
+  inline
   float
   CellsBlocks::getDeadCellProbability() noexcept {
     return 0.7f;
@@ -35,6 +79,20 @@ namespace cellulator {
     return m_nodesDims.area();
   }
 
+  inline
+  int
+  CellsBlocks::indexFromCoord(const BlockDesc& block,
+                              const utils::Vector2i& coord) const
+  {
+    // Convert the input coordinate in the local block's cooordinate frame.
+    utils::Vector2i local(coord.x() - block.area.x(), coord.y() - block.area.y());
+
+    // Compute the one-dimensional index from this.
+    int xMin = block.area.getLeftBound();
+    int yMin = block.area.getBottomBound();
+
+    return (local.y() - yMin) * block.area.w() + (local.x() - xMin);
+  }
 
 }
 

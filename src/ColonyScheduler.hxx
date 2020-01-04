@@ -12,20 +12,6 @@ namespace cellulator {
   }
 
   inline
-  utils::Boxi
-  ColonyScheduler::getArea() noexcept {
-    return m_colony->getArea();
-  }
-
-  inline
-  utils::Boxi
-  ColonyScheduler::fetchCells(std::vector<State>& cells,
-                              const utils::Boxf& area)
-  {
-    return m_colony->fetchCells(cells, area);
-  }
-
-  inline
   unsigned
   ColonyScheduler::getWorkerThreadCount() noexcept {
     return 3u;

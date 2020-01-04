@@ -6,6 +6,7 @@
 # include <core_utils/CoreObject.hh>
 # include <maths_utils/Box.hh>
 # include <maths_utils/Size.hh>
+# include <maths_utils/Vector2.hh>
 # include "ColonyTile.hh"
 # include "CellsBlocks.hh"
 
@@ -58,6 +59,18 @@ namespace cellulator {
       utils::Boxi
       fetchCells(std::vector<State>& cells,
                  const utils::Boxf& area);
+
+      /**
+       * @brief - Used to retrieve the state and age of the cell at the position
+       *          specified by `coord`.
+       *          In case there is no cell there the second element of the pair
+       *          will be set to a negative value.
+       * @param coord - the coordinate of the cell to retrieve.
+       * @return - a pair containing the state of the cell as first value and the
+       *           age of the cell as second element.
+       */
+      std::pair<State, int>
+      getCellState(const utils::Vector2i& coord);
 
       /**
        * @brief - Used to simulate a single step of the colony's life. Nothing is

@@ -100,7 +100,8 @@ namespace cellulator {
     // Reset the generation count.
     onGenerationComputed.safeEmit(
       std::string("onGenerationComputed(0, ") + std::to_string(alive) + ")",
-      0u, alive
+      0u,
+      alive
     );
   }
 
@@ -159,7 +160,8 @@ namespace cellulator {
 
       onGenerationComputed.safeEmit(
         std::string("onGenerationComputed(") + std::to_string(gen) + ", " + std::to_string(alive) + ")",
-        gen, alive
+        gen,
+        alive
       );
 
       // Check whether we should schedule a new generation based on the status of
