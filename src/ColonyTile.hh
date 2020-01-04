@@ -2,14 +2,12 @@
 # define   COLONY_TILE_HH
 
 # include <memory>
+# include <vector>
 # include <maths_utils/Box.hh>
 # include <core_utils/AsynchronousJob.hh>
-# include "CellsQuadTreeNode.hh"
+# include "Cell.hh"
 
 namespace cellulator {
-
-  // Forward declaration to be able to use a quadtree node right away.
-  class CellsQuadTreeNode;
 
   class ColonyTile: public utils::AsynchronousJob {
     public:
@@ -40,7 +38,7 @@ namespace cellulator {
        * @param type - the type of job associated to this tile.
        */
       ColonyTile(const utils::Boxi& area,
-                 CellsQuadTreeNode* cells,
+                 std::vector<Cell>& cells,
                  const Type& type);
 
       ~ColonyTile() = default;
@@ -61,9 +59,9 @@ namespace cellulator {
       utils::Boxi m_area;
 
       /**
-       * @brief - The quadtree node containing the cells to evolve.
+       * @brief - The data containing the cells to evolve.
        */
-      CellsQuadTreeNode* m_data;
+      std::vector<Cell>& m_data;
 
       /**
        * @brief - The type of this tile, which determine the processing to call on the

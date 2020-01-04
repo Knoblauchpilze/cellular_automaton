@@ -8,6 +8,7 @@
 # include <sdl_graphic/ScrollableWidget.hh>
 # include <sdl_engine/Brush.hh>
 # include "Colony.hh"
+# include "ColonyScheduler.hh"
 
 namespace cellulator {
 
@@ -318,9 +319,10 @@ namespace cellulator {
       bool m_colonyRendered;
 
       /**
-       * @brief - The colony displayed in the renderer.
+       * @brief - The colony displayed in the renderer. Note that we only keep a wrapper on
+       *          said colony which allows to execute its evolution in a transparent way.
        */
-      ColonyShPtr m_colony;
+      ColonySchedulerShPtr m_colony;
 
       /**
        * @brief - Contains the index of the signal registered on the colony to be notified
