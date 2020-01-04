@@ -80,6 +80,9 @@ namespace cellulator {
     // Update the rendering area.
     m_settings.area = newArea;
 
+    // TODO: We should update the position and the age of the cell pointed at by the colony
+    // if the mouse is inside the renderer.
+
     // Request a repaint operation.
     setColonyChanged();
 
