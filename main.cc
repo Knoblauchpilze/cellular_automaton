@@ -23,7 +23,7 @@
 // TODO: Add brushes.
 // TODO: Add grid.
 // TODO: Fix bugs while evolving colony.
-// TODO: Connect the stop button to untoggle the start simulation button0
+// TODO: Connect the stop button to untoggle the start simulation button.
 
 int main(int /*argc*/, char** /*argv*/) {
   // Create the logger.
@@ -80,17 +80,17 @@ int main(int /*argc*/, char** /*argv*/) {
       renderer,
       &cellulator::ColonyRenderer::fitToContent
     );
-    status->getStartSimilationButton().onClick.connect_member<cellulator::ColonyRenderer>(
+    status->onSimulationStarted.connect_member<cellulator::ColonyRenderer>(
       renderer,
       &cellulator::ColonyRenderer::start
     );
-    status->getStopSimilationButton().onClick.connect_member<cellulator::ColonyRenderer>(
-      renderer,
-      &cellulator::ColonyRenderer::stop
-    );
-    status->getNextStepButton().onClick.connect_member<cellulator::ColonyRenderer>(
+    status->onSimulationStepped.connect_member<cellulator::ColonyRenderer>(
       renderer,
       &cellulator::ColonyRenderer::nextStep
+    );
+    status->onSimulationStopped.connect_member<cellulator::ColonyRenderer>(
+      renderer,
+      &cellulator::ColonyRenderer::stop
     );
     status->getGenerateColonyButton().onClick.connect_member<cellulator::ColonyRenderer>(
       renderer,

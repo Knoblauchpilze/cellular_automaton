@@ -11,7 +11,11 @@ namespace cellulator {
                          hint,
                          parent),
 
-    m_propsLocker()
+    m_propsLocker(),
+
+    onSimulationStarted(),
+    onSimulationStepped(),
+    onSimulationStopped()
   {
     build();
   }
@@ -142,6 +146,61 @@ namespace cellulator {
     layout->addItem(start);
     layout->addItem(next);
     layout->addItem(stop);
+
+    // Connect signals to the internal handler.
+    start->onClick.connect_member<ColonyStatus>(
+      this,
+      &ColonyStatus::onButtonClicked
+    );
+    next->onClick.connect_member<ColonyStatus>(
+      this,
+      &ColonyStatus::onButtonClicked
+    );
+    stop->onClick.connect_member<ColonyStatus>(
+      this,
+      &ColonyStatus::onButtonClicked
+    );
+  }
+
+  void
+  ColonyStatus::onButtonClicked(const std::string& buttonName) {
+    // Protect from concurrent accesses.
+    Guard guard(m_propsLocker);
+
+    // Check which button has been clicked among the possible values.
+    bool handled = false;
+
+    if (buttonName == getStartSimulationButtonName()) {
+      handled = true;
+
+      onSimulationStarted.safeEmit(
+        std::string("onSimulationStarted()")
+      );
+    }
+    if (buttonName == getNextStepButtonName()) {
+      handled = true;
+
+      onSimulationStepped.safeEmit(
+        std::string("onSimulationStepped()")
+      );
+    }
+    if (buttonName == getStopSimulationButtonName()) {
+      handled = true;
+
+      // We need to untoggle the start button.
+      // TODO: Implementation.
+
+      onSimulationStopped.safeEmit(
+        std::string("onSimulationStopped()")
+      );
+    }
+
+    if (!handled) {
+      log(
+        std::string("Could not interpret signal coming from \"") + buttonName + "\" in status",
+        utils::Level::Warning
+      );
+    }
   }
 
 }

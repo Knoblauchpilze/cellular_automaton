@@ -48,21 +48,21 @@ namespace cellulator {
 
   inline
   void
-  ColonyRenderer::start(const std::string& /*dummy*/) {
+  ColonyRenderer::start() {
     // Request to start the simulation.
-    m_colony->start();
+    m_colony->start(); 
   }
 
   inline
   void
-  ColonyRenderer::stop(const std::string& /*dummy*/) {
+  ColonyRenderer::stop() {
     // Request to stop the simulation.
     m_colony->stop();
   }
 
   inline
   void
-  ColonyRenderer::nextStep(const std::string& /*dummy*/) {
+  ColonyRenderer::nextStep() {
     // Request a next step.
     m_colony->step();
   }
