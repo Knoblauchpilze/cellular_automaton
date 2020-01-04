@@ -13,24 +13,6 @@ namespace cellulator {
 
   inline
   sdl::graphic::Button&
-  ColonyStatus::getStartSimilationButton() {
-    return *getChildAs<sdl::graphic::Button>(getStartSimulationButtonName());
-  }
-
-  inline
-  sdl::graphic::Button&
-  ColonyStatus::getStopSimilationButton() {
-    return *getChildAs<sdl::graphic::Button>(getStopSimulationButtonName());
-  }
-
-  inline
-  sdl::graphic::Button&
-  ColonyStatus::getNextStepButton() {
-    return *getChildAs<sdl::graphic::Button>(getNextStepButtonName());
-  }
-
-  inline
-  sdl::graphic::Button&
   ColonyStatus::getGenerateColonyButton() {
     return *getChildAs<sdl::graphic::Button>(getRandomGenerationButtonName());
   }
@@ -99,6 +81,24 @@ namespace cellulator {
   utils::Sizef
   ColonyStatus::getSimulationButtonMaxSize() noexcept {
     return utils::Sizef(100.0f, getStatusMaxHeight() - getGlobalMargins());
+  }
+
+  inline
+  sdl::graphic::Button&
+  ColonyStatus::getStartSimulationButton() {
+    return *getChildAs<sdl::graphic::Button>(getStartSimulationButtonName());
+  }
+
+  inline
+  sdl::graphic::Button&
+  ColonyStatus::getStopSimulationButton() {
+    return *getChildAs<sdl::graphic::Button>(getStopSimulationButtonName());
+  }
+
+  inline
+  sdl::graphic::Button&
+  ColonyStatus::getNextStepButton() {
+    return *getChildAs<sdl::graphic::Button>(getNextStepButtonName());
   }
 
 }

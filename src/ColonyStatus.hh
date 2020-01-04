@@ -25,7 +25,7 @@ namespace cellulator {
       ~ColonyStatus() = default;
 
       /**
-       * @brief - Used to retrive the fit to content button associated to this
+       * @brief - Used to retrieve the fit to content button associated to this
        *          status. This method is only meant as a way to connect elements
        *          to the `onClick` signal of this button, lacking of a better way.
        *          The method may raise an error in case the start simulation
@@ -37,36 +37,8 @@ namespace cellulator {
       getFitToContentButton();
 
       /**
-       * @brief - Used to retrive the start simulation button associated to this
-       *          status. This method is only meant as a way to connect elements
-       *          to the `onClick` signal of this button, lacking of a better way.
-       *          The method may raise an error in case the start simulation
-       *          button is not defined.
-       * @return - a reference to the start simulation button associated to this
-       *           status.
-       */
-      sdl::graphic::Button&
-      getStartSimilationButton();
-
-      /**
-       * @brief - Similar to the `getStartSimulationButton` but used to retrieve
-       *          the stop simulation button.
-       * @return - a reference to the stop simulation button.
-       */
-      sdl::graphic::Button&
-      getStopSimilationButton();
-
-      /**
-       * @brief - Similar to the `getStartSimulationButton` but used to retrieve
-       *          the next step button.
-       * @return - a reference to the next step button.
-       */
-      sdl::graphic::Button&
-      getNextStepButton();
-
-      /**
-       * @brief - Similar to the `getStartSimulationButton` but used to retrieve
-       *          the generate random colony button.
+       * @brief - Similar to the `getFitToContentButton` but used to retrieve the
+       *          generate random colony button.
        * @return - a reference to the generate colony button.
        */
       sdl::graphic::Button&
@@ -186,12 +158,71 @@ namespace cellulator {
       void
       build();
 
+      /**
+       * @brief - Used to retrieve the start simulation button associated to this
+       *          status. This method is used when a `onClick` signal is received
+       *          in order to retrieve the source of the event. This allows to
+       *          set the needed states if needed (typically untoggling the `Start`
+       *          simulation button when the simulation is stopped.
+       *          The method may raise an error in case the start simulation button
+       *          is not defined.
+       * @return - a reference to the start simulation button associated to this
+       *           status.
+       */
+      sdl::graphic::Button&
+      getStartSimulationButton();
+
+      /**
+       * @brief - Similar to the `getStartSimulationButton` but used to retrieve the
+       *          stop simulation button.
+       * @return - a reference to the stop simulation button.
+       */
+      sdl::graphic::Button&
+      getStopSimulationButton();
+
+      /**
+       * @brief - Similar to the `getStartSimulationButton` but used to retrieve the
+       *          next step button.
+       * @return - a reference to the next step button.
+       */
+      sdl::graphic::Button&
+      getNextStepButton();
+
+      /**
+       * @brief - Signal handling a click on any button of this status. We handle internal
+       *          modifications (like untoggling of the `Start` button if needed) and then
+       *          transmit the correct signal through the public interface.
+       * @param buttonName - the name of the button which has just been pressed.
+       */
+      void
+      onButtonClicked(const std::string& buttonName);
+
     private:
 
       /**
        * @brief - A mutex to protect the internal properties of this widget.
        */
       mutable std::mutex m_propsLocker;
+
+    public:
+
+      /**
+       * @brief - Signal emitted whenver the simulation of the colony should start. This is
+       *          triggered by a click on the `Start` button.
+       */
+      utils::Signal<> onSimulationStarted;
+
+      /**
+       * @brief - Signal emitted whenver the simulation of the colony should move one step
+       *          forward. This is triggered by a click on the `Step` button.
+       */
+      utils::Signal<> onSimulationStepped;
+
+      /**
+       * @brief - Signal emitted whenver the simulation of the colony should stop. This is
+       *          triggered by a click on the `Stop` button.
+       */
+      utils::Signal<> onSimulationStopped;
   };
 
 }

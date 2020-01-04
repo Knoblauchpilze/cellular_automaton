@@ -48,31 +48,25 @@ namespace cellulator {
        *          fire a request to start simulating the colony and make cells
        *          live and die until a call to the `stop` method is issued.
        *          Note that nothing happens if the simulation is already started.
-       * @param dummy - the name of the component which requested to start the
-       *                simulation. Should not be used.
        */
       void
-      start(const std::string& dummy);
+      start();
 
       /**
        * @brief - Used to request the simulation to stop immediately. Unlike the
        *          `start` method it will attemp to stop the simulation.
        *          Note that nothing happens if the simulation has not started yet.
-       * @param dummy - the name of the component which requested to start the
-       *                simulation. Should not be used.
        */
       void
-      stop(const std::string& dummy);
+      stop();
 
       /**
        * @brief - Used to request the simulation to simulate a single step and to
        *          display the results. Nothing happens if the simulation is already
        *          running (because the next step is obviously already requested).
-       * @param dummy - the name of the component which requested to compute the
-       *                next step of the simulation. Should not be used.
        */
       void
-      nextStep(const std::string& dummy);
+      nextStep();
 
       /**
        * @brief - Used to request the colony to be generated randomly. Note that
