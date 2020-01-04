@@ -143,10 +143,12 @@ namespace cellulator {
        *          Note that the locker is assumed to be locked upon calling this
        *          method.
        * @param area - the area to associate to the block.
+       * @param state - the state of cells to assign to the newly created block.
        * @return - the description of the created block.
        */
       BlockDesc
-      registerNewBlock(const utils::Boxi& area);
+      registerNewBlock(const utils::Boxi& area,
+                       const State& state = State::Dead);
 
       /**
        * @brief - Used to retrieve the index at which the data for a block with the
