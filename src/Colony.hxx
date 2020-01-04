@@ -34,6 +34,12 @@ namespace cellulator {
     return iArea;
   }
 
+  inline
+  utils::Sizei
+  Colony::getCellBlockDims() noexcept {
+    return utils::Sizei(8, 8);
+  }
+
 }
 
 #endif    /* COLONY_HXX */

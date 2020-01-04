@@ -26,9 +26,20 @@ namespace cellulator {
 
   inline
   void
-  InfoBar::onSelectedCellChanged(utils::Vector2i coords) {
+  InfoBar::onSelectedCellChanged(utils::Vector2i coords,
+                                 int age)
+  {
     // Protect from concurrent accesses.
     Guard guard(m_propsLocker);
+
+
+    std::string ageStr;
+    if (age < 0) {
+      ageStr += "(dead)";
+    }
+    else {
+      ageStr += "(age: " + std::to_string(age) + ")";
+    }
 
     sdl::graphic::LabelWidget* mc = getMouseCoordsLabel();
     if (mc == nullptr) {
@@ -39,11 +50,31 @@ namespace cellulator {
 
       return;
     }
+    else {
+      mc->setText(
+        std::string("x: ") + std::to_string(coords.x()) +
+        " y: " + std::to_string(coords.y()) + " " +
+        ageStr
+      );
+    }
+  }
 
-    mc->setText(
-      std::string("x: ") + std::to_string(coords.x()) +
-      " y: " + std::to_string(coords.y())
-    );
+  void
+  InfoBar::onAliveCellsChanged(unsigned count) {
+    // Protect from concurrent accesses.
+    Guard guard(m_propsLocker);
+
+    sdl::graphic::LabelWidget* ac = getAliveCellsLabel();
+    if (ac == nullptr) {
+      log(
+        std::string("Could not find label to update alive cells count to ") + std::to_string(count),
+        utils::Level::Error
+      );
+
+      return;
+    }
+
+    ac->setText(std::string("Alive: ") + std::to_string(count));
   }
 
   inline

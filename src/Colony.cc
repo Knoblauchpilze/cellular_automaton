@@ -27,7 +27,7 @@ namespace cellulator {
   }
 
   unsigned
-  Colony::step() {
+  Colony::step(unsigned* alive) {
     // Protect from concurrent accesses.
     Guard guard(m_propsLocker);
 
@@ -35,6 +35,11 @@ namespace cellulator {
 
     // One more generation has been computed.
     ++m_generation;
+
+    // Fill in the number of alive cells if needed.
+    if (alive != nullptr) {
+      *alive = 0u;
+    }
 
     return m_generation;
   }
@@ -44,12 +49,12 @@ namespace cellulator {
     // Protect from concurrent accesses.
     Guard guard(m_propsLocker);
 
-    // TODO: Should randomize the colony.
+    unsigned count = m_cells->randomize();
 
     // The colony is back to square one.
     m_generation = 0u;
 
-    return m_generation;
+    return count;
   }
 
   std::vector<ColonyTileShPtr>
@@ -66,7 +71,10 @@ namespace cellulator {
                 const rules::Type& ruleset)
   {
     // Create the cells' data.
-    m_cells.resize(dims.area(), Cell(State::Dead, ruleset));
+    m_cells = std::make_shared<CellsBlocks>(ruleset, getCellBlockDims());
+
+    // Allocate initial blocks.
+    m_cells->allocateTo(dims, State::Dead);
   }
 
 }

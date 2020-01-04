@@ -13,6 +13,7 @@ set (SOURCES
   Colony.cc
   ColonyTile.cc
   ColonyScheduler.cc
+  CellsBlocks.cc
   )
 
 add_library (cellular_automaton_lib SHARED

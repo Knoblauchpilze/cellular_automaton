@@ -97,13 +97,17 @@ int main(int /*argc*/, char** /*argv*/) {
     );
 
     // Connect changes in the colony to the status display.
+    renderer->onCoordChanged.connect_member<cellulator::InfoBar>(
+      bar,
+      &cellulator::InfoBar::onSelectedCellChanged
+    );
     renderer->onGenerationComputed.connect_member<cellulator::InfoBar>(
       bar,
       &cellulator::InfoBar::onGenerationComputed
     );
-    renderer->onCoordChanged.connect_member<cellulator::InfoBar>(
+    renderer->onAliveCellsChanged.connect_member<cellulator::InfoBar>(
       bar,
-      &cellulator::InfoBar::onSelectedCellChanged
+      &cellulator::InfoBar::onAliveCellsChanged
     );
 
     // Run it.

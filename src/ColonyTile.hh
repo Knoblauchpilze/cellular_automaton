@@ -5,7 +5,7 @@
 # include <vector>
 # include <maths_utils/Box.hh>
 # include <core_utils/AsynchronousJob.hh>
-# include "Cell.hh"
+# include "CellsBlocks.hh"
 
 namespace cellulator {
 
@@ -38,7 +38,7 @@ namespace cellulator {
        * @param type - the type of job associated to this tile.
        */
       ColonyTile(const utils::Boxi& area,
-                 std::vector<Cell>& cells,
+                 CellsBlocksShPtr cells,
                  const Type& type);
 
       ~ColonyTile() = default;
@@ -61,7 +61,7 @@ namespace cellulator {
       /**
        * @brief - The data containing the cells to evolve.
        */
-      std::vector<Cell>& m_data;
+      CellsBlocksShPtr m_data;
 
       /**
        * @brief - The type of this tile, which determine the processing to call on the

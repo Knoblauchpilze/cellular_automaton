@@ -53,7 +53,7 @@ namespace cellulator {
 
     sdl::graphic::LabelWidget* generation = new sdl::graphic::LabelWidget(
       getGenerationLabelName(),
-      "Generation: 1",
+      "Generation: 0",
       getInfoLabelFont(),
       15u,
       sdl::graphic::LabelWidget::HorizontalAlignment::Center,

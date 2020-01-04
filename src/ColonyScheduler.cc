@@ -95,12 +95,12 @@ namespace cellulator {
     }
 
     // Use the dedicated handler to generate the colony.
-    unsigned gen = m_colony->generate();
+    unsigned alive = m_colony->generate();
 
     // Reset the generation count.
     onGenerationComputed.safeEmit(
-      std::string("onGenerationComputed(") + std::to_string(gen) + ")",
-      gen
+      std::string("onGenerationComputed(0, ") + std::to_string(alive) + ")",
+      0u, alive
     );
   }
 
@@ -154,11 +154,12 @@ namespace cellulator {
     // listeners. Otherwise wait for the generation to complete.
     if (m_taskProgress == m_taskTotal) {
       // Step the colony one generation ahead in time.
-      unsigned gen = m_colony->step();
+      unsigned alive = 0u;
+      unsigned gen = m_colony->step(&alive);
 
       onGenerationComputed.safeEmit(
-        std::string("onGenerationComputed(") + std::to_string(gen) + ")",
-        gen
+        std::string("onGenerationComputed(") + std::to_string(gen) + ", " + std::to_string(alive) + ")",
+        gen, alive
       );
 
       // Check whether we should schedule a new generation based on the status of
