@@ -43,6 +43,12 @@ namespace cellulator {
 
   inline
   float
+  ColonyStatus::getButtonBorderSize() noexcept {
+    return 5.0f;
+  }
+
+  inline
+  float
   ColonyStatus::getGlobalMargins() noexcept {
     return 0.0f;
   }
