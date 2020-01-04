@@ -43,7 +43,7 @@ namespace cellulator {
       onSelectedCellChanged(utils::Vector2i coords);
 
       /**
-       * @brief - Used to retrive the grid display button registered in this info bar. This
+       * @brief - Used to retrieve the grid display button registered in this info bar. This
        *          method is only meant as a way to connect elements to the `onClick` signal
        *          of this button, lacking of a better way.
        *          The method may raise an error in case the grid display button cannot be
