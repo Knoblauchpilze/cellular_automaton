@@ -12,8 +12,7 @@ set (SOURCES
   Cell.cc
   Colony.cc
   ColonyTile.cc
-  CellsQuadTree.cc
-  CellsQuadTreeNode.cc
+  ColonyScheduler.cc
   )
 
 add_library (cellular_automaton_lib SHARED

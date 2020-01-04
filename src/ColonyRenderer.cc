@@ -18,7 +18,7 @@ namespace cellulator {
     m_settings(),
     m_colonyRendered(true),
 
-    m_colony(colony),
+    m_colony(std::make_shared<ColonyScheduler>(colony)),
     m_generationComputedSignalID(utils::Signal<unsigned>::NoID),
 
     onGenerationComputed(),
@@ -30,7 +30,7 @@ namespace cellulator {
     if (m_colony == nullptr) {
       error(
         std::string("Could not create renderer"),
-        std::string("Invalid null colony")
+        std::string("Invalid null colony scheduler")
       );
     }
 

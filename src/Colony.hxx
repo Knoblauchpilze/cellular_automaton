@@ -6,15 +6,10 @@
 namespace cellulator {
 
   inline
-  Colony::~Colony() {
-    // Stops the colony.
-    stop();
-  }
-
-  inline
   utils::Boxi
   Colony::getArea() noexcept {
-    return m_cells->getLiveArea();
+    // TODO: Restore that.
+    return utils::Boxi();
   }
 
   inline
@@ -25,20 +20,18 @@ namespace cellulator {
     // Protect from concurrent accesses.
     Guard guard(m_propsLocker);
 
-    return m_cells->fetchCells(cells, area);
-  }
+    // TODO: Restore that.
+    utils::Boxi iArea(
+      static_cast<int>(std::round(area.x())),
+      static_cast<int>(std::round(area.y())),
+      static_cast<int>(std::round(area.w())),
+      static_cast<int>(std::round(area.h()))
+    );
 
-  inline
-  unsigned
-  Colony::getWorkerThreadCount() noexcept {
-    return 3u;
-  }
+    cells.resize(iArea.area());
+    std::fill(cells.begin(), cells.end(), State::Dead);
 
-  inline
-  utils::Sizei
-  Colony::getQuadTreeNodeSize() noexcept {
-    // return utils::Sizei(256, 256);
-    return utils::Sizei(4, 4);
+    return iArea;
   }
 
 }
