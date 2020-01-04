@@ -13,7 +13,7 @@
 # include <core_utils/LoggerLocator.hh>
 # include <sdl_app_core/SdlApplication.hh>
 # include <core_utils/CoreException.hh>
-# include "StatusBar.hh"
+# include "InfoBar.hh"
 # include "Colony.hh"
 # include "ColonyStatus.hh"
 # include "ColonyRenderer.hh"
@@ -48,7 +48,7 @@ int main(int /*argc*/, char** /*argv*/) {
       appIcon,
       size,
       true,
-      utils::Sizef(0.4f, 0.6f),
+      utils::Sizef(0.4f, 0.5f),
       50.0f,
       60.0f
     );
@@ -72,7 +72,7 @@ int main(int /*argc*/, char** /*argv*/) {
     cellulator::ColonyStatus* status = new cellulator::ColonyStatus();
     app->addDockWidget(status, sdl::app::DockWidgetArea::TopArea);
 
-    cellulator::StatusBar* bar = new cellulator::StatusBar();
+    cellulator::InfoBar* bar = new cellulator::InfoBar();
     app->setStatusBar(bar);
 
     // Connect the simulation's control button to the options panel slots.
@@ -98,13 +98,13 @@ int main(int /*argc*/, char** /*argv*/) {
     );
 
     // Connect changes in the colony to the status display.
-    renderer->onGenerationComputed.connect_member<cellulator::StatusBar>(
+    renderer->onGenerationComputed.connect_member<cellulator::InfoBar>(
       bar,
-      &cellulator::StatusBar::onGenerationComputed
+      &cellulator::InfoBar::onGenerationComputed
     );
-    renderer->onCoordChanged.connect_member<cellulator::StatusBar>(
+    renderer->onCoordChanged.connect_member<cellulator::InfoBar>(
       bar,
-      &cellulator::StatusBar::onSelectedCellChanged
+      &cellulator::InfoBar::onSelectedCellChanged
     );
 
     // Run it.

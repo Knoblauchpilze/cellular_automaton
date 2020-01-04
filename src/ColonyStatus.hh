@@ -30,7 +30,7 @@ namespace cellulator {
        *          to the `onClick` signal of this button, lacking of a better way.
        *          The method may raise an error in case the start simulation
        *          button is not defined.
-       * @return - a reference to the fit to content button  associated to this
+       * @return - a reference to the fit to content button associated to this
        *           status.
        */
       sdl::graphic::Button&
@@ -83,6 +83,15 @@ namespace cellulator {
       static
       float
       getStatusMaxHeight() noexcept;
+
+      /**
+       * @brief - A suited value to use for the border size of the buttons used in
+       *          this status.
+       * @return - a suited value for the size of the borders for buttons.
+       */
+      static
+      float
+      getButtonBorderSize() noexcept;
 
       /**
        * @brief - Used to define the margins of the layout applied around the whole
