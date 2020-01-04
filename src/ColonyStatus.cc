@@ -188,7 +188,7 @@ namespace cellulator {
       handled = true;
 
       // We need to untoggle the start button.
-      // TODO: Implementation.
+      getStartSimulationButton().toggle(false);
 
       onSimulationStopped.safeEmit(
         std::string("onSimulationStopped()")
