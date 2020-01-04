@@ -19,6 +19,7 @@
 # include "ColonyRenderer.hh"
 
 // TODO: Multiple rulesets ? See here: https://en.wikipedia.org/wiki/Cyclic_cellular_automaton
+// Instead use different count for dead and alive rules.
 // TODO: Improve dead areas.
 // TODO: Add brushes.
 // TODO: Add grid.
