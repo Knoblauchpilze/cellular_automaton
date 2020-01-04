@@ -261,7 +261,9 @@ namespace cellulator {
   }
 
   void
-  ColonyRenderer::handleGenerationComputed(unsigned generation) {
+  ColonyRenderer::handleGenerationComputed(unsigned generation,
+                                           unsigned liveCells)
+  {
     // Protect from concurrent accesses.
     Guard guard(m_propsLocker);
 
@@ -272,6 +274,11 @@ namespace cellulator {
     onGenerationComputed.safeEmit(
       std::string("onGenerationComputed(") + std::to_string(generation) + ")",
       generation
+    );
+
+    onAliveCellsChanged.safeEmit(
+      std::string("onAliveCellsChanged(") + std::to_string(liveCells) + ")",
+      liveCells
     );
   }
 
@@ -315,12 +322,6 @@ namespace cellulator {
         switch (ce) {
           case State::Alive:
             co = sdl::core::engine::Color::NamedColor::Blue;
-            break;
-          case State::Newborn:
-            co = sdl::core::engine::Color::NamedColor::Green;
-            break;
-          case State::Dying:
-            co = sdl::core::engine::Color::NamedColor::Red;
             break;
           case State::Dead:
           default:

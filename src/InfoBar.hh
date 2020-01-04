@@ -37,10 +37,25 @@ namespace cellulator {
       /**
        * @brief - Used to receive notification when the cell pointed at by the mouse is
        *          changed so that we can update the related label.
+       *          The selected cell is provided along its age (which usually changes from
+       *          cell to another). Note that in case the `age` is negative it means that
+       *          there is no cell at the specified coordinates. It is up to this object
+       *          to determine the best way to display this.
        * @param coords - the coordinates of the cell which is now pointed at by the mouse.
+       * @param age - the age of the cell that is now selected (i.e. the one at `coords`).
        */
       void
-      onSelectedCellChanged(utils::Vector2i coords);
+      onSelectedCellChanged(utils::Vector2i coords,
+                            int age);
+
+      /**
+       * @brief - Used to receive notifications about the number of alive cells in the
+       *          colony currently displayed. This provide an indication of the `health`
+       *          of the colony.
+       * @param count - the number of alive cells in the colony at the moment.
+       */
+      void
+      onAliveCellsChanged(unsigned count);
 
       /**
        * @brief - Used to retrieve the grid display button registered in this info bar. This

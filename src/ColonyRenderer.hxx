@@ -83,9 +83,11 @@ namespace cellulator {
     );
 
     // Notify external listeners.
+    // TODO: Should connect the age of the cell.
     onCoordChanged.safeEmit(
       std::string("onCoordChanged(") + cell.toString() + ")",
-      cell
+      cell,
+      -1
     );
 
     // Use the base handler to provide a return value.

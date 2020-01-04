@@ -6,8 +6,8 @@
 # include <core_utils/CoreObject.hh>
 # include <maths_utils/Box.hh>
 # include <maths_utils/Size.hh>
-# include "Cell.hh"
 # include "ColonyTile.hh"
+# include "CellsBlocks.hh"
 
 namespace cellulator {
 
@@ -70,21 +70,22 @@ namespace cellulator {
        *          of the colony.
        *          Once this is done this method only applies the modifications so
        *          as to make them current.
+       * @param alive - pointer which will be filled with the number of alive cells
+       *                in the colony if needed.
        * @return - the new generation of the colony (typically starts at `0`): note
        *           that the first value returned by this method is `1` (as the `0`
        *           generation is actually the starting point).
        */
       unsigned
-      step();
+      step(unsigned* alive = nullptr);
 
       /**
        * @brief - Used to generate a random colony without modifying the dimensions
        *          of the colony. Each cell will be assigned a random state among the
        *          available ones.
        *          An error is raised in case the simulation is started.
-       * @return - the new generation assigned to the colony. Usually we want to set
-       *           this value to `0` but for the case we decide to persist the info
-       *           somehow we can use this value to return it.
+       * @return - the number of live cells created during the process. This value
+       *           can be used to update some external displays.
        */
       unsigned
       generate();
@@ -102,6 +103,21 @@ namespace cellulator {
       generateSchedule();
 
     private:
+
+      /**
+       * @brief - Used to retrieve a suited size for a block of cells. Rather than having
+       *          a single gigantic array where cells are stored we divide the colony into
+       *          several smaller blocks containing a part of the cells. This helps having
+       *          a better strategy when it comes to de/allocating elements and keeping
+       *          track of living cells.
+       *          The size of the block should not be too big (otherwise we might not be
+       *          able to factorize correctly dead blocks) and not too small (otherwise
+       *          we might end up with toog big an overhead managing all the blocks).
+       * @return - a suited size for a cell block.
+       */
+      static
+      utils::Sizei
+      getCellBlockDims() noexcept;
 
       /**
        * @brief - Connect signals and build the scheduler to use to simulate the colony.
@@ -131,7 +147,7 @@ namespace cellulator {
       /**
        * @brief - The internal container for the cells representing the colony.
        */
-      std::vector<Cell> m_cells;
+      CellsBlocksShPtr m_cells;
   };
 
   using ColonyShPtr = std::shared_ptr<Colony>;

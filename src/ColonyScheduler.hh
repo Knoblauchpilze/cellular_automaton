@@ -175,8 +175,10 @@ namespace cellulator {
        * @brief - Signal emitted whenever a new generation has been computed by the pool.
        *          This is useful for listeners which would like to keep up with the current
        *          generation of cells displayed on screen.
+       *          We provide both the current generation along with the number of alive
+       *          cells in the colony.
        */
-      utils::Signal<unsigned> onGenerationComputed;
+      utils::Signal<unsigned, unsigned> onGenerationComputed;
   };
 
   using ColonySchedulerShPtr = std::shared_ptr<ColonyScheduler>;

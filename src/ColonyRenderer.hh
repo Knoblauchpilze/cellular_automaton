@@ -250,9 +250,11 @@ namespace cellulator {
        *          has been computed by the colony. Used to both dispatch the information
        *          and also perform a repaint of the content.
        * @param generation - the index of the generation which was completed.
+       * @param liveCells - the number of live cells in this generation.
        */
       void
-      handleGenerationComputed(unsigned generation);
+      handleGenerationComputed(unsigned generation,
+                               unsigned liveCells);
 
       /**
        * @brief - Used to create a brush representing the input cells given that it should
@@ -342,11 +344,20 @@ namespace cellulator {
       utils::Signal<unsigned> onGenerationComputed;
 
       /**
+       * @brief - Signal emitted whenever the number of alive cells is modified in the colony
+       *          displayed by the renderer. This is useful to listeners which would like to
+       *          print this information.
+       */
+      utils::Signal<unsigned> onAliveCellsChanged;
+
+      /**
        * @brief - Signal emitted whenever the coordinates of the point located under the mouse
        *          is changed. This is usually to keep track of said position (using a label for
        *          example).
+       *          Along with the position this signal also indicate the age of the cell at the
+       *          specified coordinate.
        */
-      utils::Signal<utils::Vector2i> onCoordChanged;
+      utils::Signal<utils::Vector2i, int> onCoordChanged;
   };
 
 }
