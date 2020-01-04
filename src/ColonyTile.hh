@@ -38,7 +38,7 @@ namespace cellulator {
        * @param type - the type of job associated to this tile.
        */
       ColonyTile(const utils::Boxi& area,
-                 CellsBlocksShPtr cells,
+                 CellsBlocks* cells,
                  const Type& type);
 
       ~ColonyTile() = default;
@@ -61,7 +61,7 @@ namespace cellulator {
       /**
        * @brief - The data containing the cells to evolve.
        */
-      CellsBlocksShPtr m_data;
+      CellsBlocks* m_data;
 
       /**
        * @brief - The type of this tile, which determine the processing to call on the

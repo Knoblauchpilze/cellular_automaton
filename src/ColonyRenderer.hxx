@@ -50,7 +50,7 @@ namespace cellulator {
   void
   ColonyRenderer::start() {
     // Request to start the simulation.
-    m_colony->start(); 
+    m_colony->start();
   }
 
   inline

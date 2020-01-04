@@ -1,5 +1,6 @@
 
 # include "CellsBlocks.hh"
+# include "ColonyTile.hh"
 
 namespace cellulator {
 
@@ -37,34 +38,17 @@ namespace cellulator {
     // Protect from concurrent accesses.
     Guard guard(m_propsLocker);
 
-    // Clamp dimensions to be at least a full block.
+    // Round the dimensions so that they fit perfectly the expected nodes size.
+    // At least get a whole multiple of said dimensions.
     utils::Sizei cDims(
-      std::max(dims.w(), m_nodesDims.w()),
-      std::max(dims.h(), m_nodesDims.h())
+      dims.w() + (m_nodesDims.w() - dims.w() % m_nodesDims.w()) % m_nodesDims.w(),
+      dims.h() + (m_nodesDims.h() - dims.h() % m_nodesDims.h()) % m_nodesDims.h()
     );
 
-    // Compute the number of blocks to allocate.
-    unsigned bcW = static_cast<unsigned>(std::ceil(1.0f * cDims.w() / m_nodesDims.w()));
-    unsigned bcH = static_cast<unsigned>(std::ceil(1.0f * cDims.h() / m_nodesDims.h()));
+    utils::Boxi global(0, 0, cDims);
 
-    // Derive the total size of the colony.
-    utils::Boxi global(0, 0, bcW * m_nodesDims.w(), bcH * m_nodesDims.h());
-
-    // Register each block.
-    int minX = global.getLeftBound() + m_nodesDims.w() / 2;
-    int minY = global.getBottomBound() + m_nodesDims.h() / 2;
-
-    utils::Boxi area(0, 0, m_nodesDims);
-
-    for (unsigned y = 0u ; y < bcH ; ++y) {
-      area.y() = minY + y * m_nodesDims.h();
-
-      for (unsigned x = 0u ; x < bcW ; ++x) {
-        area.x() = minX + x * m_nodesDims.w();
-
-        registerNewBlock(area, state);
-      }
-    }
+    // Allocate using the rectified dimensions.
+    allocate(global, state);
 
     return global;
   }
@@ -73,6 +57,16 @@ namespace cellulator {
   CellsBlocks::randomize() {
     // Protect from concurrent accesses.
     Guard guard(m_propsLocker);
+
+    // Clear any existing data and save the current size so that we
+    // can reallocate the colony with a similar size.
+    // TODO: Fetch old area from the quadtree.
+    utils::Boxi old;
+
+    clear();
+
+    // Allocate to reach the old size.
+    allocate(old);
 
     unsigned count = 0u;
 
@@ -84,6 +78,89 @@ namespace cellulator {
     }
 
     return count;
+  }
+
+  unsigned
+  CellsBlocks::step() {
+    // Protect from concurrent accesses.
+    Guard guard(m_propsLocker);
+
+    // We first need to evolve all the cells to their next state. This is
+    // achieved by swapping the internal vectors, which is cheap and fast.
+    m_states.swap(m_nextStates);
+    m_adjacency.swap(m_nextAdjacency);
+
+    // Now we need to update the alive count for each block.
+    unsigned alive = 0u;
+
+    for (unsigned id = 0u ; id < m_blocks.size() ; ++id) {
+      // Only handle active blocks.
+      if (!m_blocks[id].active) {
+        continue;
+      }
+
+      m_blocks[id].alive = m_blocks[id].nAlive;
+      alive += m_blocks[id].alive;
+    }
+
+    // Now we should expand and create new blocks to account for cells that
+    // might overflow the current state of the colony.
+    // TODO: Should handle expansion.
+
+    return alive;
+  }
+
+  void
+  CellsBlocks::generateSchedule(std::vector<ColonyTileShPtr>& tiles) {
+    // Protect from concurrent accesses.
+    Guard guard(m_propsLocker);
+
+    // We want to generate colony tiles for all active blocks.
+    for (unsigned id = 0u ; id < m_blocks.size() ; ++id) {
+      // Only handle this block if it is active.
+      if (m_blocks[id].active) {
+        tiles.push_back(
+          std::make_shared<ColonyTile>(
+            m_blocks[id].area,
+            this,
+            ColonyTile::Type::Interior
+          )
+        );
+      }
+    }
+  }
+
+  void
+  CellsBlocks::allocate(const utils::Boxi& area,
+                        const State& state)
+  {
+    // Compute the number of blocks to allocate.
+    unsigned bcW = static_cast<unsigned>(std::ceil(1.0f * area.w() / m_nodesDims.w()));
+    unsigned bcH = static_cast<unsigned>(std::ceil(1.0f * area.h() / m_nodesDims.h()));
+
+    if (area.w() % m_nodesDims.w() != 0 || area.h() % m_nodesDims.h()) {
+      log(
+        std::string("Trying to allocate colony with dimensions ") + area.toString() +
+        " not fitting internal node dimensions of " + m_nodesDims.toString(),
+        utils::Level::Error
+      );
+    }
+
+    // Register each block.
+    int minX = area.getLeftBound() + m_nodesDims.w() / 2;
+    int minY = area.getBottomBound() + m_nodesDims.h() / 2;
+
+    utils::Boxi lArea(0, 0, m_nodesDims);
+
+    for (unsigned y = 0u ; y < bcH ; ++y) {
+      lArea.y() = minY + y * m_nodesDims.h();
+
+      for (unsigned x = 0u ; x < bcW ; ++x) {
+        lArea.x() = minX + x * m_nodesDims.w();
+
+        registerNewBlock(lArea, state);
+      }
+    }
   }
 
   bool
@@ -117,6 +194,8 @@ namespace cellulator {
       s,
       s + sizeOfBlock(),
 
+      true,
+      0u,
       0u,
       sizeOfBlock()
     };
@@ -143,9 +222,37 @@ namespace cellulator {
     // TODO: Implementation.
 
     // Register the block and return it.
-    m_blocks.push_back(block);
+    if (newB) {
+      m_blocks.push_back(block);
+    }
+    else {
+      m_blocks[block.id] = block;
+    }
 
     return block;
+  }
+
+  bool
+  CellsBlocks::destroyBlock(unsigned blockID) {
+    // Check whether the speciifed block exists.
+    if (blockID >= m_blocks.size()) {
+      log(
+        std::string("Could not destroy block ") + std::to_string(blockID) + ", only " + std::to_string(m_blocks.size()) + " registered",
+        utils::Level::Error
+      );
+
+      return false;
+    }
+
+    bool save = m_blocks[blockID].active;
+    if (save) {
+      // Deactivate the block and register it in the list of
+      // available ones.
+      m_blocks[blockID].active = false;
+      m_freeBlocks.push_back(blockID);
+    }
+
+    return save;
   }
 
   void

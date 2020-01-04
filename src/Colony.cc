@@ -31,14 +31,15 @@ namespace cellulator {
     // Protect from concurrent accesses.
     Guard guard(m_propsLocker);
 
-    // TODO: Evolve all the cells.
+    // We need to swap the internal arrays to move on to the next state.
+    unsigned ac = m_cells->step();
 
     // One more generation has been computed.
     ++m_generation;
 
     // Fill in the number of alive cells if needed.
     if (alive != nullptr) {
-      *alive = 0u;
+      *alive = ac;
     }
 
     return m_generation;
@@ -62,8 +63,10 @@ namespace cellulator {
     // Protect from concurrent accesses.
     Guard guard(m_propsLocker);
 
-    // TODO: Should create the schedule.
-    return std::vector<ColonyTileShPtr>();
+    std::vector<ColonyTileShPtr> tiles;
+    m_cells->generateSchedule(tiles);
+
+    return tiles;
   }
 
   void

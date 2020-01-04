@@ -30,6 +30,11 @@ namespace cellulator {
     };
   }
 
+  // Forward declaration to be able to use a shared pointer on a colony tile
+  // right away.
+  class ColonyTile;
+  using ColonyTileShPtr = std::shared_ptr<ColonyTile>;
+
   class CellsBlocks: public utils::CoreObject {
     public:
 
@@ -64,6 +69,8 @@ namespace cellulator {
        *          In case the requested dimensions are not exactly divisible by the input
        *          `dims`, the blocks will be allocated to reach *at least* this size. This
        *          usually means allocating a larger area than expected.
+       *          This method is mostly a wrapper which interpret the input dimensions to
+       *          build a consistent area and then calls the internal wrapper `allocate`.
        * @param dims - the minimum dimensions to reach. Will be reached when the node size
        *               divides perfectly this value.
        * @param state - the state to assign to each cell (default is `Dead`).
@@ -82,6 +89,26 @@ namespace cellulator {
       unsigned
       randomize();
 
+      /**
+       * @brief - Used to move the cells one step forward in time. This basically means swapping
+       *          the internal arrays representing the next step with the current one. We also
+       *          need to perform the expansion of the colony in case some cells are now on the
+       *          boundaries so that we can continue simulating them properly.
+       * @return - the number of alive cells at the current generation.
+       */
+      unsigned
+      step();
+
+      /**
+       * @brief - Used to generate a schedule of all the blocks currently registered in this
+       *          object and wrap them in the input vector as `ColonyTile`s. This can then
+       *          be used for example to perform the evolution of the colony.
+       *          Note that no nodes are created nor destroyed during this operation.
+       * @param tiles - the output vector to use to register the tiles.
+       */
+      void
+      generateSchedule(std::vector<ColonyTileShPtr>& tiles);
+
     private:
 
       /**
@@ -99,7 +126,12 @@ namespace cellulator {
         unsigned end;     //< The end index of this block. Should be equal to the start
                           //< index plus the size of the block.
 
+        bool active;      //< `true` if the block is registered in the `m_blocks` array
+                          //< and `false` if this is not the case. Such cases indicate
+                          //< blocks which have been destroyed and are waiting to be
+                          //< reused.
         unsigned alive;   //< The number of alive cells.
+        unsigned nAlive;  //< The number of alive cells in the next state of this block.
         unsigned changed; //< The number of cells which changed in the previous iteration.
                           //< If this value is `0` and `alive > 0` it means that only still
                           //< life forms are present in the block so we can skip it.
@@ -115,6 +147,19 @@ namespace cellulator {
       static
       float
       getDeadCellProbability() noexcept;
+
+      /**
+       * @brief - Perform the allocation of the internal buffer arrays to match the input
+       *          dimensions and assign the input state to each created cell. Note that the
+       *          input area is assumed to be a perfect multiple of the internal nodes size
+       *          and failure to comply will cause undefined behavior.
+       *          All the needed block are allocated right away.
+       * @param area - the area to allocate. Must be a multiple of `m_nodesDims`.
+       * @param state - the state to assign to the created cells.
+       */
+      void
+      allocate(const utils::Boxi& area,
+               const State& state = State::Dead);
 
       /**
        * @brief - Try to find a block spanning the `area`. Note that the block is considered
@@ -149,6 +194,32 @@ namespace cellulator {
       BlockDesc
       registerNewBlock(const utils::Boxi& area,
                        const State& state = State::Dead);
+
+      /**
+       * @brief - Used to unregister the block specified by the input id. Note that
+       *          the input index is both the identifier of the block and its index
+       *          in the `m_blocks` index.
+       *          We will set the `active` boolean to `false` for the block and set
+       *          it as available in the `m_freeBlocks` array.
+       *          Nothing happens if the block is already inactive.
+       *          Note that the internal mutex is assumed to be locked upon calling
+       *          this method.
+       * @param blockID - the index of the block to destroy.
+       * @return - `true` if the block was effectively destroyed and `false` otherwise
+       *           (usually indicating that it was already inactive).
+       */
+      bool
+      destroyBlock(unsigned blockID);
+
+      /**
+       * @brief - Clears any data registered in this cells blocks excluding the
+       *          internal node dimensions and ruleset.
+       *          This allows to start fresh and should theoretically followed
+       *          at some point by a call to the `allocateTo` method.
+       *          Assumes that the internal locker is already acquired.
+       */
+      void
+      clear();
 
       /**
        * @brief - Used to retrieve the index at which the data for a block with the
@@ -196,7 +267,7 @@ namespace cellulator {
        * @brief - Protect this object from concurrent accesses.
        */
       std::mutex m_propsLocker;
-      
+
       /**
        * @brief - The set of rules associated to the cells handled by this block. The set
        *          described how and wehn cells should be born and die.
@@ -250,7 +321,7 @@ namespace cellulator {
        *          all the above vectors.
        *          This vector should never be shrinking but might contain a lot of dead
        *          blocks where there are either no alive cells or only still life forms.
-       */ 
+       */
       std::vector<BlockDesc> m_blocks;
 
       /**
