@@ -31,13 +31,42 @@ namespace cellulator {
   }
 
   utils::Boxi
-  CellsBlocks::allocateTo(const utils::Sizei& /*dims*/,
-                          const State& /*state*/)
+  CellsBlocks::allocateTo(const utils::Sizei& dims,
+                          const State& state)
   {
     // Protect from concurrent accesses.
     Guard guard(m_propsLocker);
-    // TODO: Handle this.
-    return utils::Boxi();
+
+    // Clamp dimensions to be at least a full block.
+    utils::Sizei cDims(
+      std::max(dims.w(), m_nodesDims.w()),
+      std::max(dims.h(), m_nodesDims.h())
+    );
+
+    // Compute the number of blocks to allocate.
+    unsigned bcW = static_cast<unsigned>(std::ceil(1.0f * cDims.w() / m_nodesDims.w()));
+    unsigned bcH = static_cast<unsigned>(std::ceil(1.0f * cDims.h() / m_nodesDims.h()));
+
+    // Derive the total size of the colony.
+    utils::Boxi global(0, 0, bcW * m_nodesDims.w(), bcH * m_nodesDims.h());
+
+    // Register each block.
+    int minX = global.getLeftBound() + m_nodesDims.w() / 2;
+    int minY = global.getBottomBound() + m_nodesDims.h() / 2;
+
+    utils::Boxi area(0, 0, m_nodesDims);
+
+    for (unsigned y = 0u ; y < bcH ; ++y) {
+      area.y() = minY + y * m_nodesDims.h();
+
+      for (unsigned x = 0u ; x < bcW ; ++x) {
+        area.x() = minX + x * m_nodesDims.w();
+
+        registerNewBlock(area, state);
+      }
+    }
+
+    return global;
   }
 
   unsigned
@@ -66,7 +95,9 @@ namespace cellulator {
   }
 
   CellsBlocks::BlockDesc
-  CellsBlocks::registerNewBlock(const utils::Boxi& area) {
+  CellsBlocks::registerNewBlock(const utils::Boxi& area,
+                                const State& state)
+  {
     // Check whether some already instantiated blocks exist.
     unsigned id = m_blocks.size();
 
@@ -90,19 +121,21 @@ namespace cellulator {
       sizeOfBlock()
     };
 
+    log("Created block " + std::to_string(id) + " for " + area.toString() + " (range: " + std::to_string(block.start) + " - " + std::to_string(block.end) + ")");
+
     // Allocate cells data if needed and reset the existing data.
     if (newB) {
-      m_states.resize(block.end, State::Dead);
+      m_states.resize(block.end, state);
       m_adjacency.resize(block.end, 0u);
 
-      m_nextStates.resize(block.end, State::Dead);
+      m_nextStates.resize(block.end, state);
       m_nextAdjacency.resize(block.end, 0u);
     }
     else {
       std::fill(
         m_states.begin() + block.start,
         m_states.begin() + block.end,
-        State::Dead
+        state
       );
     }
 
