@@ -16,18 +16,23 @@ namespace cellulator {
   Colony::fetchCells(std::vector<State>& cells,
                      const utils::Boxf& area)
   {
-    // TODO: Restore that.
-    utils::Boxi iArea(
-      static_cast<int>(std::round(area.x())),
-      static_cast<int>(std::round(area.y())),
-      static_cast<int>(std::round(area.w())),
-      static_cast<int>(std::round(area.h()))
-    );
+    // Protect from concurrent accesses.
+    Guard guard(m_propsLocker);
 
-    cells.resize(iArea.area());
-    std::fill(cells.begin(), cells.end(), State::Dead);
+    // Clamp the area to get only relevant cells.
+    utils::Boxi evenized = fromFPCoordinates(area);
 
-    return iArea;
+    // Resize the output vector if needed.
+    if (cells.size() != static_cast<unsigned>(evenized.area())) {
+      cells.resize(evenized.area());
+    }
+
+    // Fetch the cells from the internal data.
+    m_cells->fetchCells(cells, evenized);
+
+    // Return the area that is actually represented by the
+    // returns `cells` array.
+    return evenized;
   }
 
   inline
@@ -40,6 +45,43 @@ namespace cellulator {
   utils::Sizei
   Colony::getCellBlockDims() noexcept {
     return utils::Sizei(8, 8);
+  }
+
+  inline
+  utils::Boxi
+  Colony::fromFPCoordinates(const utils::Boxf& in) const noexcept {
+    // First compute extremum for the input box.
+    float minX = std::floor(in.getLeftBound());
+    float maxX = std::ceil(in.getRightBound());
+
+    float minY = std::floor(in.getBottomBound());
+    float maxY = std::ceil(in.getTopBound());
+
+    int w = static_cast<int>(maxX - minX);
+    int h = static_cast<int>(maxY - minY);
+
+    // Determine whether the dimensions are even: if this is the
+    // case we are guaranteed to have an integer coordinates center.
+    // otherwise we need to add one to the dimension and offset the
+    // center so that it still covers the area provided in input.
+    int rW = w % 2;
+    int rH = h % 2;
+
+    int cX = (maxX + minX) / 2;
+    if (rW != 0) {
+      // Move the center to the left and add one to the width.
+      // Given the rules of the integer division, the center is
+      // already offseted by one.
+      ++w;
+    }
+
+    int cY = (maxY + minY) / 2;
+    if (rH != 0) {
+      // Similar to what happens for `x`.
+      ++h;
+    }
+
+    return utils::Boxi(cX, cY, w, h);
   }
 
 }

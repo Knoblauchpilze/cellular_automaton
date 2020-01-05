@@ -74,13 +74,11 @@ namespace cellulator {
        *          build a consistent area and then calls the internal wrapper `allocate`.
        * @param dims - the minimum dimensions to reach. Will be reached when the node size
        *               divides perfectly this value.
-       * @param state - the state to assign to each cell (default is `Dead`).
        * @return - the actual area allocated by this object. Should be a centered area with
        *           dimensions at least the ones of `dims`.
        */
       utils::Boxi
-      allocateTo(const utils::Sizei& dims,
-                 const State& state = State::Dead);
+      allocateTo(const utils::Sizei& dims);
 
       /**
        * @brief - Used to assign random values and ages to all the cells currently allocated
@@ -131,6 +129,24 @@ namespace cellulator {
       std::pair<State, int>
       getCellStatus(const utils::Vector2i& coord);
 
+      /**
+       * @brief - Used to retrieve the cells from the area described in input into the specified
+       *          vector. Internal blocks will be scanned for any matching the corresponding area
+       *          and filled in the output `cells` vector.
+       *          As we store the cells in contiguous blocks we can be a bit more efficient and
+       *          try to assign all the cells registered in a single block before moving on to
+       *          the next one.
+       *          Also there's no need to traverse the individual cells requetsed by the input
+       *          area because they will automatically be discovered when scanning the internal
+       *          list of blocks.
+       *          The default state of non-existing cells is `Dead`.
+       * @param cells - output vector where cells will be saved.
+       * @param area - the area for which cells should be retrieved.
+       */
+      void
+      fetchCells(std::vector<State>& cells,
+                 const utils::Boxi& area);
+
     private:
 
       /**
@@ -157,6 +173,12 @@ namespace cellulator {
         unsigned changed; //< The number of cells which changed in the previous iteration.
                           //< If this value is `0` and `alive > 0` it means that only still
                           //< life forms are present in the block so we can skip it.
+
+        int west;         //< The index of the block directly on the left of this one.
+                          //< The value is set to `-1` if the block does not exist.
+        int east;         //< The index of the block directly on the right of this one.
+        int south;        //< The index of the block directly on the bottom of this one.
+        int north;        //< The index of the block directly on the top of this one.
       };
 
       /**
@@ -172,16 +194,14 @@ namespace cellulator {
 
       /**
        * @brief - Perform the allocation of the internal buffer arrays to match the input
-       *          dimensions and assign the input state to each created cell. Note that the
+       *          dimensions and assign a `Dead` state to each created cell. Note that the
        *          input area is assumed to be a perfect multiple of the internal nodes size
        *          and failure to comply will cause undefined behavior.
        *          All the needed block are allocated right away.
        * @param area - the area to allocate. Must be a multiple of `m_nodesDims`.
-       * @param state - the state to assign to the created cells.
        */
       void
-      allocate(const utils::Boxi& area,
-               const State& state = State::Dead);
+      allocate(const utils::Boxi& area);
 
       /**
        * @brief - Try to find a block spanning the `area`. Note that the block is considered
@@ -210,12 +230,10 @@ namespace cellulator {
        *          Note that the locker is assumed to be locked upon calling this
        *          method.
        * @param area - the area to associate to the block.
-       * @param state - the state of cells to assign to the newly created block.
        * @return - the description of the created block.
        */
       BlockDesc
-      registerNewBlock(const utils::Boxi& area,
-                       const State& state = State::Dead);
+      registerNewBlock(const utils::Boxi& area);
 
       /**
        * @brief - Used to unregister the block specified by the input id. Note that
@@ -270,6 +288,8 @@ namespace cellulator {
        * @brief - Computes the coordinate to access the cell's data in the internal
        *          arrays from the input coord, given that the coordinates are within
        *          the block. Failure to guarantee that will cause undefined behavior.
+       *          Note that the coordinates should be expressed in *global* coordinate
+       *          frame.
        * @param block - the block to which the coordinate belongs.
        * @param coord - the coordinate expressed in absolute coordinate frame. This
        *                method converts it to local block's coordinate frame and then
@@ -280,6 +300,28 @@ namespace cellulator {
       int
       indexFromCoord(const BlockDesc& block,
                      const utils::Vector2i& coord) const;
+
+      /**
+       * @brief - Perform the update of the adjacency for the cell at `coord` in the
+       *          specified block. The coordinates should be expressed in the block's
+       *          coordinate frame (i.e. `x in [0; block.area.w()]` and same for `y`)
+       *          to be considered valid: failure to do so will terminate the method
+       *          early (so it's safe but not recommended).
+       *          This method will add one to all the adjacency count of cells that
+       *          are neighboring the input coordinate either to the current adjacency
+       *          count or the next step (depending on the `makeCurrent` boolean).
+       *          In case the coordinate are located on the boundary of the block the
+       *          neighboring blocks are scanned and updated but are not created in
+       *          case they do not exist.
+       * @param block - the block related to the coordinate.
+       * @param coord - the coordinate within the block to update.
+       * @param makeCurrent - `true` if the current adjacency should be updated or
+       *                      `false` if the next step adjacency should.
+       */
+      void
+      updateAdjacency(const BlockDesc& block,
+                      const utils::Vector2i& coord,
+                      bool makeCurrent);
 
       /**
        * @brief - Used to randomize the content of the block described in input. The
@@ -297,6 +339,15 @@ namespace cellulator {
       makeRandom(BlockDesc& desc,
                  float deadProb,
                  bool makeCurrent);
+
+      /**
+       * @brief - Used to update the age of all the cells registered in the blocks.
+       *          Will traverse the `m_states` array and use it to increase the age
+       *          of live cells.
+       *          Assumes that the internal locker is already acquired.
+       */
+      void
+      updateCellsAge() noexcept;
 
     private:
 
@@ -351,6 +402,13 @@ namespace cellulator {
        *          `m_adjacency` in order to make it current.
        */
       std::vector<unsigned> m_nextAdjacency;
+
+      /**
+       * @brief - Holds an array representing the age of each cells. Note that this array
+       *          should only be interpreted in case the `m_states` value indicates a live
+       *          cell at this point.
+       */
+      std::vector<int> m_ages;
 
       /**
        * @brief - The list of registered cells blocks so far. This list is the heart of the

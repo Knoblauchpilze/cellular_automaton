@@ -143,6 +143,18 @@ namespace cellulator {
       build(const utils::Sizei& dims,
             const rules::Type& ruleset);
 
+      /**
+       * @brief - Used to convert the input box from a floating point semantic to a
+       *          valid integer coordinates box. This will also make sure that the
+       *          returned box completely encompasses the input box so that we are
+       *          sure that all the data contained in the `in` box will also be there
+       *          in the output box.
+       * @param in - the box to convert to integer coordinates.
+       * @return - a box containing the input `in` box with integer coordinates.
+       */
+      utils::Boxi
+      fromFPCoordinates(const utils::Boxf& in) const noexcept;
+
     private:
 
       /**
