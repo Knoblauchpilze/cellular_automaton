@@ -20,9 +20,6 @@ namespace cellulator {
   inline
   void
   ColonyStatus::onSimulationHalted() {
-    // Protect from concurrent accesses.
-    Guard guard(m_propsLocker);
-
     // Untoggle the start simulation button.
     getStartSimulationButton().toggle(false);
   }
