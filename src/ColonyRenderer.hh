@@ -80,6 +80,15 @@ namespace cellulator {
       void
       generate(const std::string& dummy);
 
+      /**
+       * @brief - Used to retrieve the internal scheduler used to evolve the colony
+       *          within this renderer. It is mostly used to connect the simulation
+       *          halted signal to external listeners.
+       * @return - the internal scheduler used to evolve the colony.
+       */
+      ColonySchedulerShPtr
+      getScheduler() noexcept;
+
     protected:
 
       /**

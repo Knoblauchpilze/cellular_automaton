@@ -16,7 +16,8 @@ namespace cellulator {
 
     m_colony(colony),
 
-    onGenerationComputed()
+    onGenerationComputed(),
+    onSimulationHalted()
   {
     setService("scheduler");
 
@@ -130,9 +131,9 @@ namespace cellulator {
 
     // Return early if nothing needs to be scheduled.
     if (tilesAsJobs.empty()) {
-      // The scheduling yields no tiles: this probably means that the colony
-      // is only composed of `Dead` cells. We still need to move on to the
-      // next generation and notify listeners.
+      // The scheduling yields no tiles: this usually means that the colony
+      // is composed only of `Dead` cells and still life patterns.
+      // We still need to move on to the next generation and notify listeners.
       unsigned gen = m_colony->getGeneration();
       unsigned alive = m_colony->getLiveCellsCount();
 
@@ -142,14 +143,14 @@ namespace cellulator {
         alive
       );
 
-      // TODO: Note that when the colony is completely still or dead (i.e. presents
-      // no evolution between two steps), we end up here and we emit a generation
-      // computed signal. But then even if the simulation is running we won't reschedule
-      // anything (as we don't finish in the `handleTilesComputed` method).
-      // We can't call it programatically otherwise we will loop indefinitely because
-      // we can assume that as soon as we reach a fixed point nothing will change.
-      // Better would be to display a message or something indicating that the
-      // simulation cannot move anymore (or rather than it won't change anything).
+      // Reset the internal simulation state.
+      m_simulationState = SimulationState::Stopped;
+
+      // Notify that the simulation is halted.
+      onSimulationHalted.safeEmit(
+        std::string("onSimulationHalted()")
+      );
+
       return;
     }
 

@@ -46,18 +46,6 @@ namespace cellulator {
     build();
   }
 
-  void
-  ColonyRenderer::generate(const std::string& /*dummy*/) {
-    // Generate random cells in the colony.
-    m_scheduler->generate();
-
-    // Protect from concurrent accesses.
-    Guard guard(m_propsLocker);
-
-    // Indicate that the colony changed so that we can repaint it.
-    setColonyChanged();
-  }
-
   bool
   ColonyRenderer::handleContentScrolling(const utils::Vector2f& /*posToFix*/,
                                          const utils::Vector2f& whereTo,

@@ -44,6 +44,17 @@ namespace cellulator {
       sdl::graphic::Button&
       getGenerateColonyButton();
 
+      /**
+       * @brief - Used to react to the simulation being halted. This usually indicates
+       *          that either an error occurred during the simulation or that the colony
+       *          reached a point where it is composed only of still life patterns and
+       *          `Dead` cells (and thus there's no point in pursuing the simulation).
+       *          This method will handle the necessary untoggling of the simulation
+       *          started button.
+       */
+      void
+      onSimulationHalted();
+
     protected:
 
       /**
