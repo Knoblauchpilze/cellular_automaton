@@ -89,13 +89,12 @@ namespace cellulator {
        *          we get another perspective on the fractal.
        *          The interface is similar to what is expected by the parent
        *          class (see `ScrollableWidget` for more details).
-       * @param posToFix - the position in local coordinate frame corresponding
-       *                   to the position that should be fixed during the
-       *                   scroll operation. Note that this corresponds to a
-       *                   `cell` coordinate.
+       * @param posToFix - Corresponds to the center of the rendering area in
+       *                   cells' coordinate frame.
        * @param whereTo - the new position of the `posToFix`. Corresponds to
        *                  the `posToFix` where the `motion` has been applied.
-       *                  Note that this corresponds to a `cell` coordinate.
+       *                  It represents the position in global coordinate frame
+       *                  of the mouse.
        * @param motion - the motion to apply in cells coordinates.
        * @param notify - indication as to this method should emit some signals
        *                 like `onHorizontalAxisChanged`.

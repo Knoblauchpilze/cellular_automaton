@@ -59,8 +59,8 @@ namespace cellulator {
   }
 
   bool
-  ColonyRenderer::handleContentScrolling(const utils::Vector2f& posToFix,
-                                         const utils::Vector2f& /*whereTo*/,
+  ColonyRenderer::handleContentScrolling(const utils::Vector2f& /*posToFix*/,
+                                         const utils::Vector2f& whereTo,
                                          const utils::Vector2f& motion,
                                          bool /*notify*/)
   {
@@ -91,7 +91,7 @@ namespace cellulator {
 
     // Update the position and age of the cell pointed at by the mouse.
     if (isMouseInside()) {
-      notifyCoordinatePointedTo(posToFix, false);
+      notifyCoordinatePointedTo(whereTo, true);
     }
 
     // Request a repaint operation.
@@ -127,8 +127,6 @@ namespace cellulator {
 
     // Schedule a scrolling if some motion has been detected.
     if (move) {
-      utils::Vector2f center, newCenter;
-
       {
         Guard guard(m_propsLocker);
 
@@ -139,17 +137,9 @@ namespace cellulator {
 
         motion.x() /= cellsDims.w();
         motion.y() /= cellsDims.h();
-
-        if (isMouseInside()) {
-          center = m_lastKnownMousePos;
-        }
-        else {
-          center = m_settings.area.getCenter();
-        }
-        newCenter = center + motion;
       }
 
-      if (handleContentScrolling(center, newCenter, motion, false)) {
+      if (handleContentScrolling(m_settings.area.getCenter(), m_lastKnownMousePos, motion, false)) {
         requestRepaint();
       }
     }
