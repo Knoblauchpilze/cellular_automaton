@@ -13,33 +13,18 @@ namespace cellulator {
     public:
 
       /**
-       * @brief - Describe the type of operation which should be performed by this
-       *          tile.
+       * @brief - Creates a new computation tile with the block index. This
+       *          class is merely a wrapper to allow the parallel computation
+       *          of several blocks. We don't actually want to do anything we
+       *          just use it as a convenient wrapper to handle scheduling of
+       *          blocks through the `CellsBlocks` interface.
+       * @param blockID - the block attached to this colony tile: it will be
+       *                  scheduled for evolution when this tile is executed.
+       * @param cells - the cells data from which we can make sense of the
+       *                `blockID`.
        */
-      enum class Type {
-        Border,
-        Interior
-      };
-
-    public:
-
-      /**
-       * @brief - Creates a new computation tile with the associated area. It
-       *          will use the provided data to perform the computation of the
-       *          cells in the specified area to the next generation.
-       *          Based on the `type` of the tile the computation process will
-       *          either call the computation methods on the interior of the
-       *          `cells` or call the boundaries update. Depending on the type
-       *          the priority is also not the same (typically borders jobs are
-       *          assigned a low priority).
-       * @param area - the rendering area for which the computations should be
-       *               done.
-       * @param cells - the cells data to make evolve.
-       * @param type - the type of job associated to this tile.
-       */
-      ColonyTile(const utils::Boxi& area,
-                 CellsBlocks* cells,
-                 const Type& type);
+      ColonyTile(unsigned blockID,
+                 CellsBlocks* cells);
 
       ~ColonyTile() = default;
 
@@ -54,20 +39,17 @@ namespace cellulator {
     private:
 
       /**
-       * @brief - The rendering area for which the computations should be performed.
+       * @brief - The index of the block attached to this tile: will be scheduled
+       *          for evolution when this tile is executed. We don't actually have
+       *          to know to which area this block is related, this is all managed
+       *          internally by the `CellsBlocks` data.
        */
-      utils::Boxi m_area;
+      unsigned m_blockID;
 
       /**
        * @brief - The data containing the cells to evolve.
        */
       CellsBlocks* m_data;
-
-      /**
-       * @brief - The type of this tile, which determine the processing to call on the
-       *          internal `m_data` node.
-       */
-      Type m_type;
   };
 
   using ColonyTileShPtr = std::shared_ptr<ColonyTile>;

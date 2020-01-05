@@ -11,7 +11,6 @@ set (SOURCES
   ColonyStatus.cc
   Cell.cc
   Colony.cc
-  ColonyTile.cc
   ColonyScheduler.cc
   CellsBlocks.cc
   )

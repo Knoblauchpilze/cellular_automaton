@@ -6,49 +6,12 @@
 namespace cellulator {
 
   inline
-  utils::Boxi
+  utils::Boxf
   CellsBlocks::getLiveArea() noexcept {
     // Protect from concurrent access.
     Guard guard(m_propsLocker);
 
     return m_liveArea;
-  }
-
-  inline
-  std::pair<State, int>
-  CellsBlocks::getCellStatus(const utils::Vector2i& coord) {
-    // Protect from concurrent access.
-    Guard guard(m_propsLocker);
-
-    std::pair<State, int> out = std::make_pair(State::Dead, -1);
-
-    // Eliminate trivial cases where the input coordinate are not in the
-    // live area of the colony.
-    if (!m_liveArea.contains(coord)) {
-      return out;
-    }
-
-    // Traverse the list of blocks and find the one spanning the input
-    // coordinate. If none can be found (or at least none active) the
-    // default value will be returned.
-    unsigned id = 0u;
-    bool found = false;
-
-    while (id < m_blocks.size() && !found) {
-      // Discard inactive blocks.
-      if (m_blocks[id].active && m_blocks[id].area.contains(coord)) {
-        int dataID = indexFromCoord(m_blocks[id], coord);
-
-        out.first = m_states[dataID];
-        out.second = m_ages[dataID];
-
-        found = true;
-      }
-
-      ++id;
-    }
-
-    return out;
   }
 
   inline
@@ -97,6 +60,19 @@ namespace cellulator {
   }
 
   inline
+  utils::Vector2i
+  CellsBlocks::coordFromIndex(const BlockDesc& block,
+                              unsigned coord) const
+  {
+    // Compute local `x` and `y` coordinates for the input index.
+    int x = coord % block.area.w();
+    int y = coord / block.area.w();
+
+    // Translate into vector semantic.
+    return utils::Vector2i(block.area.getLeftBound() + x, block.area.getBottomBound() + y);
+  }
+
+  inline
   void
   CellsBlocks::updateCellsAge() noexcept {
     // Traverse the current states.
@@ -105,6 +81,49 @@ namespace cellulator {
         ++m_ages[id];
       }
     }
+  }
+
+  inline
+  void
+  CellsBlocks::updateLiveArea() noexcept {
+    int xMin = std::numeric_limits<int>::max();
+    int yMin = std::numeric_limits<int>::max();
+    int xMax = std::numeric_limits<int>::min();
+    int yMax = std::numeric_limits<int>::min();
+
+    // Traverse all blocks and update minimum and maximum values
+    // for the live area.
+    for (unsigned id = 0u ; id < m_blocks.size() ; ++id) {
+      // Ignore inactive and dead blocks.
+      if (!m_blocks[id].active || m_blocks[id].alive == 0u) {
+        continue;
+      }
+
+      const BlockDesc& b = m_blocks[id];
+      for (unsigned idC = b.start ; idC < b.end ; ++idC) {
+        if (m_states[idC] == State::Alive) {
+          utils::Vector2i c = coordFromIndex(b, idC - b.start);
+
+          xMin = std::min(xMin, c.x());
+          yMin = std::min(yMin, c.y());
+          xMax = std::max(xMax, c.x());
+          yMax = std::max(yMax, c.y());
+        }
+      }
+    }
+
+    // Add one to the max bounds as we're using a bottom left
+    // based box semantic: typically the cell at `(-1, 5)`
+    // covers the real world pixels unti `(-1, 6)`.
+
+    m_liveArea = utils::Boxf(
+      1.0f * (xMin + xMax + 1) / 2.0f,
+      1.0f * (yMin + yMax + 1) / 2.0f,
+      1.0f * (xMax + 1 - xMin),
+      1.0f * (yMax + 1 - yMin)
+    );
+
+    log("Live area is now " + m_liveArea.toString());
   }
 
 }

@@ -22,7 +22,7 @@ namespace cellulator {
     // We want the entire colony to fit inside the screen. We also want to
     // keep the best aspect ratio given the colony's size.
     utils::Sizef env = LayoutItem::getRenderingArea().toSize();
-    utils::Boxi cArea = m_colony->getArea();
+    utils::Boxf cArea = m_colony->getArea();
 
     // Determine the dimension of a cell in pixel's coordinate frame for
     // each axis.
