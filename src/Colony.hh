@@ -40,8 +40,27 @@ namespace cellulator {
        *          The size is expressed in terms of cells.
        * @return - the living area occupied by the colony.
        */
-      utils::Boxi
+      utils::Boxf
       getArea() noexcept;
+
+      /**
+       * @brief - Retrieves the current generation reached by the colony. Note that
+       *          this means that the generationw as effectively reached, it does
+       *          not account for generation which are being computed or which have
+       *          not been been finalized through the `step` method.
+       * @return - the current generation reached by the colony.
+       */
+      unsigned
+      getGeneration() noexcept;
+
+      /**
+       * @brief - Retrieve the number of live cells in this colony. Just like for
+       *          the `getGeneration` method it only accounts for state reached by
+       *          the colony (so through the `step` method).
+       * @return - the number of live cells in the colony.
+       */
+      unsigned
+      getLiveCellsCount() noexcept;
 
       /**
        * @brief - Used to retrieve the cells from the area described in input into
@@ -168,6 +187,13 @@ namespace cellulator {
        *          generation which is kept internally.
        */
       unsigned m_generation;
+
+      /**
+       * @brief - Holds the number of live cells in the current generation reached
+       *          by the colony. This indicates some sort of `health` for the colony
+       *          as the more cells it have the larger it should be.
+       */
+      unsigned m_liveCells;
 
       /**
        * @brief - The internal container for the cells representing the colony.

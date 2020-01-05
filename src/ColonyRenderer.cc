@@ -49,7 +49,7 @@ namespace cellulator {
   void
   ColonyRenderer::generate(const std::string& /*dummy*/) {
     // Generate random cells in the colony.
-    m_colony->generate();
+    m_scheduler->generate();
 
     // Protect from concurrent accesses.
     Guard guard(m_propsLocker);

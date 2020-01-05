@@ -6,9 +6,27 @@
 namespace cellulator {
 
   inline
-  utils::Boxi
+  utils::Boxf
   Colony::getArea() noexcept {
     return m_cells->getLiveArea();
+  }
+
+  inline
+  unsigned
+  Colony::getGeneration() noexcept {
+    // Protect from concurrent accesses.
+    Guard guard(m_propsLocker);
+    
+    return m_generation;
+  }
+
+  inline
+  unsigned
+  Colony::getLiveCellsCount() noexcept {
+    // Protect from concurrent accesses.
+    Guard guard(m_propsLocker);
+
+    return m_liveCells;
   }
 
   inline

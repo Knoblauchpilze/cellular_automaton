@@ -72,6 +72,9 @@ namespace cellulator {
       }
     }
 
+    // Update live area to reflect the newly generated cells.
+    updateLiveArea();
+
     return count;
   }
 
@@ -102,7 +105,15 @@ namespace cellulator {
 
       m_blocks[id].alive = m_blocks[id].nAlive;
       alive += m_blocks[id].alive;
+
+      // Destroy the block if needed.
+      if (m_blocks[id].alive == 0u) {
+        destroyBlock(m_blocks[id].id);
+      }
     }
+
+    // Update live area to reflect the new states of cells.
+    updateLiveArea();
 
     // Now we should expand and create new blocks to account for cells that
     // might overflow the current state of the colony.
@@ -122,13 +133,54 @@ namespace cellulator {
       if (m_blocks[id].active) {
         tiles.push_back(
           std::make_shared<ColonyTile>(
-            m_blocks[id].area,
-            this,
-            ColonyTile::Type::Interior
+            m_blocks[id].id,
+            this
           )
         );
       }
     }
+  }
+
+  void
+  CellsBlocks::evolve(unsigned /*blockID*/) {
+    // TODO: Implementation.
+    // Should update the `m_nextStates`, `m_nextAdjacency` and `nAlive`.
+  }
+
+  std::pair<State, int>
+  CellsBlocks::getCellStatus(const utils::Vector2i& coord) {
+    // Protect from concurrent access.
+    Guard guard(m_propsLocker);
+
+    std::pair<State, int> out = std::make_pair(State::Dead, -1);
+
+    // Eliminate trivial cases where the input coordinate are not in the
+    // live area of the colony.
+    if (!m_liveArea.contains(utils::Vector2f(1.0f * coord.x(), 1.0f * coord.y()))) {
+      return out;
+    }
+
+    // Traverse the list of blocks and find the one spanning the input
+    // coordinate. If none can be found (or at least none active) the
+    // default value will be returned.
+    unsigned id = 0u;
+    bool found = false;
+
+    while (id < m_blocks.size() && !found) {
+      // Discard inactive blocks.
+      if (m_blocks[id].active && m_blocks[id].area.contains(coord)) {
+        int dataID = indexFromCoord(m_blocks[id], coord);
+
+        out.first = m_states[dataID];
+        out.second = m_ages[dataID];
+
+        found = true;
+      }
+
+      ++id;
+    }
+
+    return out;
   }
 
   void
@@ -228,18 +280,12 @@ namespace cellulator {
         registerNewBlock(lArea);
       }
     }
+    
+    // TODO: Handle neighboring of nodes.
 
     // Assign the internal areas.
     m_totalArea = area;
-    m_liveArea = utils::Boxi(m_totalArea.getCenter(), 0, 0);
-  }
-
-  bool
-  CellsBlocks::find(const utils::Boxi& /*area*/,
-                    BlockDesc& /*desc*/)
-  {
-    // TODO: Implementation.
-    return false;
+    m_liveArea = utils::Boxf(1.0f * m_totalArea.x(), 1.0f * m_totalArea.y(), 0.0f, 0.0f);
   }
 
   CellsBlocks::BlockDesc
@@ -314,6 +360,8 @@ namespace cellulator {
       return false;
     }
 
+    log("Destroying block " + std::to_string(blockID) + " (internal: " + std::to_string(m_blocks[blockID].id) + ") spanning " + m_blocks[blockID].area.toString());
+
     bool save = m_blocks[blockID].active;
     if (save) {
       // Deactivate the block and register it in the list of
@@ -355,7 +403,9 @@ namespace cellulator {
       State s = State::Dead;
       if (prob >= deadProb) {
         s = State::Alive;
-        ++desc.alive;
+        if (makeCurrent) {
+          ++desc.alive;
+        }
       }
 
       if (makeCurrent) {

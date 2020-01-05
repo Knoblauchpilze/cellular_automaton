@@ -130,6 +130,26 @@ namespace cellulator {
 
     // Return early if nothing needs to be scheduled.
     if (tilesAsJobs.empty()) {
+      // The scheduling yields no tiles: this probably means that the colony
+      // is only composed of `Dead` cells. We still need to move on to the
+      // next generation and notify listeners.
+      unsigned gen = m_colony->getGeneration();
+      unsigned alive = m_colony->getLiveCellsCount();
+
+      onGenerationComputed.safeEmit(
+        std::string("onGenerationComputed(") + std::to_string(gen) + ", " + std::to_string(alive) + ")",
+        gen,
+        alive
+      );
+
+      // TODO: Note that when the colony is completely still or dead (i.e. presents
+      // no evolution between two steps), we end up here and we emit a generation
+      // computed signal. But then even if the simulation is running we won't reschedule
+      // anything (as we don't finish in the `handleTilesComputed` method).
+      // We can't call it programatically otherwise we will loop indefinitely because
+      // we can assume that as soon as we reach a fixed point nothing will change.
+      // Better would be to display a message or something indicating that the
+      // simulation cannot move anymore (or rather than it won't change anything).
       return;
     }
 
