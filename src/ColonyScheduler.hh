@@ -152,6 +152,15 @@ namespace cellulator {
        *          cells in the colony.
        */
       utils::Signal<unsigned, unsigned> onGenerationComputed;
+
+      /**
+       * @brief - Used to signal to listeners the fact that the simulation can't be continued
+       *          any further. Usually this means that the colony reached a point where all
+       *          the cells are dead or arranged in still life patterns.
+       *          In this case there's no need to continue the simulation and we notify the
+       *          external listeners with this signal.
+       */
+      utils::Signal<> onSimulationHalted;
   };
 
   using ColonySchedulerShPtr = std::shared_ptr<ColonyScheduler>;

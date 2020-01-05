@@ -97,6 +97,11 @@ int main(int /*argc*/, char** /*argv*/) {
       &cellulator::ColonyRenderer::generate
     );
 
+    renderer->getScheduler()->onSimulationHalted.connect_member<cellulator::ColonyStatus>(
+      status,
+      &cellulator::ColonyStatus::onSimulationHalted
+    );
+
     // Connect changes in the colony to the status display.
     renderer->onCoordChanged.connect_member<cellulator::InfoBar>(
       bar,

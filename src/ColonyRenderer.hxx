@@ -65,6 +65,28 @@ namespace cellulator {
   }
 
   inline
+  void
+  ColonyRenderer::generate(const std::string& /*dummy*/) {
+    // Generate random cells in the colony.
+    m_scheduler->generate();
+
+    // Protect from concurrent accesses.
+    Guard guard(m_propsLocker);
+
+    // Indicate that the colony changed so that we can repaint it.
+    setColonyChanged();
+  }
+
+  inline
+  ColonySchedulerShPtr
+  ColonyRenderer::getScheduler() noexcept {
+    // Protect from concurrent accesses.
+    Guard guard(m_propsLocker);
+
+    return m_scheduler;
+  }
+
+  inline
   bool
   ColonyRenderer::mouseMoveEvent(const sdl::core::engine::MouseEvent& e) {
     // Protect from concurrent accesses.
