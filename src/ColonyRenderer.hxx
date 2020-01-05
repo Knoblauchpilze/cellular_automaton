@@ -223,6 +223,9 @@ namespace cellulator {
       return;
     }
 
+    // Update the last known position of the mouse.
+    m_lastKnownMousePos = (global ? pos : mapToGlobal(pos));
+
     // Convert the mouse position to cell coordinates.
     utils::Vector2f fpC = convertPosToRealWorld(pos, global);
 
