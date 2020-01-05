@@ -263,7 +263,7 @@ namespace cellulator {
     onCoordChanged.safeEmit(
       std::string("onCoordChanged(") + cell.toString() + ")",
       cell,
-      s.second
+      s.first == State::Dead ? -1 : s.second
     );
   }
 
