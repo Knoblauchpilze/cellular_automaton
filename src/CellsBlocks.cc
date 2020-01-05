@@ -21,6 +21,7 @@ namespace cellulator {
     m_ages(),
 
     m_blocks(),
+    m_freeBlocks(),
 
     m_totalArea(),
     m_liveArea()
@@ -184,7 +185,7 @@ namespace cellulator {
     while (id < m_blocks.size() && !found) {
       // Discard inactive blocks.
       if (m_blocks[id].active && m_blocks[id].area.contains(coord)) {
-        int dataID = indexFromCoord(m_blocks[id], coord);
+        int dataID = indexFromCoord(m_blocks[id], coord, true);
 
         out.first = m_states[dataID];
         out.second = m_ages[dataID];
@@ -353,7 +354,7 @@ namespace cellulator {
     }
     else {
       std::fill(m_states.begin() + block.start, m_states.begin() + block.end, State::Dead);
-      std::fill(m_ages.begin() + block.start, m_ages.end() + block.end, 0);
+      std::fill(m_ages.begin() + block.start, m_ages.begin() + block.end, 0);
       std::fill(m_adjacency.begin() + block.start, m_adjacency.begin() + block.end, 0u);
     }
 
@@ -415,18 +416,21 @@ namespace cellulator {
       int xMax = coord.x() + 1;
       int yMax = coord.y() + 1;
 
+      int xOffset = block.area.w() / 2;
+      int yOffset = block.area.h() / 2;
+
       utils::Vector2i cell;
 
-      for (int y = yMin ; y < yMax ; ++y) {
-        for (int x = xMin ; x < xMax ; ++x) {
-          cell.x() = x;
-          cell.y() = y;
+      for (int y = yMin ; y <= yMax ; ++y) {
+        for (int x = xMin ; x <= xMax ; ++x) {
+          cell.x() = x - xOffset;
+          cell.y() = y - yOffset;
 
           if (makeCurrent) {
-            ++m_adjacency[indexFromCoord(block, cell)];
+            ++m_adjacency[indexFromCoord(block, cell, false)];
           }
           else {
-            ++m_nextAdjacency[indexFromCoord(block, cell)];
+            ++m_nextAdjacency[indexFromCoord(block, cell, false)];
           }
         }
       }
@@ -460,6 +464,9 @@ namespace cellulator {
     int uBW = block.area.w() - 1;
     int uBH = block.area.h() - 1;
 
+    int xOffset = block.area.w() / 2;
+    int yOffset = block.area.h() / 2;
+
     utils::Vector2i cell;
 
     for (int y = yMin ; y <= yMax ; ++y) {
@@ -469,20 +476,19 @@ namespace cellulator {
           continue;
         }
 
-        cell.x() = x % xMax;
-        cell.y() = y % yMax;
+        cell.x() = x % xMax - xOffset;
+        cell.y() = y % yMax - yOffset;
 
         // Determine which block should be used.
         const BlockDesc* toUse = nullptr;
         bool okX = (x >= 0 && x <= uBW);
         bool okY = (y >= 0 && y <= uBH);
 
-        if (okX && okY) {
-          toUse = &block;
-        }
-        else if (okX) {
-          // We know that `y` cannot be valid.
-          if (y < 0) {
+        if (okX) {
+          if (okY) {
+            toUse = &block;
+          }
+          else if (y < 0) {
             toUse = s;
           }
           else {
@@ -526,10 +532,10 @@ namespace cellulator {
         }
 
         if (makeCurrent) {
-          ++m_adjacency[indexFromCoord(*toUse, cell)];
+          ++m_adjacency[indexFromCoord(*toUse, cell, false)];
         }
         else {
-          ++m_nextAdjacency[indexFromCoord(*toUse, cell)];
+          ++m_nextAdjacency[indexFromCoord(*toUse, cell, false)];
         }
       }
     }

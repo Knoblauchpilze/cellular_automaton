@@ -47,10 +47,16 @@ namespace cellulator {
   inline
   int
   CellsBlocks::indexFromCoord(const BlockDesc& block,
-                              const utils::Vector2i& coord) const
+                              const utils::Vector2i& coord,
+                              bool global) const
   {
-    // Convert the input coordinate in the local block's cooordinate frame.
-    utils::Vector2i local(coord.x() - block.area.x(), coord.y() - block.area.y());
+    // Convert the input coordinate in the local block's cooordinate frame
+    // if needed.
+    utils::Vector2i local = coord;
+    if (global) {
+      local.x() = coord.x() - block.area.x();
+      local.y() = coord.y() - block.area.y();
+    }
 
     // Compute the one-dimensional index from this.
     int xMin = block.area.getLeftBound();

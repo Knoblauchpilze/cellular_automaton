@@ -294,13 +294,16 @@ namespace cellulator {
        * @param block - the block to which the coordinate belongs.
        * @param coord - the coordinate expressed in absolute coordinate frame. This
        *                method converts it to local block's coordinate frame and then
-       *                uses it to extract the data index.
+       *                uses it to extract the data index if needed.
+       * @param global - `true` if the `coord` is expressed in absolute coordinate frame
+       *                 and `false` if it is already expressed in local block's frame.
        * @return - an index which can be used in the internal arrays (like `m_state`
        *           for example) and which corresponds to the cell's data.
        */
       int
       indexFromCoord(const BlockDesc& block,
-                     const utils::Vector2i& coord) const;
+                     const utils::Vector2i& coord,
+                     bool global) const;
 
       /**
        * @brief - Compute the real world coordinates of the `coord` cell in the input
