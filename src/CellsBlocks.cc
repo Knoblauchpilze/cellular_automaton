@@ -17,6 +17,7 @@ namespace cellulator {
     m_adjacency(),
     m_nextStates(),
     m_nextAdjacency(),
+    m_adjacencyLocker(),
     m_ages(),
 
     m_blocks(),
@@ -117,7 +118,21 @@ namespace cellulator {
 
     // Now we should expand and create new blocks to account for cells that
     // might overflow the current state of the colony.
-    // TODO: Should handle expansion.
+    // In order to do that we need to scan the internal list of blocks and
+    // check for each one whether it is a boundary and if it risks to need
+    // some other elements in the next generation.
+    // As we will perform some heavy recycling and allocation while we are
+    // travsersing the list it might be a problem. However we know that:
+    //  - we can only create nodes at the end of the queue or on a place
+    //    where we already have a block allocated but marked inactive.
+    //  - all created blocks will be empty at first.
+    // These considerations make it possible to only iterate once through
+    // the internal list of blocks and call it a day.
+    // We will possibly iterate on blocks which have just been created but
+    // this should be fast as they are clearly not active.
+    for (unsigned id = 0u ; id < m_blocks.size() ; ++id) {
+      allocateBoundary(id);
+    }
 
     return alive;
   }
@@ -317,6 +332,11 @@ namespace cellulator {
       -1,
       -1,
       -1,
+      -1,
+
+      -1,
+      -1,
+      -1,
       -1
     };
 
@@ -326,7 +346,7 @@ namespace cellulator {
     if (newB) {
       m_states.resize(block.end, State::Dead);
       m_adjacency.resize(block.end, 0u);
-      m_ages.resize(block.end);
+      m_ages.resize(block.end, 0);
 
       m_nextStates.resize(block.end, State::Dead);
       m_nextAdjacency.resize(block.end, 0u);
@@ -379,11 +399,140 @@ namespace cellulator {
   }
 
   void
-  CellsBlocks::updateAdjacency(const BlockDesc& /*block*/,
-                               const utils::Vector2i& /*coord*/,
-                               bool /*makeCurrent*/)
+  CellsBlocks::updateAdjacency(const BlockDesc& block,
+                               const utils::Vector2i& coord,
+                               bool makeCurrent)
   {
-    // TODO: Implementation.
+    // Check whether the input coordinate corresponds to a cell
+    // on the boundary of the node.
+    if (coord.x() > 1 && coord.x() < block.area.w() - 2 &&
+        coord.y() > 1 && coord.y() < block.area.h() - 2)
+    {
+      // Interior cell, we can just update the adjacency values
+      // without worrying about multithreading.
+      int xMin = coord.x() - 1;
+      int yMin = coord.y() - 1;
+      int xMax = coord.x() + 1;
+      int yMax = coord.y() + 1;
+
+      utils::Vector2i cell;
+
+      for (int y = yMin ; y < yMax ; ++y) {
+        for (int x = xMin ; x < xMax ; ++x) {
+          cell.x() = x;
+          cell.y() = y;
+
+          if (makeCurrent) {
+            ++m_adjacency[indexFromCoord(block, cell)];
+          }
+          else {
+            ++m_nextAdjacency[indexFromCoord(block, cell)];
+          }
+        }
+      }
+
+      // We're done.
+      return;
+    }
+
+    // Acquire the lock on the mutex protecting adjacency arrays.
+    Guard guard(m_adjacencyLocker);
+
+    // We will follow a standard process, the only thing is that we
+    // need to find the correct block based on whether the adjacency
+    // to update is in the input `block` or in one of the neighors.
+    // To prepare the work we will fetch the blocks beforehand.
+    const BlockDesc* e = (block.east >= 0 ? &m_blocks[block.east] : nullptr);
+    const BlockDesc* w = (block.west >= 0 ? &m_blocks[block.west] : nullptr);
+    const BlockDesc* s = (block.south >= 0 ? &m_blocks[block.south] : nullptr);
+    const BlockDesc* n = (block.north >= 0 ? &m_blocks[block.north] : nullptr);
+
+    const BlockDesc* ne = (block.ne >= 0 ? &m_blocks[block.ne] : nullptr);
+    const BlockDesc* nw = (block.nw >= 0 ? &m_blocks[block.nw] : nullptr);
+    const BlockDesc* sw = (block.sw >= 0 ? &m_blocks[block.sw] : nullptr);
+    const BlockDesc* se = (block.se >= 0 ? &m_blocks[block.se] : nullptr);
+
+    int xMin = coord.x() - 1;
+    int yMin = coord.y() - 1;
+    int xMax = coord.x() + 1;
+    int yMax = coord.y() + 1;
+
+    int uBW = block.area.w() - 1;
+    int uBH = block.area.h() - 1;
+
+    utils::Vector2i cell;
+
+    for (int y = yMin ; y <= yMax ; ++y) {
+      for (int x = xMin ; x <= xMax ; ++x) {
+        // Do not update the cell itself.
+        if (x == coord.x() && y == coord.y()) {
+          continue;
+        }
+
+        cell.x() = x % xMax;
+        cell.y() = y % yMax;
+
+        // Determine which block should be used.
+        const BlockDesc* toUse = nullptr;
+        bool okX = (x >= 0 && x <= uBW);
+        bool okY = (y >= 0 && y <= uBH);
+
+        if (okX && okY) {
+          toUse = &block;
+        }
+        else if (okX) {
+          // We know that `y` cannot be valid.
+          if (y < 0) {
+            toUse = s;
+          }
+          else {
+            // Only `y > uBH` remaining.
+            toUse = n;
+          }
+        }
+        else if (x < 0) {
+          if (okY) {
+            toUse = w;
+          }
+          else if (y < 0) {
+            toUse = sw;
+          }
+          else {
+            // Only `y > uBH` remaining.
+            toUse = nw;
+          }
+        }
+        else {
+          // Only `x > uBW` remaining.
+          if (okY) {
+            toUse = e;
+          }
+          else if (y < 0) {
+            toUse = se;
+          }
+          else {
+            // Only `y > uBH` remaining.
+            toUse = ne;
+          }
+        }
+
+        if (toUse == nullptr) {
+          log(
+            std::string("Could not update adjacency for " + cell.toString() + " (on behalf of " + coord.toString() + ") from block " + block.area.toString()),
+            utils::Level::Error
+          );
+
+          continue;
+        }
+
+        if (makeCurrent) {
+          ++m_adjacency[indexFromCoord(*toUse, cell)];
+        }
+        else {
+          ++m_nextAdjacency[indexFromCoord(*toUse, cell)];
+        }
+      }
+    }
   }
 
   void
@@ -427,6 +576,96 @@ namespace cellulator {
 
       updateAdjacency(desc, coord, makeCurrent);
     }
+  }
+
+  bool
+  CellsBlocks::allocateBoundary(unsigned blockID) noexcept {
+    BlockDesc b = m_blocks[blockID];
+
+    // Discard inactive blocks.
+    if (!b.active) {
+      return false;
+    }
+
+    // Check whether this block is a border.
+    if (b.east >= 0 && b.west >= 0 && b.south >= 0 && b.north >= 0 &&
+        b.ne >= 0 && b.nw >= 0 && b.se >= 0 && b.sw >= 0)
+    {
+      // The block is not a boundary.
+      return false;
+    }
+
+    // Allocate any missing children if needed: that is if the node
+    // has at least one live cell.
+    if (b.alive == 0u) {
+      return false;
+    }
+
+    // For each node to create we need to compute its associated area
+    // which can be done using the current area of the node with some
+    // offset.
+    // What we know is that any area will have dimensions matching the
+    // `m_nodesDims` attribute.
+    utils::Boxi area(0, 0, m_nodesDims);
+
+    if (b.ne < 0) {
+      area.x() = b.area.x() + m_nodesDims.w();
+      area.y() = b.area.y() + m_nodesDims.w();
+
+      registerNewBlock(area);
+    }
+
+    if (b.north < 0) {
+      area.x() = b.area.x();
+      area.y() = b.area.y() + m_nodesDims.h();
+
+      registerNewBlock(area);
+    }
+
+    if (b.nw < 0) {
+      area.x() = b.area.x() - m_nodesDims.w();
+      area.y() = b.area.y() + m_nodesDims.w();
+
+      registerNewBlock(area);
+    }
+
+    if (b.west < 0) {
+      area.x() = b.area.x() - m_nodesDims.w();
+      area.y() = b.area.y();
+
+      registerNewBlock(area);
+    }
+
+    if (b.sw < 0) {
+      area.x() = b.area.x() - m_nodesDims.w();
+      area.y() = b.area.y() - m_nodesDims.w();
+
+      registerNewBlock(area);
+    }
+
+    if (b.south < 0) {
+      area.x() = b.area.x();
+      area.y() = b.area.y() - m_nodesDims.h();
+
+      registerNewBlock(area);
+    }
+
+    if (b.se < 0) {
+      area.x() = b.area.x() + m_nodesDims.w();
+      area.y() = b.area.y() - m_nodesDims.w();
+
+      registerNewBlock(area);
+    }
+
+    if (b.east < 0) {
+      area.x() = b.area.x() + m_nodesDims.w();
+      area.y() = b.area.y();
+
+      registerNewBlock(area);
+    }
+
+    // At least one node has been created.
+    return true;
   }
 
 }

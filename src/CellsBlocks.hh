@@ -192,6 +192,11 @@ namespace cellulator {
         int east;         //< The index of the block directly on the right of this one.
         int south;        //< The index of the block directly on the bottom of this one.
         int north;        //< The index of the block directly on the top of this one.
+
+        int nw;           //< Index of the north west block if any.
+        int ne;           //< Index of the north east block if any.
+        int sw;           //< Index of the south west block if any.
+        int se;           //< Index of the south east block if any.
       };
 
       /**
@@ -372,6 +377,23 @@ namespace cellulator {
       void
       updateLiveArea() noexcept;
 
+      /**
+       * @brief - Used to determine whether this block is a boundary node and perform
+       *          the needed allocation should it be the case. We consider that a node
+       *          is a boundary as long as one of its neighboring node is not registered
+       *          in the internal blocks list.
+       *          Note that we don't scan the blocks list but rather rely on the props
+       *          of the block: indeed if any of the `east`, `west`, etc. point is set
+       *          to `-1` it means that the corresponding block is not allocated and
+       *          thus we should do it.
+       *          The allocation only occurs in case the block is active and has at least
+       *          one live cells (otherwise there's no need to allocate it).
+       * @param blockID - the index of the block for which boundaries should be allocated.
+       * @return - `true` if some nodes have been allocated for this block.
+       */
+      bool
+      allocateBoundary(unsigned blockID) noexcept;
+
     private:
 
       /**
@@ -425,6 +447,23 @@ namespace cellulator {
        *          `m_adjacency` in order to make it current.
        */
       std::vector<unsigned> m_nextAdjacency;
+
+      /**
+       * @brief - As we want to allow the computation of blocks in parellel, it means that
+       *          we need to find a way to make sure that only a single thread is accessing
+       *          the cells data at any time.
+       *          Regarding the cells' state it is quite easy as the only information that
+       *          is needed to evolve a cell is the current cell. But it's not so easy for
+       *          the adjacency. While most of the accesses are fine (i.e. accesses where
+       *          the data is *inside* a block), some might concurrently modify the values
+       *          of certain cells: namely the ones that lie on the boundaries of blocks.
+       *          In order to not greatly decrease the efficiency of the worker threads, we
+       *          will use this locker to protect concurrent accesses to adjacency values
+       *          for any cells on the boundary of a block.
+       *          Actually we do want to protect cells which can influence the boundary so
+       *          it also cvers the second to boundary cells of a node.
+       */
+      std::mutex m_adjacencyLocker;
 
       /**
        * @brief - Holds an array representing the age of each cells. Note that this array
