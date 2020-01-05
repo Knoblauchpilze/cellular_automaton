@@ -2,6 +2,26 @@
 # include "CellsBlocks.hh"
 # include "ColonyTile.hh"
 
+namespace {
+
+  inline
+  cellulator::State
+  evolveCell(const cellulator::State& s,
+             unsigned live)
+  {
+    if (s == cellulator::State::Dead && live == 3u) {
+      return cellulator::State::Alive;
+    }
+
+    if (s == cellulator::State::Alive && live >= 2 && live <= 3) {
+      return cellulator::State::Alive;
+    }
+
+    return cellulator::State::Dead;
+  }
+
+}
+
 namespace cellulator {
 
   CellsBlocks::CellsBlocks(const rules::Type& ruleset,
@@ -158,9 +178,23 @@ namespace cellulator {
   }
 
   void
-  CellsBlocks::evolve(unsigned /*blockID*/) {
-    // TODO: Implementation.
-    // Should update the `m_nextStates`, `m_nextAdjacency` and `nAlive`.
+  CellsBlocks::evolve(unsigned blockID) {
+    // Retrieve the block's description.
+    BlockDesc& b = m_blocks[blockID];
+
+    b.nAlive = 0u;
+
+    // Evolve each cell.
+    for (unsigned id = b.start ; id < b.end ; ++id) {
+      State s = evolveCell(m_states[id], m_adjacency[id]);
+
+      m_nextStates[id] = s;
+
+      if (s == State::Alive) {
+        ++b.nAlive;
+        updateAdjacency(b, coordFromIndex(b, id - b.start), false);
+      }
+    }
   }
 
   std::pair<State, int>
@@ -618,60 +652,76 @@ namespace cellulator {
       area.x() = b.area.x() + m_nodesDims.w();
       area.y() = b.area.y() + m_nodesDims.w();
 
-      registerNewBlock(area);
+      BlockDesc o = registerNewBlock(area);
+      attachTo(b, o, Orientation::SouthWest);
     }
 
     if (b.north < 0) {
       area.x() = b.area.x();
       area.y() = b.area.y() + m_nodesDims.h();
 
-      registerNewBlock(area);
+      BlockDesc o = registerNewBlock(area);
+      attachTo(b, o, Orientation::South);
     }
 
     if (b.nw < 0) {
       area.x() = b.area.x() - m_nodesDims.w();
       area.y() = b.area.y() + m_nodesDims.w();
 
-      registerNewBlock(area);
+      BlockDesc o = registerNewBlock(area);
+      attachTo(b, o, Orientation::SouthEast);
     }
 
     if (b.west < 0) {
       area.x() = b.area.x() - m_nodesDims.w();
       area.y() = b.area.y();
 
-      registerNewBlock(area);
+      BlockDesc o = registerNewBlock(area);
+      attachTo(b, o, Orientation::East);
     }
 
     if (b.sw < 0) {
       area.x() = b.area.x() - m_nodesDims.w();
       area.y() = b.area.y() - m_nodesDims.w();
 
-      registerNewBlock(area);
+      BlockDesc o = registerNewBlock(area);
+      attachTo(b, o, Orientation::NorthEast);
     }
 
     if (b.south < 0) {
       area.x() = b.area.x();
       area.y() = b.area.y() - m_nodesDims.h();
 
-      registerNewBlock(area);
+      BlockDesc o = registerNewBlock(area);
+      attachTo(b, o, Orientation::North);
     }
 
     if (b.se < 0) {
       area.x() = b.area.x() + m_nodesDims.w();
       area.y() = b.area.y() - m_nodesDims.w();
 
-      registerNewBlock(area);
+      BlockDesc o = registerNewBlock(area);
+      attachTo(b, o, Orientation::NorthWest);
     }
 
     if (b.east < 0) {
       area.x() = b.area.x() + m_nodesDims.w();
       area.y() = b.area.y();
 
-      registerNewBlock(area);
+      BlockDesc o = registerNewBlock(area);
+      attachTo(b, o, Orientation::West);
     }
 
     // At least one node has been created.
     return true;
+  }
+
+  void
+  CellsBlocks::attachTo(const BlockDesc& /*from*/,
+                        const BlockDesc& /*to*/,
+                        const Orientation& /*orientation*/)
+  {
+    // TODO: Implementation.
   }
 
 }
