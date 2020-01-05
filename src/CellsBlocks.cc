@@ -716,11 +716,62 @@ namespace cellulator {
     return true;
   }
 
-  void
-  CellsBlocks::attachTo(const BlockDesc& /*from*/,
-                        const BlockDesc& /*to*/,
-                        const Orientation& /*orientation*/)
+  bool
+  CellsBlocks::find(const utils::Boxi& /*area*/,
+                    BlockDesc& /*desc*/)
   {
+    // TODO: Implementation.
+    return false;
+  }
+
+  void
+  CellsBlocks::attachTo(BlockDesc& from,
+                        BlockDesc& to,
+                        const Orientation& orientation)
+  {
+    // Convenience lambda to attach a block to another.
+    auto attach = [](BlockDesc& lhs, BlockDesc& rhs, const Orientation& o){
+      switch (o) {
+        case Orientation::NorthEast:
+          lhs.ne = rhs.id;
+          break;
+        case Orientation::North:
+          lhs.north = rhs.id;
+          break;
+        case Orientation::NorthWest:
+          lhs.nw = rhs.id;
+          break;
+        case Orientation::West:
+          lhs.west = rhs.id;
+          break;
+        case Orientation::SouthWest:
+          lhs.sw = rhs.id;
+          break;
+        case Orientation::South:
+          lhs.south = rhs.id;
+          break;
+        case Orientation::SouthEast:
+          lhs.se = rhs.id;
+          break;
+        case Orientation::East:
+          lhs.east = rhs.id;
+          break;
+        default:
+          return false;
+      }
+
+      return true;
+    };
+
+    // First, attach the `from` to `to` with the desired orientation.
+    bool check = attach(to, from, orientation);
+    if (!check) {
+      error(
+        std::string("Could not attach block " + std::to_string(to.id) + " to " + std::to_string(from.id)),
+        std::string("Invalid return code")
+      );
+    }
+
     // TODO: Implementation.
   }
 
