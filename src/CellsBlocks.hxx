@@ -37,9 +37,11 @@ namespace cellulator {
     while (id < m_blocks.size() && !found) {
       // Discard inactive blocks.
       if (m_blocks[id].active && m_blocks[id].area.contains(coord)) {
-        out.first = m_states[indexFromCoord(m_blocks[id], coord)];
-        // TODO: Handle age.
-        out.second = 0;
+        int dataID = indexFromCoord(m_blocks[id], coord);
+
+        out.first = m_states[dataID];
+        out.second = m_ages[dataID];
+
         found = true;
       }
 
@@ -92,6 +94,17 @@ namespace cellulator {
     int yMin = block.area.getBottomBound();
 
     return (local.y() - yMin) * block.area.w() + (local.x() - xMin);
+  }
+
+  inline
+  void
+  CellsBlocks::updateCellsAge() noexcept {
+    // Traverse the current states.
+    for (unsigned id = 0u ; id < m_states.size() ; ++id) {
+      if (m_states[id] == State::Alive) {
+        ++m_ages[id];
+      }
+    }
   }
 
 }

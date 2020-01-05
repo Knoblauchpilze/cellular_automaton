@@ -74,7 +74,7 @@ namespace cellulator {
     m_cells = std::make_shared<CellsBlocks>(ruleset, getCellBlockDims());
 
     // Allocate initial blocks.
-    m_cells->allocateTo(dims, State::Dead);
+    m_cells->allocateTo(dims);
   }
 
 }
