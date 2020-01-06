@@ -54,28 +54,34 @@ namespace cellulator {
     // if needed.
     utils::Vector2i local = coord;
     if (global) {
-      local.x() = coord.x() - block.area.x();
-      local.y() = coord.y() - block.area.y();
+      local.x() = coord.x() - block.area.x() + block.area.w() / 2;
+      local.y() = coord.y() - block.area.y() + block.area.h() / 2;
     }
 
     // Compute the one-dimensional index from this.
-    int xMin = block.area.getLeftBound();
-    int yMin = block.area.getBottomBound();
-
-    return (local.y() - yMin) * block.area.w() + (local.x() - xMin);
+    return local.y() * block.area.w() + local.x();
   }
 
   inline
   utils::Vector2i
   CellsBlocks::coordFromIndex(const BlockDesc& block,
-                              unsigned coord) const
+                              unsigned coord,
+                              bool global) const
   {
     // Compute local `x` and `y` coordinates for the input index.
     int x = coord % block.area.w();
     int y = coord / block.area.w();
 
+    utils::Vector2i pos(x, y);
+
+    // Convert to global if needed.
+    if (global) {
+      pos.x() += block.area.getLeftBound();
+      pos.y() += block.area.getBottomBound();
+    }
+
     // Translate into vector semantic.
-    return utils::Vector2i(block.area.getLeftBound() + x, block.area.getBottomBound() + y);
+    return pos;
   }
 
   inline
@@ -108,7 +114,7 @@ namespace cellulator {
       const BlockDesc& b = m_blocks[id];
       for (unsigned idC = b.start ; idC < b.end ; ++idC) {
         if (m_states[idC] == State::Alive) {
-          utils::Vector2i c = coordFromIndex(b, idC - b.start);
+          utils::Vector2i c = coordFromIndex(b, idC - b.start, true);
 
           xMin = std::min(xMin, c.x());
           yMin = std::min(yMin, c.y());

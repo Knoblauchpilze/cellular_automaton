@@ -20,6 +20,17 @@ namespace {
     return cellulator::State::Dead;
   }
 
+  inline
+  unsigned
+  hashCoordinate(const utils::Vector2i& v) {
+    unsigned A = (v.x() >= 0 ? 2u * v.x() : -2 * v.x() - 1);
+    unsigned B = (v.y() >= 0 ? 2u * v.y() : -2 * v.y() - 1);
+
+    unsigned C = (A >= B ? A * A + A + B : A + B * B) / 2;
+
+    return ((v.x() < 0 && v.y() < 0) || (v.x() >= 0 && v.y() >= 0)) ? C : -C - 1;
+  }
+
 }
 
 namespace cellulator {
@@ -42,6 +53,7 @@ namespace cellulator {
 
     m_blocks(),
     m_freeBlocks(),
+    m_blocksIndex(),
 
     m_totalArea(),
     m_liveArea()
@@ -190,9 +202,11 @@ namespace cellulator {
 
       m_nextStates[id] = s;
 
+      log("Cell " + coordFromIndex(b, id - b.start, true).toString() + " has " + std::to_string(m_adjacency[id]) + " neighbor(s) and is now " + std::to_string(static_cast<int>(s)));
+
       if (s == State::Alive) {
         ++b.nAlive;
-        updateAdjacency(b, coordFromIndex(b, id - b.start), false);
+        updateAdjacency(b, coordFromIndex(b, id - b.start, false), false);
       }
     }
   }
@@ -400,6 +414,28 @@ namespace cellulator {
       m_blocks[block.id] = block;
     }
 
+    // Also register the block in the table allowing to fetch by area.
+    // Note that it is enough to use the center of the area of the block
+    // to compute a key because we should only ever have a single block
+    // representing the area. As we're quite rigid in the conditions that
+    // lead to create a block we can control that and thus make sure that
+    // we only ever create one block spanning any point of the colony.
+    // This fact guarantees that the only way we have for two blocks to
+    // overlap is for them to be the same.
+    unsigned key = hashCoordinate(area.getCenter());
+    AreaToBlockIndex::const_iterator it = m_blocksIndex.find(key);
+
+    if (it != m_blocksIndex.cend()) {
+      log(
+        std::string("Overriding key ") + std::to_string(key) + " (associated to " + m_blocks[it->second].area.toString() +
+        " with " + area.toString(),
+        utils::Level::Error
+      );
+    }
+
+    m_blocksIndex[key] = block.id;
+
+    // Return the created block.
     return block;
   }
 
@@ -428,6 +464,20 @@ namespace cellulator {
       m_blocks[blockID].alive = 0u;
       m_blocks[blockID].nAlive = 0u;
       m_blocks[blockID].changed = 0u;
+
+      // Finally unregister its key from the internal table.
+      unsigned key = hashCoordinate(m_blocks[blockID].area.getCenter());
+      AreaToBlockIndex::const_iterator it = m_blocksIndex.find(key);
+
+      if (it == m_blocksIndex.cend()) {
+        log(
+          std::string("Could not remove block ") + m_blocks[blockID].area.toString() + " from association table",
+          utils::Level::Error
+        );
+      }
+      else {
+        m_blocksIndex.erase(it);
+      }
     }
 
     return save;
@@ -438,6 +488,9 @@ namespace cellulator {
                                const utils::Vector2i& coord,
                                bool makeCurrent)
   {
+    // Convert global coord to local coordinate frame.
+    utils::Vector2i lCoord(coord.x() - block.area.x(), coord.y() - block.area.y());
+
     // Check whether the input coordinate corresponds to a cell
     // on the boundary of the node.
     if (coord.x() > 1 && coord.x() < block.area.w() - 2 &&
@@ -450,15 +503,17 @@ namespace cellulator {
       int xMax = coord.x() + 1;
       int yMax = coord.y() + 1;
 
-      int xOffset = block.area.w() / 2;
-      int yOffset = block.area.h() / 2;
-
       utils::Vector2i cell;
 
       for (int y = yMin ; y <= yMax ; ++y) {
         for (int x = xMin ; x <= xMax ; ++x) {
-          cell.x() = x - xOffset;
-          cell.y() = y - yOffset;
+          // Ignore the cell for which adjacency should be updated.
+          if (x == coord.x() && y == coord.y()) {
+            continue;
+          }
+
+          cell.x() = x;
+          cell.y() = y;
 
           if (makeCurrent) {
             ++m_adjacency[indexFromCoord(block, cell, false)];
@@ -495,13 +550,10 @@ namespace cellulator {
     int xMax = coord.x() + 1;
     int yMax = coord.y() + 1;
 
-    int uBW = block.area.w() - 1;
-    int uBH = block.area.h() - 1;
-
-    int xOffset = block.area.w() / 2;
-    int yOffset = block.area.h() / 2;
-
     utils::Vector2i cell;
+
+    int uBW = block.area.w();
+    int uBH = block.area.h();
 
     for (int y = yMin ; y <= yMax ; ++y) {
       for (int x = xMin ; x <= xMax ; ++x) {
@@ -510,13 +562,13 @@ namespace cellulator {
           continue;
         }
 
-        cell.x() = x % xMax - xOffset;
-        cell.y() = y % yMax - yOffset;
+        cell.x() = (x + uBW) % uBW;
+        cell.y() = (y + uBH) % uBH;
 
         // Determine which block should be used.
         const BlockDesc* toUse = nullptr;
-        bool okX = (x >= 0 && x <= uBW);
-        bool okY = (y >= 0 && y <= uBH);
+        bool okX = (x >= 0 && x < uBW);
+        bool okY = (y >= 0 && y < uBH);
 
         if (okX) {
           if (okY) {
@@ -608,13 +660,21 @@ namespace cellulator {
     // Update adjacency for the cells of this block. We will start
     // by internal cells and then handle the borders.
     utils::Vector2i coord;
-    unsigned w = desc.area.w();
 
     for (unsigned id = desc.start ; id < desc.end ; ++id) {
-      coord.x() = id % w;
-      coord.y() = id / w;
+      coord = coordFromIndex(desc, id - desc.start, false);
 
-      updateAdjacency(desc, coord, makeCurrent);
+      bool alive = false;
+      if (makeCurrent) {
+        alive = (m_states[id] == State::Alive);
+      }
+      else {
+        alive = (m_nextStates[id] == State::Alive);
+      }
+
+      if (alive) {
+        updateAdjacency(desc, coord, makeCurrent);
+      }
     }
   }
 
@@ -717,11 +777,39 @@ namespace cellulator {
   }
 
   bool
-  CellsBlocks::find(const utils::Boxi& /*area*/,
-                    BlockDesc& /*desc*/)
+  CellsBlocks::find(const utils::Boxi& area,
+                    BlockDesc& desc)
   {
-    // TODO: Implementation.
-    return false;
+    // We need to use the `m_blocksIndex` table to find the block corresponding
+    // to the input area if it exists.
+    unsigned key = hashCoordinate(area.getCenter());
+    AreaToBlockIndex::const_iterator it = m_blocksIndex.find(key);
+
+    if (it == m_blocksIndex.cend()) {
+      // The input area is not registered yet, we need to indicate that the block
+      // does not exist.
+      return false;
+    }
+
+    // The block exists, let's perform some consistency checks and return its
+    // description if we can.
+    if (it->second >= m_blocks.size()) {
+      log(
+        std::string("Found block ") + area.toString() + " at " + std::to_string(it->second) + " but only " +
+        std::to_string(m_blocks.size()) + " block(s) available",
+        utils::Level::Error
+      );
+
+      // Remove this faulty entry.
+      m_blocksIndex.erase(it);
+
+      // We did not find the block after all.
+      return false;
+    }
+
+    desc = m_blocks[it->second];
+
+    return true;
   }
 
   void
@@ -772,7 +860,103 @@ namespace cellulator {
       );
     }
 
-    // TODO: Implementation.
+    // Use the `find` method to attach all the other blocks to the
+    // `from` element. We could save some computations by reusing
+    // the blocks already attached to `to` if any but actually it
+    // is more complex to put in place than just looking into the
+    // `m_blocksIndex` table which is already quite fast anyways.
+    // For each node we should both link it to the `from` node but
+    // also link the other one to `from` node with opposite dir.
+    utils::Boxi area(0, 0, m_nodesDims);
+    BlockDesc o;
+
+    // North east.
+    area.x() = from.area.x() + m_nodesDims.w();
+    area.y() = from.area.y() + m_nodesDims.w();
+
+    bool f = find(area, o);
+    if (f) {
+      log("Linking " + o.area.toString() + " to north east of " + o.area.toString());
+      from.ne = o.id;
+      o.sw = from.id;
+    }
+
+    // North.
+    area.x() = from.area.x();
+    area.y() = from.area.y() + m_nodesDims.w();
+
+    f = find(area, o);
+    if (f) {
+      log("Linking " + o.area.toString() + " to north of " + o.area.toString());
+      from.north = o.id;
+      o.south = from.id;
+    }
+
+    // North west.
+    area.x() = from.area.x() - m_nodesDims.w();
+    area.y() = from.area.y() + m_nodesDims.w();
+
+    f = find(area, o);
+    if (f) {
+      log("Linking " + o.area.toString() + " to north west of " + o.area.toString());
+      from.nw = o.id;
+      o.se = from.id;
+    }
+
+    // West.
+    area.x() = from.area.x() - m_nodesDims.w();
+    area.y() = from.area.y();
+
+    f = find(area, o);
+    if (f) {
+      log("Linking " + o.area.toString() + " to west of " + o.area.toString());
+      from.west = o.id;
+      o.east = from.id;
+    }
+
+    // South west.
+    area.x() = from.area.x() - m_nodesDims.w();
+    area.y() = from.area.y() - m_nodesDims.w();
+
+    f = find(area, o);
+    if (f) {
+      log("Linking " + o.area.toString() + " to south west of " + o.area.toString());
+      from.sw = o.id;
+      o.ne = from.id;
+    }
+
+    // south.
+    area.x() = from.area.x();
+    area.y() = from.area.y() - m_nodesDims.w();
+
+    f = find(area, o);
+    if (f) {
+      log("Linking " + o.area.toString() + " to south of " + o.area.toString());
+      from.south = o.id;
+      o.north = from.id;
+    }
+
+    // South east.
+    area.x() = from.area.x() + m_nodesDims.w();
+    area.y() = from.area.y() - m_nodesDims.w();
+
+    f = find(area, o);
+    if (f) {
+      log("Linking " + o.area.toString() + " to south east of " + o.area.toString());
+      from.se = o.id;
+      o.nw = from.id;
+    }
+
+    // East.
+    area.x() = from.area.x() + m_nodesDims.w();
+    area.y() = from.area.y();
+
+    f = find(area, o);
+    if (f) {
+      log("Linking " + o.area.toString() + " to east of " + o.area.toString());
+      from.east = o.id;
+      o.west = from.id;
+    }
   }
 
 }
