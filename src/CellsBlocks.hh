@@ -164,20 +164,6 @@ namespace cellulator {
     private:
 
       /**
-       * @brief - Describes the possible orientation for a block relative to another.
-       */
-      enum class Orientation {
-        NorthEast,
-        North,
-        NorthWest,
-        West,
-        SouthWest,
-        South,
-        SouthEast,
-        East
-      };
-
-      /**
        * @brief - Describe a cell block with all its associated properties. Note that we
        *          have convenience attributes which can speed up the access and fetching
        *          of information about the block. The drawback is that we need to update
@@ -427,32 +413,30 @@ namespace cellulator {
        *          areas exactly covering blocks in this situation.
        *          Assumes that the locker for this object is already acquired.
        * @param area - the area to find in the registered blocks.
-       * @param desc - the output argument which should be populated with the block's info.
+       * @param id - the output argument which should be populated with the block's index.
        * @return - `true` if a block spanning the input area was found and `false` otherwise.
        *           Note that in case the return value is `false` the vaule of `desc` should
-       *           be ignored.
+       *           be ignored (it will be set to `-1`).
        */
       bool
       find(const utils::Boxi& area,
-           BlockDesc& desc);
+           int& id);
 
       /**
        * @brief - Used to perform the necessary modification to the internal blocks so
-       *          that the `from` node is related to `to` with the specified `orientation`.
-       *          This means for example if `orientation == SouthWest` that `to.sw = from`.
-       *          We will also perform the needed attachements for the neighboring nodes to
-       *          reflect this new state (so for example if `to.sw == from` we should also
-       *          have `to.w == from.n` etc.).
+       *          that the `from` node is related to its neighbors. We will scan the
+       *          internal `m_blocksLinks` table through the `find` interface in order
+       *          to link the block to its neighbors.
+       *          We will also perform the needed attachements for the neighboring nodes
+       *          to reflect this new state (so for example if `block.sw == from` we should
+       *          also have `from.ne == block` etc.).
        *          Note that only nodes that already exists will be attached but none will
        *          be created.
-       * @param from - the element to attach to `to`.
-       * @param to - the element to attach to.
-       * @param orientation - the desired orientation for `from` relatively to `to`.
+       * @param from - the index of the element which should be attached to neighboring
+       *               blocks.
        */
       void
-      attachTo(BlockDesc& from,
-               BlockDesc& to,
-               const Orientation& orientation);
+      attach(int from);
 
     private:
 

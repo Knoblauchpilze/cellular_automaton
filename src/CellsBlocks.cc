@@ -1,5 +1,6 @@
 
 # include "CellsBlocks.hh"
+# include <numeric>
 # include "ColonyTile.hh"
 
 namespace {
@@ -140,10 +141,20 @@ namespace cellulator {
       m_blocks[id].alive = m_blocks[id].nAlive;
       alive += m_blocks[id].alive;
 
-      // Destroy the block if needed.
-      if (m_blocks[id].alive == 0u) {
+      unsigned neighbors = std::accumulate(
+        m_adjacency.begin() + m_blocks[id].start,
+        m_adjacency.begin() + m_blocks[id].end,
+        0u
+      );
+
+      // Destroy the block if needed, that is if it does not contain any
+      // cells and no neighbors are registered.
+      if (m_blocks[id].alive == 0u && neighbors == 0u) {
         destroyBlock(m_blocks[id].id);
       }
+
+      // Reset changed status.
+      m_blocks[id].changed = 0u;
     }
 
     // Update live area to reflect the new states of cells.
@@ -202,11 +213,14 @@ namespace cellulator {
 
       m_nextStates[id] = s;
 
-      log("Cell " + coordFromIndex(b, id - b.start, true).toString() + " has " + std::to_string(m_adjacency[id]) + " neighbor(s) and is now " + std::to_string(static_cast<int>(s)));
+      // Register one more change if needed.
+      if (m_states[id] != m_nextStates[id]) {
+        ++b.changed;
+      }
 
       if (s == State::Alive) {
         ++b.nAlive;
-        updateAdjacency(b, coordFromIndex(b, id - b.start, false), false);
+        updateAdjacency(b, coordFromIndex(b, id, false), false);
       }
     }
   }
@@ -435,6 +449,9 @@ namespace cellulator {
 
     m_blocksIndex[key] = block.id;
 
+    // Attach this node to its neighbors.
+    attach(block.id);
+
     // Return the created block.
     return block;
   }
@@ -610,7 +627,7 @@ namespace cellulator {
 
         if (toUse == nullptr) {
           log(
-            std::string("Could not update adjacency for " + cell.toString() + " (on behalf of " + coord.toString() + ") from block " + block.area.toString()),
+            std::string("Could not update adjacency for " + cell.toString() + " (on behalf of " + coord.toString() + ", local: " + std::to_string(x) + "x" + std::to_string(y) + ") from block " + block.area.toString()),
             utils::Level::Error
           );
 
@@ -662,7 +679,7 @@ namespace cellulator {
     utils::Vector2i coord;
 
     for (unsigned id = desc.start ; id < desc.end ; ++id) {
-      coord = coordFromIndex(desc, id - desc.start, false);
+      coord = coordFromIndex(desc, id, false);
 
       bool alive = false;
       if (makeCurrent) {
@@ -712,64 +729,56 @@ namespace cellulator {
       area.x() = b.area.x() + m_nodesDims.w();
       area.y() = b.area.y() + m_nodesDims.w();
 
-      BlockDesc o = registerNewBlock(area);
-      attachTo(b, o, Orientation::SouthWest);
+      registerNewBlock(area);
     }
 
     if (b.north < 0) {
       area.x() = b.area.x();
       area.y() = b.area.y() + m_nodesDims.h();
 
-      BlockDesc o = registerNewBlock(area);
-      attachTo(b, o, Orientation::South);
+      registerNewBlock(area);
     }
 
     if (b.nw < 0) {
       area.x() = b.area.x() - m_nodesDims.w();
       area.y() = b.area.y() + m_nodesDims.w();
 
-      BlockDesc o = registerNewBlock(area);
-      attachTo(b, o, Orientation::SouthEast);
+      registerNewBlock(area);
     }
 
     if (b.west < 0) {
       area.x() = b.area.x() - m_nodesDims.w();
       area.y() = b.area.y();
 
-      BlockDesc o = registerNewBlock(area);
-      attachTo(b, o, Orientation::East);
+      registerNewBlock(area);
     }
 
     if (b.sw < 0) {
       area.x() = b.area.x() - m_nodesDims.w();
       area.y() = b.area.y() - m_nodesDims.w();
 
-      BlockDesc o = registerNewBlock(area);
-      attachTo(b, o, Orientation::NorthEast);
+      registerNewBlock(area);
     }
 
     if (b.south < 0) {
       area.x() = b.area.x();
       area.y() = b.area.y() - m_nodesDims.h();
 
-      BlockDesc o = registerNewBlock(area);
-      attachTo(b, o, Orientation::North);
+      registerNewBlock(area);
     }
 
     if (b.se < 0) {
       area.x() = b.area.x() + m_nodesDims.w();
       area.y() = b.area.y() - m_nodesDims.w();
 
-      BlockDesc o = registerNewBlock(area);
-      attachTo(b, o, Orientation::NorthWest);
+      registerNewBlock(area);
     }
 
     if (b.east < 0) {
       area.x() = b.area.x() + m_nodesDims.w();
       area.y() = b.area.y();
 
-      BlockDesc o = registerNewBlock(area);
-      attachTo(b, o, Orientation::West);
+      registerNewBlock(area);
     }
 
     // At least one node has been created.
@@ -778,12 +787,15 @@ namespace cellulator {
 
   bool
   CellsBlocks::find(const utils::Boxi& area,
-                    BlockDesc& desc)
+                    int& desc)
   {
     // We need to use the `m_blocksIndex` table to find the block corresponding
     // to the input area if it exists.
     unsigned key = hashCoordinate(area.getCenter());
     AreaToBlockIndex::const_iterator it = m_blocksIndex.find(key);
+
+    // Assume the block will not be found.
+    desc = -1;
 
     if (it == m_blocksIndex.cend()) {
       // The input area is not registered yet, we need to indicate that the block
@@ -807,59 +819,13 @@ namespace cellulator {
       return false;
     }
 
-    desc = m_blocks[it->second];
+    desc = it->second;
 
     return true;
   }
 
   void
-  CellsBlocks::attachTo(BlockDesc& from,
-                        BlockDesc& to,
-                        const Orientation& orientation)
-  {
-    // Convenience lambda to attach a block to another.
-    auto attach = [](BlockDesc& lhs, BlockDesc& rhs, const Orientation& o){
-      switch (o) {
-        case Orientation::NorthEast:
-          lhs.ne = rhs.id;
-          break;
-        case Orientation::North:
-          lhs.north = rhs.id;
-          break;
-        case Orientation::NorthWest:
-          lhs.nw = rhs.id;
-          break;
-        case Orientation::West:
-          lhs.west = rhs.id;
-          break;
-        case Orientation::SouthWest:
-          lhs.sw = rhs.id;
-          break;
-        case Orientation::South:
-          lhs.south = rhs.id;
-          break;
-        case Orientation::SouthEast:
-          lhs.se = rhs.id;
-          break;
-        case Orientation::East:
-          lhs.east = rhs.id;
-          break;
-        default:
-          return false;
-      }
-
-      return true;
-    };
-
-    // First, attach the `from` to `to` with the desired orientation.
-    bool check = attach(to, from, orientation);
-    if (!check) {
-      error(
-        std::string("Could not attach block " + std::to_string(to.id) + " to " + std::to_string(from.id)),
-        std::string("Invalid return code")
-      );
-    }
-
+  CellsBlocks::attach(int from) {
     // Use the `find` method to attach all the other blocks to the
     // `from` element. We could save some computations by reusing
     // the blocks already attached to `to` if any but actually it
@@ -867,95 +833,97 @@ namespace cellulator {
     // `m_blocksIndex` table which is already quite fast anyways.
     // For each node we should both link it to the `from` node but
     // also link the other one to `from` node with opposite dir.
+    BlockDesc& b = m_blocks[from];
+
     utils::Boxi area(0, 0, m_nodesDims);
-    BlockDesc o;
+    int o;
 
     // North east.
-    area.x() = from.area.x() + m_nodesDims.w();
-    area.y() = from.area.y() + m_nodesDims.w();
+    area.x() = b.area.x() + m_nodesDims.w();
+    area.y() = b.area.y() + m_nodesDims.w();
 
     bool f = find(area, o);
     if (f) {
-      log("Linking " + o.area.toString() + " to north east of " + o.area.toString());
-      from.ne = o.id;
-      o.sw = from.id;
+      log("Linking " + m_blocks[o].area.toString() + " to north east of " + b.area.toString(), utils::Level::Verbose);
+      b.ne = m_blocks[o].id;
+      m_blocks[o].sw = b.id;
     }
 
     // North.
-    area.x() = from.area.x();
-    area.y() = from.area.y() + m_nodesDims.w();
+    area.x() = b.area.x();
+    area.y() = b.area.y() + m_nodesDims.w();
 
     f = find(area, o);
     if (f) {
-      log("Linking " + o.area.toString() + " to north of " + o.area.toString());
-      from.north = o.id;
-      o.south = from.id;
+      log("Linking " + m_blocks[o].area.toString() + " to north of " + b.area.toString(), utils::Level::Verbose);
+      b.north = m_blocks[o].id;
+      m_blocks[o].south = b.id;
     }
 
     // North west.
-    area.x() = from.area.x() - m_nodesDims.w();
-    area.y() = from.area.y() + m_nodesDims.w();
+    area.x() = b.area.x() - m_nodesDims.w();
+    area.y() = b.area.y() + m_nodesDims.w();
 
     f = find(area, o);
     if (f) {
-      log("Linking " + o.area.toString() + " to north west of " + o.area.toString());
-      from.nw = o.id;
-      o.se = from.id;
+      log("Linking " + m_blocks[o].area.toString() + " to north west of " + b.area.toString(), utils::Level::Verbose);
+      b.nw = m_blocks[o].id;
+      m_blocks[o].se = b.id;
     }
 
     // West.
-    area.x() = from.area.x() - m_nodesDims.w();
-    area.y() = from.area.y();
+    area.x() = b.area.x() - m_nodesDims.w();
+    area.y() = b.area.y();
 
     f = find(area, o);
     if (f) {
-      log("Linking " + o.area.toString() + " to west of " + o.area.toString());
-      from.west = o.id;
-      o.east = from.id;
+      log("Linking " + m_blocks[o].area.toString() + " to west of " + b.area.toString(), utils::Level::Verbose);
+      b.west = m_blocks[o].id;
+      m_blocks[o].east = b.id;
     }
 
     // South west.
-    area.x() = from.area.x() - m_nodesDims.w();
-    area.y() = from.area.y() - m_nodesDims.w();
+    area.x() = b.area.x() - m_nodesDims.w();
+    area.y() = b.area.y() - m_nodesDims.w();
 
     f = find(area, o);
     if (f) {
-      log("Linking " + o.area.toString() + " to south west of " + o.area.toString());
-      from.sw = o.id;
-      o.ne = from.id;
+      log("Linking " + m_blocks[o].area.toString() + " to south west of " + b.area.toString(), utils::Level::Verbose);
+      b.sw = m_blocks[o].id;
+      m_blocks[o].ne = b.id;
     }
 
     // south.
-    area.x() = from.area.x();
-    area.y() = from.area.y() - m_nodesDims.w();
+    area.x() = b.area.x();
+    area.y() = b.area.y() - m_nodesDims.w();
 
     f = find(area, o);
     if (f) {
-      log("Linking " + o.area.toString() + " to south of " + o.area.toString());
-      from.south = o.id;
-      o.north = from.id;
+      log("Linking " + m_blocks[o].area.toString() + " to south of " + b.area.toString(), utils::Level::Verbose);
+      b.south = m_blocks[o].id;
+      m_blocks[o].north = b.id;
     }
 
     // South east.
-    area.x() = from.area.x() + m_nodesDims.w();
-    area.y() = from.area.y() - m_nodesDims.w();
+    area.x() = b.area.x() + m_nodesDims.w();
+    area.y() = b.area.y() - m_nodesDims.w();
 
     f = find(area, o);
     if (f) {
-      log("Linking " + o.area.toString() + " to south east of " + o.area.toString());
-      from.se = o.id;
-      o.nw = from.id;
+      log("Linking " + m_blocks[o].area.toString() + " to south east of " + b.area.toString(), utils::Level::Verbose);
+      b.se = m_blocks[o].id;
+      m_blocks[o].nw = b.id;
     }
 
     // East.
-    area.x() = from.area.x() + m_nodesDims.w();
-    area.y() = from.area.y();
+    area.x() = b.area.x() + m_nodesDims.w();
+    area.y() = b.area.y();
 
     f = find(area, o);
     if (f) {
-      log("Linking " + o.area.toString() + " to east of " + o.area.toString());
-      from.east = o.id;
-      o.west = from.id;
+      log("Linking " + m_blocks[o].area.toString() + " to east of " + b.area.toString(), utils::Level::Verbose);
+      b.east = m_blocks[o].id;
+      m_blocks[o].west = b.id;
     }
   }
 
