@@ -23,7 +23,7 @@
 // TODO: Improve dead areas.
 // TODO: Add brushes.
 // TODO: Add grid.
-// TODO: Fix bugs while evolving colony.
+// TODO: Some bugs with cells spanning other blocks that the root one as it seems.
 
 int main(int /*argc*/, char** /*argv*/) {
   // Create the logger.
