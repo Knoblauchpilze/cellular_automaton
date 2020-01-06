@@ -59,7 +59,7 @@ namespace cellulator {
     }
 
     // Compute the one-dimensional index from this.
-    return local.y() * block.area.w() + local.x();
+    return block.start + local.y() * block.area.w() + local.x();
   }
 
   inline
@@ -69,8 +69,8 @@ namespace cellulator {
                               bool global) const
   {
     // Compute local `x` and `y` coordinates for the input index.
-    int x = coord % block.area.w();
-    int y = coord / block.area.w();
+    int x = (coord - block.start) % block.area.w();
+    int y = (coord - block.start) / block.area.w();
 
     utils::Vector2i pos(x, y);
 
@@ -114,7 +114,7 @@ namespace cellulator {
       const BlockDesc& b = m_blocks[id];
       for (unsigned idC = b.start ; idC < b.end ; ++idC) {
         if (m_states[idC] == State::Alive) {
-          utils::Vector2i c = coordFromIndex(b, idC - b.start, true);
+          utils::Vector2i c = coordFromIndex(b, idC, true);
 
           xMin = std::min(xMin, c.x());
           yMin = std::min(yMin, c.y());
