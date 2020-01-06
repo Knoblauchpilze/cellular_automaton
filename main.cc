@@ -24,6 +24,7 @@
 // TODO: Add brushes.
 // TODO: Add grid.
 // TODO: Some bugs with cells spanning other blocks that the root one as it seems.
+// TODO: Reclicking on the start simulation button does not stop the simulation.
 
 int main(int /*argc*/, char** /*argv*/) {
   // Create the logger.
