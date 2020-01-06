@@ -9,7 +9,6 @@ set (SOURCES
   InfoBar.cc
   ColonyRenderer.cc
   ColonyStatus.cc
-  Cell.cc
   Colony.cc
   ColonyScheduler.cc
   CellsBlocks.cc
