@@ -98,87 +98,28 @@ namespace cellulator {
     // We want to randomize only currently active blocks.
     unsigned count = 0u;
 
+    // TODO: All existing node should be marked active, and
+    // their boundaries created (but not marked active so as
+    // not to randomize them).
+    // So maybe refine the check line `112` to include the
+    // number of live cells in the block.
+    for (unsigned id = 0u ; id < m_blocks.size() ; ++id) {
+      allocateBoundary(id);
+    }
+
     // Traverse all the existing nodes and randomize each one.
     for (unsigned id = 0u ; id < m_blocks.size() ; ++id) {
       if (m_blocks[id].active) {
-        makeRandom(m_blocks[id], getDeadCellProbability(), true);
+        makeRandom(m_blocks[id], getDeadCellProbability());
 
         count += m_blocks[id].alive;
       }
     }
 
     // Update live area to reflect the newly generated cells.
-    updateLiveArea();
+    stepPrivate();
 
     return count;
-  }
-
-  unsigned
-  CellsBlocks::step() {
-    // Protect from concurrent accesses.
-    Guard guard(m_propsLocker);
-
-    // We first need to evolve all the cells to their next state. This is
-    // achieved by swapping the internal vectors, which is cheap and fast.
-    m_states.swap(m_nextStates);
-    m_adjacency.swap(m_nextAdjacency);
-
-    // Update cells' age.
-    updateCellsAge();
-
-    // We also need to reset the next adjacency count to `0` everywhere.
-    std::fill(m_nextAdjacency.begin(), m_nextAdjacency.end(), 0u);
-
-    // Now we need to update the alive count for each block.
-    unsigned alive = 0u;
-
-    for (unsigned id = 0u ; id < m_blocks.size() ; ++id) {
-      // Only handle active blocks.
-      if (!m_blocks[id].active) {
-        continue;
-      }
-
-      m_blocks[id].alive = m_blocks[id].nAlive;
-      alive += m_blocks[id].alive;
-
-      unsigned neighbors = std::accumulate(
-        m_adjacency.begin() + m_blocks[id].start,
-        m_adjacency.begin() + m_blocks[id].end,
-        0u
-      );
-
-      // Destroy the block if needed, that is if it does not contain any
-      // cells and no neighbors are registered.
-      if (m_blocks[id].alive == 0u && neighbors == 0u) {
-        destroyBlock(m_blocks[id].id);
-      }
-
-      // Reset changed status.
-      m_blocks[id].changed = 0u;
-    }
-
-    // Update live area to reflect the new states of cells.
-    updateLiveArea();
-
-    // Now we should expand and create new blocks to account for cells that
-    // might overflow the current state of the colony.
-    // In order to do that we need to scan the internal list of blocks and
-    // check for each one whether it is a boundary and if it risks to need
-    // some other elements in the next generation.
-    // As we will perform some heavy recycling and allocation while we are
-    // travsersing the list it might be a problem. However we know that:
-    //  - we can only create nodes at the end of the queue or on a place
-    //    where we already have a block allocated but marked inactive.
-    //  - all created blocks will be empty at first.
-    // These considerations make it possible to only iterate once through
-    // the internal list of blocks and call it a day.
-    // We will possibly iterate on blocks which have just been created but
-    // this should be fast as they are clearly not active.
-    for (unsigned id = 0u ; id < m_blocks.size() ; ++id) {
-      allocateBoundary(id);
-    }
-
-    return alive;
   }
 
   void
@@ -220,7 +161,7 @@ namespace cellulator {
 
       if (s == State::Alive) {
         ++b.nAlive;
-        updateAdjacency(b, coordFromIndex(b, id, false), false);
+        updateAdjacency(b, coordFromIndex(b, id, false));
       }
     }
   }
@@ -358,8 +299,6 @@ namespace cellulator {
         registerNewBlock(lArea);
       }
     }
-    
-    // TODO: Handle neighboring of nodes.
 
     // Assign the internal areas.
     m_totalArea = area;
@@ -502,8 +441,7 @@ namespace cellulator {
 
   void
   CellsBlocks::updateAdjacency(const BlockDesc& block,
-                               const utils::Vector2i& coord,
-                               bool makeCurrent)
+                               const utils::Vector2i& coord)
   {
     // Convert global coord to local coordinate frame.
     utils::Vector2i lCoord(coord.x() - block.area.x(), coord.y() - block.area.y());
@@ -532,12 +470,7 @@ namespace cellulator {
           cell.x() = x;
           cell.y() = y;
 
-          if (makeCurrent) {
-            ++m_adjacency[indexFromCoord(block, cell, false)];
-          }
-          else {
-            ++m_nextAdjacency[indexFromCoord(block, cell, false)];
-          }
+          ++m_nextAdjacency[indexFromCoord(block, cell, false)];
         }
       }
 
@@ -634,26 +567,20 @@ namespace cellulator {
           continue;
         }
 
-        if (makeCurrent) {
-          ++m_adjacency[indexFromCoord(*toUse, cell, false)];
-        }
-        else {
-          ++m_nextAdjacency[indexFromCoord(*toUse, cell, false)];
-        }
+        ++m_nextAdjacency[indexFromCoord(*toUse, cell, false)];
       }
     }
   }
 
   void
   CellsBlocks::makeRandom(BlockDesc& desc,
-                          float deadProb,
-                          bool makeCurrent)
+                          float deadProb)
   {
     // Traverse the cells for this block and randomize each one.
     float prob = 0.0f;
 
-    desc.alive = 0u;
-    desc.changed = desc.end - desc.start;
+    desc.nAlive = 0u;
+    desc.changed = 0u;
 
     for (unsigned id = desc.start ; id < desc.end ; ++id) {
       prob = 1.0f * std::rand() / RAND_MAX;
@@ -661,17 +588,14 @@ namespace cellulator {
       State s = State::Dead;
       if (prob >= deadProb) {
         s = State::Alive;
-        if (makeCurrent) {
-          ++desc.alive;
-        }
+        ++desc.nAlive;
+      }
+      if (m_states[id] != s) {
+        ++desc.changed;
       }
 
-      if (makeCurrent) {
-        m_states[id] = s;
-      }
-      else {
-        m_nextStates[id] = s;
-      }
+      m_ages[id] = 0u;
+      m_nextStates[id] = s;
     }
 
     // Update adjacency for the cells of this block. We will start
@@ -681,19 +605,13 @@ namespace cellulator {
     for (unsigned id = desc.start ; id < desc.end ; ++id) {
       coord = coordFromIndex(desc, id, false);
 
-      bool alive = false;
-      if (makeCurrent) {
-        alive = (m_states[id] == State::Alive);
-      }
-      else {
-        alive = (m_nextStates[id] == State::Alive);
-      }
+      bool alive = (m_nextStates[id] == State::Alive);
 
       if (alive) {
         // TODO: Maybe we should have a boolean indicating whether the blocks
         // missing should be created so that we could start with a nice area
         // when randomizing the colony.
-        updateAdjacency(desc, coord, makeCurrent);
+        updateAdjacency(desc, coord);
       }
     }
   }
@@ -928,6 +846,72 @@ namespace cellulator {
       b.east = m_blocks[o].id;
       m_blocks[o].west = b.id;
     }
+  }
+
+  unsigned
+  CellsBlocks::stepPrivate() {
+
+    // We first need to evolve all the cells to their next state. This is
+    // achieved by swapping the internal vectors, which is cheap and fast.
+    m_states.swap(m_nextStates);
+    m_adjacency.swap(m_nextAdjacency);
+
+    // Update cells' age.
+    updateCellsAge();
+
+    // We also need to reset the next adjacency count to `0` everywhere.
+    std::fill(m_nextAdjacency.begin(), m_nextAdjacency.end(), 0u);
+
+    // Now we need to update the alive count for each block.
+    unsigned alive = 0u;
+
+    for (unsigned id = 0u ; id < m_blocks.size() ; ++id) {
+      // Only handle active blocks.
+      if (!m_blocks[id].active) {
+        continue;
+      }
+
+      m_blocks[id].alive = m_blocks[id].nAlive;
+      alive += m_blocks[id].alive;
+
+      unsigned neighbors = std::accumulate(
+        m_adjacency.begin() + m_blocks[id].start,
+        m_adjacency.begin() + m_blocks[id].end,
+        0u
+      );
+
+      // Destroy the block if needed, that is if it does not contain any
+      // cells and no neighbors are registered.
+      if (m_blocks[id].alive == 0u && neighbors == 0u) {
+        destroyBlock(m_blocks[id].id);
+      }
+
+      // Reset changed status.
+      m_blocks[id].changed = 0u;
+    }
+
+    // Update live area to reflect the new states of cells.
+    updateLiveArea();
+
+    // Now we should expand and create new blocks to account for cells that
+    // might overflow the current state of the colony.
+    // In order to do that we need to scan the internal list of blocks and
+    // check for each one whether it is a boundary and if it risks to need
+    // some other elements in the next generation.
+    // As we will perform some heavy recycling and allocation while we are
+    // travsersing the list it might be a problem. However we know that:
+    //  - we can only create nodes at the end of the queue or on a place
+    //    where we already have a block allocated but marked inactive.
+    //  - all created blocks will be empty at first.
+    // These considerations make it possible to only iterate once through
+    // the internal list of blocks and call it a day.
+    // We will possibly iterate on blocks which have just been created but
+    // this should be fast as they are clearly not active.
+    for (unsigned id = 0u ; id < m_blocks.size() ; ++id) {
+      allocateBoundary(id);
+    }
+
+    return alive;
   }
 
 }

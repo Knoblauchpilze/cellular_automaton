@@ -6,6 +6,15 @@
 namespace cellulator {
 
   inline
+  unsigned
+  CellsBlocks::step() {
+    // Protect from concurrent accesses.
+    Guard guard(m_propsLocker);
+
+    return stepPrivate();
+  }
+
+  inline
   utils::Boxf
   CellsBlocks::getLiveArea() noexcept {
     // Protect from concurrent access.
