@@ -90,10 +90,9 @@ namespace cellulator {
       randomize();
 
       /**
-       * @brief - Used to move the cells one step forward in time. This basically means swapping
-       *          the internal arrays representing the next step with the current one. We also
-       *          need to perform the expansion of the colony in case some cells are now on the
-       *          boundaries so that we can continue simulating them properly.
+       * @brief - Wrapper to the internal `stepPrivate` method. ALlows for external elements
+       *          to trigger the next step of the colony. Basically just acquire the internal
+       *          locker and transmit the call to `stepPrivate`.
        * @return - the number of alive cells at the current generation.
        */
       unsigned
@@ -335,21 +334,17 @@ namespace cellulator {
        *          to be considered valid: failure to do so will terminate the method
        *          early (so it's safe but not recommended).
        *          This method will add one to all the adjacency count of cells that
-       *          are neighboring the input coordinate either to the current adjacency
-       *          count or the next step (depending on the `makeCurrent` boolean).
+       *          are neighboring the input coordinate to the next adjacency step.
        *          In case the coordinate are located on the boundary of the block the
-       *          neighboring blocks are scanned and updated but are not created in
-       *          case they do not exist.
+       *          neighboring blocks are scanned and updated but are not created if
+       *          they do not exist.
        * @param block - the block related to the coordinate.
        * @param coord - the coordinate within the block to update. The coordinate arez
        *                assumed to lie in the range `[0, w[x[0, h[`.
-       * @param makeCurrent - `true` if the current adjacency should be updated or
-       *                      `false` if the next step adjacency should.
        */
       void
       updateAdjacency(const BlockDesc& block,
-                      const utils::Vector2i& coord,
-                      bool makeCurrent);
+                      const utils::Vector2i& coord);
 
       /**
        * @brief - Used to randomize the content of the block described in input. The
@@ -361,13 +356,10 @@ namespace cellulator {
        * @param desc - the block description to be randomized.
        * @param deadProb - the probability to generate a dead cell. Should be in the
        *                   range `[0; 1]` but we don't check it.
-       * @param makeCurrent - `true` if the state of the cell to generate should be
-       *                      assigned to the current state or to the next state.
        */
       void
       makeRandom(BlockDesc& desc,
-                 float deadProb,
-                 bool makeCurrent);
+                 float deadProb);
 
       /**
        * @brief - Used to update the age of all the cells registered in the blocks.
@@ -437,6 +429,16 @@ namespace cellulator {
        */
       void
       attach(int from);
+
+      /**
+       * @brief - Used to move the cells one step forward in time. This basically means swapping
+       *          the internal arrays representing the next step with the current one. We also
+       *          need to perform the expansion of the colony in case some cells are now on the
+       *          boundaries so that we can continue simulating them properly.
+       * @return - the number of alive cells at the current generation.
+       */
+      unsigned
+      stepPrivate();
 
     private:
 
