@@ -13,6 +13,8 @@ namespace cellulator {
 
     m_propsLocker(),
 
+    m_started(false),
+
     onSimulationStarted(),
     onSimulationStepped(),
     onSimulationStopped()
@@ -173,9 +175,24 @@ namespace cellulator {
     if (buttonName == getStartSimulationButtonName()) {
       handled = true;
 
-      onSimulationStarted.safeEmit(
-        std::string("onSimulationStarted()")
-      );
+      // Handle the case where the simulation is already started: in
+      // this case we want to stop it instead.
+      sdl::graphic::Button& sb = getStartSimulationButton();
+      if (m_started) {
+        // We need to untoggle the start button.
+        sb.toggle(false);
+
+        onSimulationStopped.safeEmit(
+          std::string("onSimulationStopped()")
+        );
+      }
+      else {
+        onSimulationStarted.safeEmit(
+          std::string("onSimulationStarted()")
+        );
+      }
+
+      m_started = !m_started;
     }
     if (buttonName == getNextStepButtonName()) {
       handled = true;
