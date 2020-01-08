@@ -389,12 +389,17 @@ namespace cellulator {
        *          to `-1` it means that the corresponding block is not allocated and
        *          thus we should do it.
        *          The allocation only occurs in case the block is active and has at least
-       *          one live cells (otherwise there's no need to allocate it).
+       *          one live cells (otherwise there's no need to allocate it) or if the
+       *          `force` boolean is set to `true`.
        * @param blockID - the index of the block for which boundaries should be allocated.
+       * @param force - `true` if the boundary for the input node should be created even
+       *                though the node does not have any live cells in it. Note that an
+       *                inactive block will still be left unchanged.
        * @return - `true` if some nodes have been allocated for this block.
        */
       bool
-      allocateBoundary(unsigned blockID) noexcept;
+      allocateBoundary(unsigned blockID,
+                       bool force) noexcept;
 
       /**
        * @brief - Try to find a block spanning the `area`. Note that the block is considered

@@ -1,6 +1,7 @@
 
 # include "CellsBlocks.hh"
 # include <numeric>
+# include <unordered_set>
 # include "ColonyTile.hh"
 
 namespace {
@@ -98,18 +99,36 @@ namespace cellulator {
     // We want to randomize only currently active blocks.
     unsigned count = 0u;
 
-    // TODO: All existing node should be marked active, and
-    // their boundaries created (but not marked active so as
-    // not to randomize them).
-    // So maybe refine the check line `112` to include the
-    // number of live cells in the block.
+    // We want to generate data on all currently registered
+    // nodes. In order to allow for the simulation to happen
+    // smoothly though we need to also allocate the boundary
+    // nodes of the current nodes in order to allow cells to
+    // evolve.
+    // As the `allocateBoundary` create some nodes we need
+    // to register somehow the list of existing blocks in
+    // order to process only these.
+    std::unordered_set<int> blocks;
     for (unsigned id = 0u ; id < m_blocks.size() ; ++id) {
-      allocateBoundary(id);
+      // If the block is active right now we can save it
+      // and randomize it.
+      if (m_blocks[id].active) {
+        blocks.insert(m_blocks[id].id);
+      }
     }
 
-    // Traverse all the existing nodes and randomize each one.
+    // Allocate boundaries on nodes so that we can correctly
+    // perform the evolution of the cells that will be created
+    // during the randomization process.
     for (unsigned id = 0u ; id < m_blocks.size() ; ++id) {
-      if (m_blocks[id].active) {
+      if (blocks.count(m_blocks[id].id) > 0) {
+        allocateBoundary(m_blocks[id].id, true);
+      }
+    }
+
+    // Randomize the list of nodes that already existed in the
+    // colony (but not the newly created boundaries).
+    for (unsigned id = 0u ; id < m_blocks.size() ; ++id) {
+      if (blocks.count(m_blocks[id].id) > 0) {
         makeRandom(m_blocks[id], getDeadCellProbability());
 
         count += m_blocks[id].alive;
@@ -617,7 +636,9 @@ namespace cellulator {
   }
 
   bool
-  CellsBlocks::allocateBoundary(unsigned blockID) noexcept {
+  CellsBlocks::allocateBoundary(unsigned blockID,
+                                bool force) noexcept
+  {
     BlockDesc b = m_blocks[blockID];
 
     // Discard inactive blocks.
@@ -635,7 +656,7 @@ namespace cellulator {
 
     // Allocate any missing children if needed: that is if the node
     // has at least one live cell.
-    if (b.alive == 0u) {
+    if (b.alive == 0u && !force) {
       return false;
     }
 
@@ -908,7 +929,7 @@ namespace cellulator {
     // We will possibly iterate on blocks which have just been created but
     // this should be fast as they are clearly not active.
     for (unsigned id = 0u ; id < m_blocks.size() ; ++id) {
-      allocateBoundary(id);
+      allocateBoundary(m_blocks[id].id, false);
     }
 
     return alive;
