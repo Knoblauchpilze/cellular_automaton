@@ -318,7 +318,7 @@ namespace cellulator {
         sdl::core::engine::Color co = sdl::core::engine::Color::NamedColor::Pink;
         switch (ce) {
           case State::Alive:
-            co = sdl::core::engine::Color::NamedColor::Blue;
+            co = sdl::core::engine::Color::NamedColor::White;
             break;
           case State::Dead:
           default:
