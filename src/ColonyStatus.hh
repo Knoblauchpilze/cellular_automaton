@@ -215,6 +215,15 @@ namespace cellulator {
        */
       mutable std::mutex m_propsLocker;
 
+      /**
+       * @brief - This boolean helps to keep track of the current simulation
+       *          state. Note that is only tracks the requests made so far
+       *          through the `onSimulationStarted` signal but does not tell
+       *          whether the relevant elements have actually started the
+       *          simulation.
+       */
+      bool m_started;
+
     public:
 
       /**
