@@ -7,6 +7,8 @@ namespace cellulator {
 
   inline
   ColonyRenderer::~ColonyRenderer() {
+    m_scheduler.reset();
+
     // Protect from concurrent accesses
     Guard guard(m_propsLocker);
 
