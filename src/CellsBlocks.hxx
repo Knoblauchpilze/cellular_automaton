@@ -138,7 +138,7 @@ namespace cellulator {
 
     // Add one to the max bounds as we're using a bottom left
     // based box semantic: typically the cell at `(-1, 5)`
-    // covers the real world pixels unti `(-1, 6)`.
+    // covers the real world pixels unit `(-1, 6)`.
 
     m_liveArea = utils::Boxf(
       1.0f * (xMin + xMax + 1) / 2.0f,
@@ -147,7 +147,7 @@ namespace cellulator {
       1.0f * (yMax + 1 - yMin)
     );
 
-    log("Live area is now " + m_liveArea.toString());
+    log("Live area is now " + m_liveArea.toString(), utils::Level::Verbose);
   }
 
 }
