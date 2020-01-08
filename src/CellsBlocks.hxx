@@ -101,6 +101,9 @@ namespace cellulator {
       if (m_states[id] == State::Alive) {
         ++m_ages[id];
       }
+      else {
+        m_ages[id] = 0;
+      }
     }
   }
 
