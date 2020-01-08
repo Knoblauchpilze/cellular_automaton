@@ -627,9 +627,6 @@ namespace cellulator {
       bool alive = (m_nextStates[id] == State::Alive);
 
       if (alive) {
-        // TODO: Maybe we should have a boolean indicating whether the blocks
-        // missing should be created so that we could start with a nice area
-        // when randomizing the colony.
         updateAdjacency(desc, coord);
       }
     }
