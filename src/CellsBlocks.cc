@@ -165,6 +165,23 @@ namespace cellulator {
     // Retrieve the block's description.
     BlockDesc& b = m_blocks[blockID];
 
+    // Handle cases where there were no changes in this block: we will just copy and
+    // paste the value to the next generation.
+    if (b.changed == 0u) {
+      b.nAlive = b.alive;
+
+      // Copy cells' states.
+      for (unsigned id = b.start ; id < b.end ; ++id) {
+        m_nextStates[id] = m_states[id];
+
+        if (m_nextStates[id] == State::Alive) {
+          updateAdjacency(b, coordFromIndex(b, id, false));
+        }
+      }
+
+      return;
+    }
+
     b.nAlive = 0u;
 
     // Evolve each cell.
@@ -172,11 +189,6 @@ namespace cellulator {
       State s = evolveCell(m_states[id], m_adjacency[id]);
 
       m_nextStates[id] = s;
-
-      // Register one more change if needed.
-      if (m_states[id] != m_nextStates[id]) {
-        ++b.changed;
-      }
 
       if (s == State::Alive) {
         ++b.nAlive;
@@ -371,7 +383,11 @@ namespace cellulator {
       -1
     };
 
-    log("Created block " + std::to_string(id) + " for " + area.toString() + " (range: " + std::to_string(block.start) + " - " + std::to_string(block.end) + ")");
+    log(
+      "Created block " + std::to_string(id) + " for " + area.toString() +
+      " (range: " + std::to_string(block.start) + " - " + std::to_string(block.end) + ")",
+      utils::Level::Verbose
+    );
 
     // Allocate cells data if needed and reset the existing data.
     if (newB) {
@@ -437,7 +453,12 @@ namespace cellulator {
       return false;
     }
 
-    log("Destroying block " + std::to_string(blockID) + " (internal: " + std::to_string(m_blocks[blockID].id) + ") spanning " + m_blocks[blockID].area.toString());
+    log(
+      "Destroying block " + std::to_string(blockID) +
+      " (internal: " + std::to_string(m_blocks[blockID].id) + ") spanning " +
+      m_blocks[blockID].area.toString(),
+      utils::Level::Verbose
+    );
 
     bool save = m_blocks[blockID].active;
     if (save) {
@@ -946,13 +967,32 @@ namespace cellulator {
     // We first need to evolve all the cells to their next state. This is
     // achieved by swapping the internal vectors, which is cheap and fast.
     m_states.swap(m_nextStates);
+
+    // Update change count: this is computed by checking whether at least
+    // one adjacency value has been updated.
+    for (unsigned id = 0u ; id < m_blocks.size() ; ++id) {
+      // Only handle active blocks.
+      if (!m_blocks[id].active) {
+        continue;
+      }
+
+      // Update change count: this is computed by checking whether at least
+      // an adjacency value has been updated.
+      m_blocks[id].changed = 0u;
+
+      for (unsigned cell = m_blocks[id].start ; cell < m_blocks[id].end ; ++cell) {
+        if (m_adjacency[cell] != m_nextAdjacency[cell]) {
+          ++m_blocks[id].changed;
+        }
+      }
+    }
+
+    // Swap the adjacencies now that we're done checking for differences.
     m_adjacency.swap(m_nextAdjacency);
+    std::fill(m_nextAdjacency.begin(), m_nextAdjacency.end(), 0u);
 
     // Update cells' age.
     updateCellsAge();
-
-    // We also need to reset the next adjacency count to `0` everywhere.
-    std::fill(m_nextAdjacency.begin(), m_nextAdjacency.end(), 0u);
 
     // Now we need to update the alive count for each block.
     unsigned alive = 0u;
@@ -977,9 +1017,6 @@ namespace cellulator {
       if (m_blocks[id].alive == 0u && neighbors == 0u) {
         destroyBlock(m_blocks[id].id);
       }
-
-      // Reset changed status.
-      m_blocks[id].changed = 0u;
     }
 
     // Update live area to reflect the new states of cells.
