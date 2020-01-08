@@ -436,6 +436,17 @@ namespace cellulator {
       attach(int from);
 
       /**
+       * @brief - Used to perform the exact opposite operation than `attach`. It should
+       *          be called whenever a block is destroyed so that it is marked as not
+       *          registered in its neighbors: this will guarantee that it gets created
+       *          again if needed.
+       * @param from - the index of the element which should be detached from neighboring
+       *               blocks.
+       */
+      void
+      detach(int from);
+
+      /**
        * @brief - Used to move the cells one step forward in time. This basically means swapping
        *          the internal arrays representing the next step with the current one. We also
        *          need to perform the expansion of the colony in case some cells are now on the

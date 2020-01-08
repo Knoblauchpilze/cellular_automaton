@@ -376,6 +376,7 @@ namespace cellulator {
       std::fill(m_states.begin() + block.start, m_states.begin() + block.end, State::Dead);
       std::fill(m_ages.begin() + block.start, m_ages.begin() + block.end, 0);
       std::fill(m_adjacency.begin() + block.start, m_adjacency.begin() + block.end, 0u);
+      std::fill(m_nextAdjacency.begin() + block.start, m_nextAdjacency.begin() + block.end, 0u);
     }
 
     // Register the block and return it.
@@ -453,6 +454,9 @@ namespace cellulator {
       else {
         m_blocksIndex.erase(it);
       }
+
+      // Detach the block from neighbors.
+      detach(blockID);
     }
 
     return save;
@@ -462,9 +466,6 @@ namespace cellulator {
   CellsBlocks::updateAdjacency(const BlockDesc& block,
                                const utils::Vector2i& coord)
   {
-    // Convert global coord to local coordinate frame.
-    utils::Vector2i lCoord(coord.x() - block.area.x(), coord.y() - block.area.y());
-
     // Check whether the input coordinate corresponds to a cell
     // on the boundary of the node.
     if (coord.x() > 1 && coord.x() < block.area.w() - 2 &&
@@ -866,9 +867,72 @@ namespace cellulator {
     }
   }
 
+  void
+  CellsBlocks::detach(int from) {
+    // We assume that the `from` block is in a consistent state that is
+    // all the blocks that point to it are also pointed at by it.
+    // We just have to detach all the neighbors.
+    BlockDesc& b = m_blocks[from];
+
+    // North east.
+    if (b.ne >= 0) {
+      log("Unlinking " + m_blocks[b.ne].area.toString() + " at north east from " + b.area.toString(), utils::Level::Verbose);
+      m_blocks[b.ne].sw = -1;
+      b.ne = -1;
+    }
+
+    // North.
+    if (b.north >= 0) {
+      log("Unlinking " + m_blocks[b.ne].area.toString() + " at north from " + b.area.toString(), utils::Level::Verbose);
+      m_blocks[b.north].south = -1;
+      b.north = -1;
+    }
+
+    // North west.
+    if (b.nw >= 0) {
+      log("Unlinking " + m_blocks[b.nw].area.toString() + " at north west from " + b.area.toString(), utils::Level::Verbose);
+      m_blocks[b.nw].se = -1;
+      b.nw = -1;
+    }
+
+    // West.
+    if (b.west >= 0) {
+      log("Unlinking " + m_blocks[b.west].area.toString() + " at west from " + b.area.toString(), utils::Level::Verbose);
+      m_blocks[b.west].east = -1;
+      b.west = -1;
+    }
+
+    // South west.
+    if (b.sw >= 0) {
+      log("Unlinking " + m_blocks[b.sw].area.toString() + " at south west from " + b.area.toString(), utils::Level::Verbose);
+      m_blocks[b.sw].ne = -1;
+      b.sw = -1;
+    }
+
+    // South.
+    if (b.south >= 0) {
+      log("Unlinking " + m_blocks[b.south].area.toString() + " at south from " + b.area.toString(), utils::Level::Verbose);
+      m_blocks[b.south].north = -1;
+      b.south = -1;
+    }
+
+    // South east.
+    if (b.se >= 0) {
+      log("Unlinking " + m_blocks[b.se].area.toString() + " at south east from " + b.area.toString(), utils::Level::Verbose);
+      m_blocks[b.se].nw = -1;
+      b.se = -1;
+    }
+
+    // East.
+    if (b.east >= 0) {
+      log("Unlinking " + m_blocks[b.east].area.toString() + " at east from " + b.area.toString(), utils::Level::Verbose);
+      m_blocks[b.east].west = -1;
+      b.east = -1;
+    }
+  }
+
   unsigned
   CellsBlocks::stepPrivate() {
-
     // We first need to evolve all the cells to their next state. This is
     // achieved by swapping the internal vectors, which is cheap and fast.
     m_states.swap(m_nextStates);
