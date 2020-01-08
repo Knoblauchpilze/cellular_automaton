@@ -23,7 +23,6 @@
 // TODO: Improve dead areas.
 // TODO: Add brushes.
 // TODO: Add grid.
-// TODO: Some bugs with cells spanning other blocks that the root one as it seems.
 
 int main(int /*argc*/, char** /*argv*/) {
   // Create the logger.
@@ -55,7 +54,7 @@ int main(int /*argc*/, char** /*argv*/) {
 
     // Create the colony to simulate.
     cellulator::ColonyShPtr colony = std::make_shared<cellulator::Colony>(
-      // utils::Sizei(512, 512),
+      // utils::Sizei(2048, 2048),
       // utils::Sizei(256, 256),
       utils::Sizei(8, 8),
       cellulator::rules::Type::GameOfLife,
