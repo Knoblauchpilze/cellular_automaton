@@ -205,14 +205,24 @@ namespace cellulator {
     bool found = false;
 
     while (id < m_blocks.size() && !found) {
-      // Discard inactive blocks.
-      if (m_blocks[id].active && m_blocks[id].area.contains(coord)) {
-        int dataID = indexFromCoord(m_blocks[id], coord, true);
+      // Discard inactive blocks and only react when the block contains
+      // the coordinate. Note however that as we're managing bottom left
+      // based coordinates, the `m_blocks[id].area.getRightBound()` is
+      // actually not considered to be in the area. So we can't use the
+      // base `contains` method and instead focus on our method.
+      // Similar reasoning apply to the top bound.
+      if (m_blocks[id].active) {
+        if (m_blocks[id].area.contains(coord) &&
+            coord.x() < m_blocks[id].area.getRightBound() &&
+            coord.y() < m_blocks[id].area.getTopBound())
+        {
+          int dataID = indexFromCoord(m_blocks[id], coord, true);
 
-        out.first = m_states[dataID];
-        out.second = m_ages[dataID];
+          out.first = m_states[dataID];
+          out.second = m_ages[dataID];
 
-        found = true;
+          found = true;
+        }
       }
 
       ++id;
