@@ -107,6 +107,24 @@ namespace cellulator {
   }
 
   void
+  ColonyScheduler::onRulesetChanged(CellEvolverShPtr ruleset) {
+    // Protect from concurrent accesses.
+    Guard guard(m_propsLocker);
+
+    // Check whether the simulation is stopped.
+    if (m_simulationState != SimulationState::Stopped) {
+      log(
+        std::string("Could not change ruleset, simulation is running"),
+        utils::Level::Warning
+      );
+
+      return;
+    }
+
+    m_colony->setRuleset(ruleset);
+  }
+
+  void
   ColonyScheduler::build() {
     // Connect the results provider signal of the thread pool to the local slot.
     m_scheduler->onJobsCompleted.connect_member<ColonyScheduler>(

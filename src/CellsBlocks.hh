@@ -9,6 +9,7 @@
 # include <maths_utils/Box.hh>
 # include <maths_utils/Size.hh>
 # include <maths_utils/Vector2.hh>
+# include "CellEvolver.hh"
 
 namespace cellulator {
 
@@ -19,18 +20,6 @@ namespace cellulator {
     Dead,
     Alive
   };
-
-  namespace rules {
-
-    /**
-     * @brief - The ruleset to use to compute the next state of a cell
-     *          based on both its current state and the number of alive
-     *          neighboring cells.
-     */
-    enum class Type {
-      GameOfLife
-    };
-  }
 
   // Forward declaration to be able to use a shared pointer on a colony tile
   // right away.
@@ -50,12 +39,10 @@ namespace cellulator {
        *          are specified at the construction of the object and cannot be changed
        *          afterwards. This will be used internally to build the atlas of blocks
        *          needed whenever the colony needs to be expanded.
-       * @param ruleset - the set of rules to apply when evolving cells.
        * @param nodeDims - the dimensions of a single block of cells. This size will be
        *                   used for each allocation of a new cells block.
        */
-      CellsBlocks(const rules::Type& ruleset,
-                  const utils::Sizei& nodeDims);
+      CellsBlocks(const utils::Sizei& nodeDims);
 
       /**
        * @brief - Destruction of the cell block.
@@ -159,6 +146,14 @@ namespace cellulator {
       void
       fetchCells(std::vector<State>& cells,
                  const utils::Boxi& area);
+
+      /**
+       * @brief - Used by external providers to update the ruleset used by this colony to perform
+       *          the evolution of the cells.
+       * @param ruleset - the rules to use to evolve cells.
+       */
+      void
+      setRuleset(CellEvolverShPtr ruleset);
 
     private:
 
@@ -471,9 +466,9 @@ namespace cellulator {
 
       /**
        * @brief - The set of rules associated to the cells handled by this block. The set
-       *          described how and wehn cells should be born and die.
+       *          described how and when cells should be born and die.
        */
-      rules::Type m_ruleset;
+      CellEvolverShPtr m_ruleset;
 
       /**
        * @brief - Holds the dimensions of a single block of cells when allocated by this

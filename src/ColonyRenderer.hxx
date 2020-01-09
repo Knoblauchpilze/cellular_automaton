@@ -82,9 +82,6 @@ namespace cellulator {
   inline
   ColonySchedulerShPtr
   ColonyRenderer::getScheduler() noexcept {
-    // Protect from concurrent accesses.
-    Guard guard(m_propsLocker);
-
     return m_scheduler;
   }
 
