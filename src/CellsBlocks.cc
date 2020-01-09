@@ -254,6 +254,11 @@ namespace cellulator {
     for (unsigned id = 0u ; id < m_blocks.size() ; ++id) {
       const BlockDesc& b = m_blocks[id];
 
+      // Only handle blocks that are active.
+      if (!b.active) {
+        continue;
+      }
+
       // Check whether this block intersect the input area.
       // We don't actually explicitly check for intersection
       // but rather we count on the fact that a block which

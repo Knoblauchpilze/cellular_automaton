@@ -22,7 +22,6 @@
 // TODO: Add brushes.
 // TODO: Add grid.
 // TODO: Add options to set max age.
-// TODO: Bugs of flicking for some cells in dead nodes.
 
 int main(int /*argc*/, char** /*argv*/) {
   // Create the logger.
