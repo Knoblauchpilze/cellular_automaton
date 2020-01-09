@@ -60,8 +60,16 @@ namespace cellulator {
   }
 
   inline
+  void
+  Colony::setRuleset(CellEvolverShPtr ruleset) {
+    // Call the dedicated handler.
+    m_cells->setRuleset(ruleset);
+  }
+
+  inline
   utils::Sizei
   Colony::getCellBlockDims() noexcept {
+    // return utils::Sizei(256, 256);
     return utils::Sizei(8, 8);
   }
 

@@ -17,12 +17,14 @@
 # include "Colony.hh"
 # include "ColonyStatus.hh"
 # include "ColonyRenderer.hh"
+# include "RulesetSelector.hh"
 
 // TODO: Multiple rulesets ? See here: https://en.wikipedia.org/wiki/Cyclic_cellular_automaton
 // Instead use different count for dead and alive rules.
-// TODO: Improve dead areas.
 // TODO: Add brushes.
 // TODO: Add grid.
+// TODO: Add options to set max age.
+// TODO: Add options to handle rulesets.
 
 int main(int /*argc*/, char** /*argv*/) {
   // Create the logger.
@@ -57,7 +59,6 @@ int main(int /*argc*/, char** /*argv*/) {
       // utils::Sizei(2048, 2048),
       // utils::Sizei(256, 256),
       utils::Sizei(8, 8),
-      cellulator::rules::Type::GameOfLife,
       std::string("Drop it like it's Hoth")
     );
 
@@ -73,6 +74,9 @@ int main(int /*argc*/, char** /*argv*/) {
 
     cellulator::InfoBar* bar = new cellulator::InfoBar();
     app->setStatusBar(bar);
+
+    cellulator::RulesetSelector* rules = new cellulator::RulesetSelector();
+    app->addDockWidget(rules, sdl::app::DockWidgetArea::RightArea);
 
     // Connect the simulation's control button to the options panel slots.
     status->getFitToContentButton().onClick.connect_member<cellulator::ColonyRenderer>(
@@ -99,6 +103,11 @@ int main(int /*argc*/, char** /*argv*/) {
     renderer->getScheduler()->onSimulationHalted.connect_member<cellulator::ColonyStatus>(
       status,
       &cellulator::ColonyStatus::onSimulationHalted
+    );
+
+    rules->onRulesetChanged.connect_member<cellulator::ColonyScheduler>(
+      renderer->getScheduler().get(),
+      &cellulator::ColonyScheduler::onRulesetChanged
     );
 
     // Connect changes in the colony to the status display.

@@ -4,7 +4,6 @@
 namespace cellulator {
 
   Colony::Colony(const utils::Sizei& dims,
-                 const rules::Type& ruleset,
                  const std::string& name):
     utils::CoreObject(name),
 
@@ -25,7 +24,7 @@ namespace cellulator {
       );
     }
 
-    build(dims, ruleset);
+    build(dims);
   }
 
   unsigned
@@ -80,11 +79,9 @@ namespace cellulator {
   }
 
   void
-  Colony::build(const utils::Sizei& dims,
-                const rules::Type& ruleset)
-  {
+  Colony::build(const utils::Sizei& dims) {
     // Create the cells' data.
-    m_cells = std::make_shared<CellsBlocks>(ruleset, getCellBlockDims());
+    m_cells = std::make_shared<CellsBlocks>(getCellBlockDims());
 
     // Allocate initial blocks.
     m_cells->allocateTo(dims);

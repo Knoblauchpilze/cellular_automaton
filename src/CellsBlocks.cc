@@ -7,22 +7,6 @@
 namespace {
 
   inline
-  cellulator::State
-  evolveCell(const cellulator::State& s,
-             unsigned live)
-  {
-    if (s == cellulator::State::Dead && live == 3u) {
-      return cellulator::State::Alive;
-    }
-
-    if (s == cellulator::State::Alive && live >= 2 && live <= 3) {
-      return cellulator::State::Alive;
-    }
-
-    return cellulator::State::Dead;
-  }
-
-  inline
   unsigned
   hashCoordinate(const utils::Vector2i& v) {
     unsigned A = (v.x() >= 0 ? 2u * v.x() : -2 * v.x() - 1);
@@ -37,13 +21,12 @@ namespace {
 
 namespace cellulator {
 
-  CellsBlocks::CellsBlocks(const rules::Type& ruleset,
-                           const utils::Sizei& nodeDims):
+  CellsBlocks::CellsBlocks(const utils::Sizei& nodeDims):
     utils::CoreObject(std::string("cells_blocks")),
 
     m_propsLocker(),
 
-    m_ruleset(ruleset),
+    m_ruleset(std::make_shared<CellEvolver>()),
     m_nodesDims(nodeDims),
 
     m_states(),
@@ -186,11 +169,24 @@ namespace cellulator {
 
     // Evolve each cell.
     for (unsigned id = b.start ; id < b.end ; ++id) {
-      State s = evolveCell(m_states[id], m_adjacency[id]);
+      State s = m_states[id];
+      unsigned nghbr = m_adjacency[id];
 
-      m_nextStates[id] = s;
+      State n = s;
+      switch (s) {
+        case State::Alive:
+          n = m_ruleset->survives(nghbr) ? State::Alive : State::Dead;
+          break;
+        case State::Dead:
+        default:
+          // Assume default state is dead.
+          n = m_ruleset->isBorn(nghbr) ? State::Alive : State::Dead;
+          break;
+      }
 
-      if (s == State::Alive) {
+      m_nextStates[id] = n;
+
+      if (n == State::Alive) {
         ++b.nAlive;
         updateAdjacency(b, coordFromIndex(b, id, false));
       }

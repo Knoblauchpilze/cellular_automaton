@@ -9,6 +9,7 @@
 # include <maths_utils/Vector2.hh>
 # include <core_utils/ThreadPool.hh>
 # include "Colony.hh"
+# include "CellEvolver.hh"
 
 namespace cellulator {
 
@@ -60,6 +61,17 @@ namespace cellulator {
        */
       void
       generate();
+
+      /**
+       * @brief - Used by external providers to update the ruleset used by this colony
+       *          to perform the evolution of the cells.
+       *          A check is performed to verify that the simulation is stopped before
+       *          performing the update (as otherwise we would end up with some strange
+       *          results).
+       * @param ruleset - the rules to use to evolve cells.
+       */
+      void
+      onRulesetChanged(CellEvolverShPtr ruleset);
 
     private:
 

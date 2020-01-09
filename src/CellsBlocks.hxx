@@ -24,6 +24,15 @@ namespace cellulator {
   }
 
   inline
+  void
+  CellsBlocks::setRuleset(CellEvolverShPtr ruleset) {
+    // Protect from concurrnet access.
+    Guard guard(m_propsLocker);
+
+    m_ruleset = ruleset;
+  }
+
+  inline
   float
   CellsBlocks::getDeadCellProbability() noexcept {
     return 0.7f;

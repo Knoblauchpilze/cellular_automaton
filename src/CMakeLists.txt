@@ -12,6 +12,7 @@ set (SOURCES
   Colony.cc
   ColonyScheduler.cc
   CellsBlocks.cc
+  RulesetSelector.cc
   )
 
 add_library (cellular_automaton_lib SHARED

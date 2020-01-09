@@ -24,7 +24,7 @@ namespace cellulator {
     // coordinates of the mouse cursor in real world frame along with a label
     // displaying the total rendering area.
     sdl::graphic::LinearLayoutShPtr layout = std::make_shared<sdl::graphic::LinearLayout>(
-      "status_bar_layout",
+      "info_bar_layout",
       this,
       sdl::graphic::LinearLayout::Direction::Horizontal,
       getGlobalMargins(),

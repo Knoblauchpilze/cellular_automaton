@@ -9,6 +9,7 @@
 # include <maths_utils/Vector2.hh>
 # include "ColonyTile.hh"
 # include "CellsBlocks.hh"
+# include "CellEvolver.hh"
 
 namespace cellulator {
 
@@ -20,12 +21,9 @@ namespace cellulator {
        *          initialized to a dead state. The user can provide a name for
        *          the colony.
        * @param dims - the dimensions of the colony.
-       * @param ruleset - the set of rules to use to update the cells at each
-       *                  iteration.
        * @param name - the lil' name of the colony.
        */
       Colony(const utils::Sizei& dims,
-             const rules::Type& ruleset,
              const std::string& name = std::string("Daddy's lil monster"));
 
       /**
@@ -134,6 +132,14 @@ namespace cellulator {
       std::vector<ColonyTileShPtr>
       generateSchedule();
 
+      /**
+       * @brief - Used by external providers to update the ruleset used by this colony
+       *          to perform the evolution of the cells.
+       * @param ruleset - the rules to use to evolve cells.
+       */
+      void
+      setRuleset(CellEvolverShPtr ruleset);
+
     private:
 
       /**
@@ -156,11 +162,9 @@ namespace cellulator {
        *          Also perform the creation of the undelrying data used to keep the cells'
        *          data for this colony.
        * @param dims - the dimensions of the colony upon creation.
-       * @param ruleset - the type of simulation to perform on the cells.
        */
       void
-      build(const utils::Sizei& dims,
-            const rules::Type& ruleset);
+      build(const utils::Sizei& dims);
 
       /**
        * @brief - Used to convert the input box from a floating point semantic to a
