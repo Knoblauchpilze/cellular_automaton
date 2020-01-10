@@ -9,6 +9,7 @@
 # include <sdl_engine/Brush.hh>
 # include "Colony.hh"
 # include "ColonyScheduler.hh"
+# include "ColorPalette.hh"
 
 namespace cellulator {
 
@@ -88,6 +89,18 @@ namespace cellulator {
        */
       ColonySchedulerShPtr
       getScheduler() noexcept;
+
+      /**
+       * @brief - Local slot connected to producers that are able to generate new
+       *          palette to be used for the coloring of this colony.
+       *          Note that this method needs to acquire the lock on the object so
+       *          it is safe to call this even when the simulation is running.
+       *          The only drawback is that the palette will be applied only upon
+       *          repainting this widget.
+       * @param palette - the palette to be used from now on.
+       */
+      void
+      onPaletteChanded(ColorPaletteShPtr palette);
 
     protected:
 
@@ -277,7 +290,7 @@ namespace cellulator {
        * @return - the brush representing the input cells given the cells' size for this item.
        */
       sdl::core::engine::BrushShPtr
-      createBrushFromCells(const std::vector<State>& cells,
+      createBrushFromCells(const std::vector<std::pair<State, unsigned>>& cells,
                            const utils::Boxi& area);
 
       /**
@@ -380,6 +393,12 @@ namespace cellulator {
        *          This position is saved in global coordinate frame.
        */
       utils::Vector2f m_lastKnownMousePos;
+
+      /**
+       * @brief - The palette to use to assign colors to the cells. This allows to provide a
+       *          coloring based on the age of the cell and its state.
+       */
+      ColorPaletteShPtr m_palette;
 
     public:
 

@@ -86,6 +86,26 @@ namespace cellulator {
   }
 
   inline
+  void
+  ColonyRenderer::onPaletteChanded(ColorPaletteShPtr palette) {
+    // Discard invalid palette.
+    if (palette == nullptr) {
+      log(
+        std::string("Discarding palette operation with invalid null palette"),
+        utils::Level::Error
+      );
+
+      return;
+    }
+
+    // Protect from concurrent accesses.
+    Guard guard(m_propsLocker);
+
+    // Assign the palette.
+    m_palette = palette;
+  }
+
+  inline
   bool
   ColonyRenderer::mouseMoveEvent(const sdl::core::engine::MouseEvent& e) {
     // Protect from concurrent accesses.
@@ -227,7 +247,11 @@ namespace cellulator {
       maxY - minY
     );
 
-    log("Changed area from " + area.toString() + " to " + newArea.toString() + " (center: " + center.toString() + ", f: " + std::to_string(factor) + ")");
+    log(
+      "Changed area from " + area.toString() + " to " + newArea.toString() +
+      " (center: " + center.toString() + ", f: " + std::to_string(factor) + ")",
+      utils::Level::Verbose
+    );
 
     // Assign it to the internal area.
     m_settings.area = newArea;

@@ -144,7 +144,7 @@ namespace cellulator {
        * @param area - the area for which cells should be retrieved.
        */
       void
-      fetchCells(std::vector<State>& cells,
+      fetchCells(std::vector<std::pair<State, unsigned>>& cells,
                  const utils::Boxi& area);
 
       /**
