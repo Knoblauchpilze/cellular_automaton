@@ -13,7 +13,7 @@ namespace cellulator {
     sdl::core::SdlWidget(std::string("rendering_props"),
                          hint,
                          parent,
-                         sdl::core::engine::Color::NamedColor::CorneFlowerBlue),
+                         getDefaultColor()),
 
     m_propsLocker(),
 
@@ -28,9 +28,11 @@ namespace cellulator {
       "rendering_layout",
       this,
       2u,
-      8u,
+      15u,
       getGlobalMargins()
     );
+
+    layout->setRowsMinimumHeight(getComponentMargins());
 
     // Assign the layout to this widget.
     setLayout(layout);
@@ -44,7 +46,7 @@ namespace cellulator {
       sdl::graphic::LabelWidget::HorizontalAlignment::Right,
       sdl::graphic::LabelWidget::VerticalAlignment::Center,
       this,
-      sdl::core::engine::Color::NamedColor::CorneFlowerBlue
+      getDefaultColor()
     );
     if (desc == nullptr) {
       error(
@@ -77,6 +79,23 @@ namespace cellulator {
 
     // Register each palette.
     for (unsigned id = 0u ; id < 6u ; ++id) {
+      sdl::graphic::LabelWidget* label = new sdl::graphic::LabelWidget(
+        std::string("label_for_") + std::to_string(id),
+        std::string("Step ") + std::to_string(id + 1u),
+        getGeneralTextFont(),
+        15u,
+        sdl::graphic::LabelWidget::HorizontalAlignment::Right,
+        sdl::graphic::LabelWidget::VerticalAlignment::Center,
+        this,
+        getDefaultColor()
+      );
+      if (label == nullptr) {
+        error(
+          std::string("Could not create rendering options panel"),
+          std::string("Could not create palette for age ") + std::to_string(id)
+        );
+      }
+
       sdl::core::SdlWidget* palette = new sdl::core::SdlWidget(
         generateNameForPalette(id),
         utils::Sizef(),
@@ -90,10 +109,16 @@ namespace cellulator {
         );
       }
 
+      utils::Sizef m = getPaletteMaxSize();
+      m.w() = std::numeric_limits<float>::max();
+      label->setMaxSize(m);
+      label->setFocusPolicy(sdl::core::FocusPolicy());
+
       palette->setMaxSize(getPaletteMaxSize());
       palette->setFocusPolicy(sdl::core::FocusPolicy());
 
-      layout->addItem(palette, 0u, 1u + id, 2u, 1u);
+      layout->addItem(label,   0u, 2u + 2u * id, 1u, 1u);
+      layout->addItem(palette, 1u, 2u + 2u * id, 1u, 1u);
     }
 
     // Create the `Apply` button.
@@ -130,7 +155,7 @@ namespace cellulator {
     );
 
     // Add it to the layout.
-    layout->addItem(apply, 0u, 7u, 2u, 1u);
+    layout->addItem(apply, 0u, 14u, 2u, 1u);
   }
 
   void

@@ -39,8 +39,20 @@ namespace cellulator {
   }
 
   inline
+  sdl::core::engine::Color
+  RenderingProperties::getDefaultColor() noexcept {
+    return sdl::core::engine::Color::fromRGB(0.1255f, 0.4196f, 0.7961f);
+  }
+
+  inline
   float
   RenderingProperties::getGlobalMargins() noexcept {
+    return 5.0f;
+  }
+
+  inline
+  float
+  RenderingProperties::getComponentMargins() noexcept {
     return 5.0f;
   }
 
