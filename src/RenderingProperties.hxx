@@ -87,9 +87,9 @@ namespace cellulator {
   }
 
   inline
-  sdl::core::SdlWidget*
+  sdl::graphic::SelectorWidget*
   RenderingProperties::getPaletteFromName(const std::string& name) {
-    return getChildAs<sdl::core::SdlWidget>(name);
+    return getChildAs<sdl::graphic::SelectorWidget>(name);
   }
 
   inline
