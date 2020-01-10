@@ -3,6 +3,7 @@
 
 # include <sdl_core/SdlWidget.hh>
 # include <sdl_graphic/TextBox.hh>
+# include <sdl_graphic/SelectorWidget.hh>
 # include "ColorPalette.hh"
 
 namespace cellulator {
@@ -104,7 +105,7 @@ namespace cellulator {
        * @param name - the name of the palette to return.
        * @return - the palette associated to the input name.
        */
-      sdl::core::SdlWidget*
+      sdl::graphic::SelectorWidget*
       getPaletteFromName(const std::string& name);
 
       /**

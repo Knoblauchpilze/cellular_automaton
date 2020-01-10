@@ -96,10 +96,10 @@ namespace cellulator {
         );
       }
 
-      sdl::core::SdlWidget* palette = new sdl::core::SdlWidget(
+      sdl::graphic::SelectorWidget* palette = new sdl::graphic::SelectorWidget(
         generateNameForPalette(id),
-        utils::Sizef(),
         this,
+        true,
         sdl::core::engine::Color::NamedColor::White
       );
       if (palette == nullptr) {
@@ -115,7 +115,6 @@ namespace cellulator {
       label->setFocusPolicy(sdl::core::FocusPolicy());
 
       palette->setMaxSize(getPaletteMaxSize());
-      palette->setFocusPolicy(sdl::core::FocusPolicy());
 
       layout->addItem(label,   0u, 2u + 2u * id, 1u, 1u);
       layout->addItem(palette, 1u, 2u + 2u * id, 1u, 1u);
@@ -188,6 +187,14 @@ namespace cellulator {
     ColorPaletteShPtr palette = std::make_shared<ColorPalette>(maxAge);
 
     // Build the gradient.
+    for (unsigned id = 0u ; id < 6u ; ++id) {
+      // Retrieve the palette.
+      std::string n = generateNameForPalette(id);
+      sdl::graphic::SelectorWidget* sw = getPaletteFromName(n);
+
+      log("Should handle color for " +  sw->getName(), utils::Level::Warning);
+    }
+
     sdl::core::engine::GradientShPtr gradient = nullptr;
 
     if (gradient != nullptr) {
