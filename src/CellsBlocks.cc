@@ -240,11 +240,11 @@ namespace cellulator {
   }
 
   void
-  CellsBlocks::fetchCells(std::vector<State>& cells,
+  CellsBlocks::fetchCells(std::vector<std::pair<State, unsigned>>& cells,
                           const utils::Boxi& area)
   {
     // Reset with dead cells as to not display some randomness.
-    std::fill(cells.begin(), cells.end(), State::Dead);
+    std::fill(cells.begin(), cells.end(), std::make_pair(State::Dead, 0u));
 
     // Protect from concurrent accesses.
     Guard guard(m_propsLocker);
@@ -297,7 +297,10 @@ namespace cellulator {
           if (rOffset >= 0 && rOffset < uB &&
               rXOff >= 0 && rXOff < b.area.w())
           {
-            cells[offset + xOff] = m_states[b.start + coord];
+            cells[offset + xOff] = std::make_pair(
+              m_states[b.start + coord],
+              m_ages[b.start + coord]
+            );
           }
         }
       }

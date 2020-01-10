@@ -24,6 +24,8 @@ namespace cellulator {
 
     m_lastKnownMousePos(),
 
+    m_palette(std::make_shared<ColorPalette>()),
+
     onGenerationComputed(),
     onCoordChanged()
   {
@@ -232,7 +234,7 @@ namespace cellulator {
 
     // Fetch the cells that are visible. We need to convert the
     // input area.
-    std::vector<State> cells;
+    std::vector<std::pair<State, unsigned>> cells;
     utils::Boxi out = m_colony->fetchCells(cells, m_settings.area);
 
     // Create the colors needed for the brush.
@@ -280,7 +282,7 @@ namespace cellulator {
   }
 
   sdl::core::engine::BrushShPtr
-  ColonyRenderer::createBrushFromCells(const std::vector<State>& cells,
+  ColonyRenderer::createBrushFromCells(const std::vector<std::pair<State, unsigned>>& cells,
                                        const utils::Boxi& area)
   {
     // Determine the size of a single cell.
@@ -312,13 +314,13 @@ namespace cellulator {
         utils::Vector2i c(cX - area.getLeftBound(), cY - area.getBottomBound());
 
         // Retrieve the state of this cell.
-        const State& ce = cells[c.y() * area.w() + c.x()];
+        const std::pair<State, unsigned>& ce = cells[c.y() * area.w() + c.x()];
 
         // Assign the corresponding color to the pixel.
         sdl::core::engine::Color co = sdl::core::engine::Color::NamedColor::Pink;
-        switch (ce) {
+        switch (ce.first) {
           case State::Alive:
-            co = sdl::core::engine::Color::NamedColor::White;
+            co = m_palette->colorize(ce.second);
             break;
           case State::Dead:
           default:

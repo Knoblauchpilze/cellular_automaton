@@ -31,7 +31,7 @@ namespace cellulator {
 
   inline
   utils::Boxi
-  Colony::fetchCells(std::vector<State>& cells,
+  Colony::fetchCells(std::vector<std::pair<State, unsigned>>& cells,
                      const utils::Boxf& area)
   {
     // Protect from concurrent accesses.
