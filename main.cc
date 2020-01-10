@@ -18,10 +18,11 @@
 # include "ColonyStatus.hh"
 # include "ColonyRenderer.hh"
 # include "RulesetSelector.hh"
+# include "RenderingProperties.hh"
 
 // TODO: Add brushes.
 // TODO: Add grid.
-// TODO: Add options to set max age.
+// TODO: Add options to configure palette for max age.
 
 int main(int /*argc*/, char** /*argv*/) {
   // Create the logger.
@@ -73,7 +74,10 @@ int main(int /*argc*/, char** /*argv*/) {
     app->setStatusBar(bar);
 
     cellulator::RulesetSelector* rules = new cellulator::RulesetSelector();
-    app->addDockWidget(rules, sdl::app::DockWidgetArea::RightArea);
+    app->addDockWidget(rules, sdl::app::DockWidgetArea::RightArea, std::string("Ruleset"));
+
+    cellulator::RenderingProperties* props = new cellulator::RenderingProperties();
+    app->addDockWidget(props, sdl::app::DockWidgetArea::RightArea, std::string("Display"));
 
     // Connect the simulation's control button to the options panel slots.
     status->getFitToContentButton().onClick.connect_member<cellulator::ColonyRenderer>(
@@ -105,6 +109,11 @@ int main(int /*argc*/, char** /*argv*/) {
     rules->onRulesetChanged.connect_member<cellulator::ColonyScheduler>(
       renderer->getScheduler().get(),
       &cellulator::ColonyScheduler::onRulesetChanged
+    );
+
+    props->onPaletteChanged.connect_member<cellulator::ColonyRenderer>(
+      renderer,
+      &cellulator::ColonyRenderer::onPaletteChanded
     );
 
     // Connect changes in the colony to the status display.

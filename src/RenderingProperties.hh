@@ -50,8 +50,16 @@ namespace cellulator {
                         bool& converted) noexcept;
 
       static
+      sdl::core::engine::Color
+      getDefaultColor() noexcept;
+
+      static
       float
       getGlobalMargins() noexcept;
+
+      static
+      float
+      getComponentMargins() noexcept;
 
       static
       float
