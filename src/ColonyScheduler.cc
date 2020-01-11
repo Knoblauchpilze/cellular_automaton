@@ -17,7 +17,7 @@ namespace cellulator {
     m_colony(colony),
 
     onGenerationComputed(),
-    onSimulationHalted()
+    onSimulationToggled()
   {
     setService("scheduler");
 
@@ -78,6 +78,42 @@ namespace cellulator {
     m_simulationState = SimulationState::Stopped;
 
     scheduleRendering();
+  }
+
+  void
+  ColonyScheduler::toggle() {
+    // Protect from concurrent accesses.
+    Guard guard(m_propsLocker);
+
+    // Toggle the simulation state.
+    bool changed = true;
+
+    switch (m_simulationState) {
+      case SimulationState::Running:
+        m_simulationState = SimulationState::Stopped;
+        break;
+      case SimulationState::Stopped:
+        m_simulationState = SimulationState::Running;
+        break;
+      case SimulationState::SingleStep:
+        // In case the simulation is set to `SingleStep` we can't
+        // really invert anything. Same for the default case where
+        // the state is not recognized. We thus won't do a thing.
+      default:
+        changed = false;
+        break;
+    }
+
+    // Scheduler a rendering if needed.
+    if (changed) {
+      scheduleRendering();
+
+      // Notify external listeners.
+      onSimulationToggled.safeEmit(
+        std::string("onSimulationToggled(") + std::to_string(m_simulationState == SimulationState::Running) + ")",
+        m_simulationState == SimulationState::Running
+      );
+    }
   }
 
   void
@@ -165,8 +201,9 @@ namespace cellulator {
       m_simulationState = SimulationState::Stopped;
 
       // Notify that the simulation is halted.
-      onSimulationHalted.safeEmit(
-        std::string("onSimulationHalted()")
+      onSimulationToggled.safeEmit(
+        std::string("onSimulationToggled(false)"),
+        false
       );
 
       return;

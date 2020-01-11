@@ -45,15 +45,23 @@ namespace cellulator {
       getGenerateColonyButton();
 
       /**
-       * @brief - Used to react to the simulation being halted. This usually indicates
-       *          that either an error occurred during the simulation or that the colony
-       *          reached a point where it is composed only of still life patterns and
-       *          `Dead` cells (and thus there's no point in pursuing the simulation).
-       *          This method will handle the necessary untoggling of the simulation
-       *          started button.
+       * @brief - Used to react to the simulation state being toggled. Basically the
+       *          simulation can either be running, which means that it will try to
+       *          continuously update the cells until further notice or halted in
+       *          which case no changes will happen.
+       *          In most cases this component provides information and commands to
+       *          make the state of the simulation change. But the renderer also has
+       *          some internal means to control the state of the simulation. It is
+       *          important that such events are notified to this object so that we
+       *          can display a consistent state for ths simulation button.
+       *          This method is thus expected to be called whenever some external
+       *          component tempers with the state of the simulation: this allows
+       *          this component to update the internal state of the simulation's
+       *          started button to be consistent with it.
+       * @param running - `true` if the simulation is now running.
        */
       void
-      onSimulationHalted();
+      onSimulationToggled(bool running);
 
     protected:
 
