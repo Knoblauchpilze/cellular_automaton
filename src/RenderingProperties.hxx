@@ -76,6 +76,12 @@ namespace cellulator {
 
   inline
   unsigned
+  RenderingProperties::getPaletteSteps() noexcept {
+    return 7u;
+  }
+
+  inline
+  unsigned
   RenderingProperties::getDefaultMaxAge() noexcept {
     return 10u;
   }
@@ -84,6 +90,55 @@ namespace cellulator {
   std::string
   RenderingProperties::generateNameForPalette(unsigned index) noexcept {
     return std::string("palette_selector_") + std::to_string(index);
+  }
+
+  inline
+  sdl::graphic::SelectorWidget*
+  RenderingProperties::createPaletteFromIndex(unsigned index) {
+    // Create the palette object.
+    sdl::graphic::SelectorWidget* palette = new sdl::graphic::SelectorWidget(
+      generateNameForPalette(index),
+      this,
+      true,
+      getDefaultColor()
+    );
+    if (palette == nullptr) {
+      error(
+        std::string("Could not create rendering options panel"),
+        std::string("Could not create palette for age ") + std::to_string(index)
+      );
+    }
+
+    // Assign properties for the palette.
+    palette->setMaxSize(getPaletteMaxSize());
+    palette->allowLog(false);
+
+    // Populate internal colors.
+    for (unsigned id = 0u ; id < m_colors.size() ; ++id) {
+      sdl::core::SdlWidget* w = new sdl::core::SdlWidget(
+        std::string("color_entry_") + std::to_string(id) + "_for_" + palette->getName(),
+        utils::Sizef(),
+        palette,
+        m_colors[id]
+      );
+      if (w == nullptr) {
+        log(
+          std::string("Could not create palette entry ") + m_colors[id].toString() + " for palette " + std::to_string(index),
+          utils::Level::Error
+        );
+
+        continue;
+      }
+
+      w->allowLog(false);
+      palette->insertWidget(w, id);
+    }
+
+    // Assign the active color.
+    palette->setActiveWidget(index);
+
+    // Return the built-in object.
+    return palette;
   }
 
   inline

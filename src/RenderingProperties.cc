@@ -24,15 +24,27 @@ namespace cellulator {
 
   void
   RenderingProperties::build() {
+    // Create the palette.
+    generatePalette();
+
+    // Create the grid layout to register each individual color picker.
+    // The layout is composed of a single line allowing to register the
+    // max age represented by the palette, then a number of steps that
+    // is defined by `getPaletteSteps`: as we want some nice spacing in
+    // between each steps we double the number of rows. We also want a
+    // space after the last option.
+    // And then the `Apply` button allowing to notify the palette opts.
     sdl::graphic::GridLayoutShPtr layout = std::make_shared<sdl::graphic::GridLayout>(
       "rendering_layout",
       this,
       2u,
-      15u,
+      1u + (2u * getPaletteSteps() + 1u) + 1u,
       getGlobalMargins()
     );
 
     layout->setRowsMinimumHeight(getComponentMargins());
+
+    layout->allowLog(false);
 
     // Assign the layout to this widget.
     setLayout(layout);
@@ -78,7 +90,7 @@ namespace cellulator {
     layout->addItem(box , 1u, 0u, 1u, 1u);
 
     // Register each palette.
-    for (unsigned id = 0u ; id < 6u ; ++id) {
+    for (unsigned id = 0u ; id < getPaletteSteps() ; ++id) {
       sdl::graphic::LabelWidget* label = new sdl::graphic::LabelWidget(
         std::string("label_for_") + std::to_string(id),
         std::string("Step ") + std::to_string(id + 1u),
@@ -96,25 +108,12 @@ namespace cellulator {
         );
       }
 
-      sdl::graphic::SelectorWidget* palette = new sdl::graphic::SelectorWidget(
-        generateNameForPalette(id),
-        this,
-        true,
-        sdl::core::engine::Color::NamedColor::White
-      );
-      if (palette == nullptr) {
-        error(
-          std::string("Could not create rendering options panel"),
-          std::string("Could not create palette for age ") + std::to_string(id)
-        );
-      }
+      sdl::graphic::SelectorWidget* palette = createPaletteFromIndex(id);
 
       utils::Sizef m = getPaletteMaxSize();
       m.w() = std::numeric_limits<float>::max();
       label->setMaxSize(m);
       label->setFocusPolicy(sdl::core::FocusPolicy());
-
-      palette->setMaxSize(getPaletteMaxSize());
 
       layout->addItem(label,   0u, 2u + 2u * id, 1u, 1u);
       layout->addItem(palette, 1u, 2u + 2u * id, 1u, 1u);
@@ -154,7 +153,36 @@ namespace cellulator {
     );
 
     // Add it to the layout.
-    layout->addItem(apply, 0u, 14u, 2u, 1u);
+    layout->addItem(apply, 0u, 1u + (2u * getPaletteSteps() + 1u), 2u, 1u);
+  }
+
+  void
+  RenderingProperties::generatePalette() noexcept {
+    // We want to generate all the named color in the palette. In order
+    // to provide some sort of consistency we will also set the first
+    // ones to be equal to the default gradient usedin the `ColorPalette`
+    // item.
+    m_colors.push_back(sdl::core::engine::Color::NamedColor::Indigo);
+    m_colors.push_back(sdl::core::engine::Color::NamedColor::Purple);
+    m_colors.push_back(sdl::core::engine::Color::NamedColor::Blue);
+    m_colors.push_back(sdl::core::engine::Color::NamedColor::Green);
+    m_colors.push_back(sdl::core::engine::Color::NamedColor::Yellow);
+    m_colors.push_back(sdl::core::engine::Color::NamedColor::Orange);
+    m_colors.push_back(sdl::core::engine::Color::NamedColor::Red);
+
+    // Register the rest of the colors.
+    m_colors.push_back(sdl::core::engine::Color::NamedColor::White);
+    m_colors.push_back(sdl::core::engine::Color::NamedColor::Black);
+    m_colors.push_back(sdl::core::engine::Color::NamedColor::Cyan);
+    m_colors.push_back(sdl::core::engine::Color::NamedColor::Magenta);
+    m_colors.push_back(sdl::core::engine::Color::NamedColor::Silver);
+    m_colors.push_back(sdl::core::engine::Color::NamedColor::Gray);
+    m_colors.push_back(sdl::core::engine::Color::NamedColor::Maroon);
+    m_colors.push_back(sdl::core::engine::Color::NamedColor::Olive);
+    m_colors.push_back(sdl::core::engine::Color::NamedColor::Pink);
+    m_colors.push_back(sdl::core::engine::Color::NamedColor::Teal);
+    m_colors.push_back(sdl::core::engine::Color::NamedColor::Navy);
+    m_colors.push_back(sdl::core::engine::Color::NamedColor::CorneFlowerBlue);
   }
 
   void
@@ -187,15 +215,31 @@ namespace cellulator {
     ColorPaletteShPtr palette = std::make_shared<ColorPalette>(maxAge);
 
     // Build the gradient.
-    for (unsigned id = 0u ; id < 6u ; ++id) {
+    sdl::core::engine::GradientShPtr gradient = std::make_shared<sdl::core::engine::Gradient>(
+      std::string("palette_for_age"),
+      sdl::core::engine::gradient::Mode::Linear
+    );
+
+    for (unsigned id = 0u ; id < getPaletteSteps() ; ++id) {
       // Retrieve the palette.
       std::string n = generateNameForPalette(id);
       sdl::graphic::SelectorWidget* sw = getPaletteFromName(n);
 
-      log("Should handle color for " +  sw->getName(), utils::Level::Warning);
-    }
+      // Populate the color based on the current active on in the palette.
+      unsigned cID = static_cast<unsigned>(sw->getActiveItem());
 
-    sdl::core::engine::GradientShPtr gradient = nullptr;
+      if (cID >= m_colors.size()) {
+        log(
+          std::string("Could not retrieve invalid color ") + std::to_string(cID) + ", only " +
+          std::to_string(m_colors.size()) + " available",
+          utils::Level::Error
+        );
+
+        continue;
+      }
+
+      gradient->setColorAt(1.0f * id / getPaletteSteps(), m_colors[cID]);
+    }
 
     if (gradient != nullptr) {
       palette->setGradient(gradient);

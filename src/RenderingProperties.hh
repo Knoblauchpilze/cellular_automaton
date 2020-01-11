@@ -76,6 +76,10 @@ namespace cellulator {
 
       static
       unsigned
+      getPaletteSteps() noexcept;
+
+      static
+      unsigned
       getDefaultMaxAge() noexcept;
 
       /**
@@ -91,11 +95,29 @@ namespace cellulator {
       generateNameForPalette(unsigned index) noexcept;
 
       /**
+       * @brief - Used to create the complete palette object used to represent
+       *          a color to assign to a cell. This include populating the item
+       *          with relevant colors.
+       *          The colors are taken from the internal map and the `index-th`
+       *          color is used as the active one.
+       * @param index - the index of the palette to create.
+       * @return - the object representing the palette.
+       */
+      sdl::graphic::SelectorWidget*
+      createPaletteFromIndex(unsigned index);
+
+      /**
        * @brief - Used to build the content of this widget so that it can be
        *          readily displayed.
        */
       void
       build();
+
+      /**
+       * @brief - Used to generate the default palette to use for this component.
+       */
+      void
+      generatePalette() noexcept;
 
       /**
        * @brief - Used to retrieve the palette from the specified name.
@@ -134,6 +156,15 @@ namespace cellulator {
        * @brief - A mutex to protect the internal properties of this widget.
        */
       mutable std::mutex m_propsLocker;
+
+      /**
+       * @brief - The list of colors in order which are assigned to the item
+       *          allowing to select colors. This ordered list is used when
+       *          the rendering options should be packaged to make the link
+       *          between the active element in a single palette and the color
+       *          that is expected to be added to the props.
+       */
+      std::vector<sdl::core::engine::Color> m_colors;
 
     public:
 
