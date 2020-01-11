@@ -54,6 +54,13 @@ namespace cellulator {
       stop();
 
       /**
+       * @brief - Used to toggle the current simulation state. If the simulation
+       *          is running it will be paused and vice-versa.
+       */
+      void
+      toggle();
+
+      /**
        * @brief - Wraps a call to the internal colony to generate random cells on
        *          all the available element.
        *          An error is raised in case the simulation is started (usually we
@@ -166,13 +173,15 @@ namespace cellulator {
       utils::Signal<unsigned, unsigned> onGenerationComputed;
 
       /**
-       * @brief - Used to signal to listeners the fact that the simulation can't be continued
-       *          any further. Usually this means that the colony reached a point where all
-       *          the cells are dead or arranged in still life patterns.
-       *          In this case there's no need to continue the simulation and we notify the
-       *          external listeners with this signal.
+       * @brief - Used to signal to listeners the fact that the simulation's state has been
+       *          changed programaticcaly. This signal is only fired in case a `toggle` op
+       *          is performed: with methods such as `start` or `stop` we assume that the
+       *          called is already aware of the change and thus does not need to receive a
+       *          notification about it.
+       *          The external listeners are provided the current state of the simulation
+       *          which is either running (input parameter set to `true`) or stopped.
        */
-      utils::Signal<> onSimulationHalted;
+      utils::Signal<bool> onSimulationToggled;
   };
 
   using ColonySchedulerShPtr = std::shared_ptr<ColonyScheduler>;

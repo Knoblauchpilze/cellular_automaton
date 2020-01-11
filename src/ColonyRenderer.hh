@@ -224,6 +224,17 @@ namespace cellulator {
       getArrowKeyMotion() noexcept;
 
       /**
+       * @brief - Retrieve a key that can be used as the default option to toggle the
+       *          simulation's state to another value. When this widget has the focus
+       *          it allows to control the simulation more easily without needing to
+       *          click on the control buttons.
+       * @return - the code of a key allowing to toggle the simulation's state.
+       */
+      static
+      sdl::core::engine::RawKey
+      getSimulationStateToggleKey() noexcept;
+
+      /**
        * @brief - Return an integer allowing to determine the closest value to which a
        *          given gfrid resolution is rounded. This is to avoid having potentially
        *          any interval possible for a grid pattern.

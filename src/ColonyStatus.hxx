@@ -19,9 +19,9 @@ namespace cellulator {
 
   inline
   void
-  ColonyStatus::onSimulationHalted() {
-    // Untoggle the start simulation button.
-    getStartSimulationButton().toggle(false);
+  ColonyStatus::onSimulationToggled(bool running) {
+    // Untoggle the start simulation button based on the input state.
+    getStartSimulationButton().toggle(running);
   }
 
   inline

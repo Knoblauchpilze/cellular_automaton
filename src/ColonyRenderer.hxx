@@ -183,6 +183,12 @@ namespace cellulator {
   }
 
   inline
+  sdl::core::engine::RawKey
+  ColonyRenderer::getSimulationStateToggleKey() noexcept {
+    return sdl::core::engine::RawKey::Space;
+  }
+
+  inline
   int
   ColonyRenderer::getGridRoundup() noexcept {
     return 5;

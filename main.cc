@@ -24,7 +24,6 @@
 // TODO: Add brushes.
 // TODO: Cannot generate the colony sometimes.
 // TODO: Weird crash with bad_alloc sometimes.
-// TODO: Add control like space to start/stop simulation.
 // TODO: Check why the start button sometimes does not work.
 
 int main(int /*argc*/, char** /*argv*/) {
@@ -107,9 +106,9 @@ int main(int /*argc*/, char** /*argv*/) {
       &cellulator::ColonyRenderer::generate
     );
 
-    renderer->getScheduler()->onSimulationHalted.connect_member<cellulator::ColonyStatus>(
+    renderer->getScheduler()->onSimulationToggled.connect_member<cellulator::ColonyStatus>(
       status,
-      &cellulator::ColonyStatus::onSimulationHalted
+      &cellulator::ColonyStatus::onSimulationToggled
     );
 
     rules->onRulesetChanged.connect_member<cellulator::ColonyScheduler>(

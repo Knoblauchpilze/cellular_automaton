@@ -106,6 +106,14 @@ namespace cellulator {
 
   bool
   ColonyRenderer::keyPressEvent(const sdl::core::engine::KeyEvent& e) {
+    // Check for simulation's state toggling key.
+    if (e.getRawKey() == getSimulationStateToggleKey()) {
+      // Toggle the scheduler's state.
+      m_scheduler->toggle();
+
+      return sdl::graphic::ScrollableWidget::keyPressEvent(e);
+    }
+
     // Check for arrow keys.
     bool move = false;
     utils::Vector2f motion;
