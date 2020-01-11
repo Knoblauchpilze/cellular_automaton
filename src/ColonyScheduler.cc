@@ -200,10 +200,9 @@ namespace cellulator {
       // Reset the internal simulation state.
       m_simulationState = SimulationState::Stopped;
 
-      // Notify that the simulation is halted.
-      onSimulationToggled.safeEmit(
-        std::string("onSimulationToggled(false)"),
-        false
+      log(
+        std::string("Scheduled a rendering but no jobs where created, discarding request"),
+        utils::Level::Error
       );
 
       return;
@@ -239,6 +238,40 @@ namespace cellulator {
         gen,
         alive
       );
+
+      // Check whether any of the jobs indicate a closure.
+      bool closure = false;
+
+      unsigned id = 0u;
+      while (id < tiles.size() && !closure) {
+        ColonyTileShPtr t = std::dynamic_pointer_cast<ColonyTile>(tiles[id]);
+
+        // Check consistency.
+        if (t == nullptr) {
+          log(
+            std::string("Received completion for unknown job type \"") + tiles[id]->getName() + "\"",
+            utils::Level::Error
+          );
+
+          continue;
+        }
+
+        closure = t->closure();
+        ++id;
+      }
+
+      // In case a closure is detected, stop the processing and notify that the
+      // simulation is halted.
+      if (closure) {
+        m_simulationState = SimulationState::Stopped;
+
+        onSimulationToggled.safeEmit(
+          std::string("onSimulationToggled(false)"),
+          false
+        );
+
+        return;
+      }
 
       // Check whether we should schedule a new generation based on the status of
       // the simulation. We will also update the simulation state accordingly.

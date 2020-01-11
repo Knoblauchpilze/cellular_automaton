@@ -129,6 +129,9 @@ namespace cellulator {
     // Protect from concurrent accesses.
     Guard guard(m_propsLocker);
 
+    // Clear exsiting jobs.
+    tiles.clear();
+
     // We want to generate colony tiles for all active blocks.
     for (unsigned id = 0u ; id < m_blocks.size() ; ++id) {
       // Only handle this block if it is active.
@@ -140,6 +143,14 @@ namespace cellulator {
           )
         );
       }
+    }
+
+    // In case no job were generated, create a dummy job which will indicate
+    // to listeners that the evolution is actually terminated.
+    if (tiles.empty()) {
+      tiles.push_back(
+        std::make_shared<ColonyTile>()
+      );
     }
   }
 

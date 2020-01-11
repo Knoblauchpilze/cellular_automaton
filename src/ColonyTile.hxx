@@ -24,10 +24,28 @@ namespace cellulator {
   }
 
   inline
+  ColonyTile::ColonyTile():
+    utils::AsynchronousJob(std::string("tile_closure")),
+
+    m_blockID(0u),
+    m_data(nullptr)
+  {
+    setService("colony");
+  }
+
+  inline
   void
   ColonyTile::compute() {
-    // Use the dedicated handler on the data.
-    m_data->evolve(m_blockID);
+    // Use the dedicated handler on the data if needed.
+    if (m_data != nullptr) {
+      m_data->evolve(m_blockID);
+    }
+  }
+
+  inline
+  bool
+  ColonyTile::closure() {
+    return m_data == nullptr;
   }
 }
 
