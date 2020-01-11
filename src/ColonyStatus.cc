@@ -43,7 +43,7 @@ namespace cellulator {
 
     sdl::graphic::Button* generate = new sdl::graphic::Button(
       getRandomGenerationButtonName(),
-      "Generate",
+      std::string(),
       "data/img/generate.bmp",
       getButtonFontName(),
       sdl::graphic::button::Type::Regular,
