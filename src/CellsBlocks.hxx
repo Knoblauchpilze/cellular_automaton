@@ -126,11 +126,15 @@ namespace cellulator {
 
     // Traverse all blocks and update minimum and maximum values
     // for the live area.
+    unsigned cnt = 0u;
+
     for (unsigned id = 0u ; id < m_blocks.size() ; ++id) {
       // Ignore inactive and dead blocks.
       if (!m_blocks[id].active || m_blocks[id].alive == 0u) {
         continue;
       }
+
+      ++cnt;
 
       const BlockDesc& b = m_blocks[id];
       for (unsigned idC = b.start ; idC < b.end ; ++idC) {
@@ -143,6 +147,14 @@ namespace cellulator {
           yMax = std::max(yMax, c.y());
         }
       }
+    }
+
+    // Account for cases when there's no active block left and
+    // thus the live area can only be meaningless.
+    if (cnt == 0u) {
+      log("No active block registered in the colony, keeping old live area of " + m_liveArea.toString(), utils::Level::Verbose);
+
+      return;
     }
 
     // Add one to the max bounds as we're using a bottom left

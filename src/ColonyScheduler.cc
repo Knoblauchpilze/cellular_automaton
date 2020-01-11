@@ -229,17 +229,9 @@ namespace cellulator {
     // In case all the tiles have been computed for this generation, notify external
     // listeners. Otherwise wait for the generation to complete.
     if (m_taskProgress == m_taskTotal) {
-      // Step the colony one generation ahead in time.
-      unsigned alive = 0u;
-      unsigned gen = m_colony->step(&alive);
-
-      onGenerationComputed.safeEmit(
-        std::string("onGenerationComputed(") + std::to_string(gen) + ", " + std::to_string(alive) + ")",
-        gen,
-        alive
-      );
-
-      // Check whether any of the jobs indicate a closure.
+      // First thing to determine is to check whether a closure exists in the input
+      // tiles: if this is the case it means that we don't want to step the colony
+      // one step forward.
       bool closure = false;
 
       unsigned id = 0u;
@@ -272,6 +264,16 @@ namespace cellulator {
 
         return;
       }
+
+      // Step the colony one generation ahead in time.
+      unsigned alive = 0u;
+      unsigned gen = m_colony->step(&alive);
+
+      onGenerationComputed.safeEmit(
+        std::string("onGenerationComputed(") + std::to_string(gen) + ", " + std::to_string(alive) + ")",
+        gen,
+        alive
+      );
 
       // Check whether we should schedule a new generation based on the status of
       // the simulation. We will also update the simulation state accordingly.
