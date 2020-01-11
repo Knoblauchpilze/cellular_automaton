@@ -10,6 +10,7 @@
 # include "Colony.hh"
 # include "ColonyScheduler.hh"
 # include "ColorPalette.hh"
+# include "CellBrush.hh"
 
 namespace cellulator {
 
@@ -115,6 +116,15 @@ namespace cellulator {
        */
       void
       onGridDisplayToggled(bool toggled);
+
+      /**
+       * @brief - Local slot handling the modification of the active brush used to
+       *          insert cells to the colony. The brush will be active until a new
+       *          call to this method is triggered.
+       * @param brush - the new brush to use to add cells to the colony.
+       */
+      void
+      onBrushChanged(CellBrushShPtr brush);
 
     protected:
 
@@ -407,6 +417,9 @@ namespace cellulator {
         bool grid;
         sdl::core::engine::Color gColor;
         utils::Vector2i resolution;
+
+        bool visible;
+        CellBrushShPtr brush;
       };
 
       /**

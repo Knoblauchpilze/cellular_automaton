@@ -30,7 +30,10 @@ namespace cellulator {
 
       false,
       sdl::core::engine::Color::NamedColor::White,
-      utils::Vector2i(1, 1)
+      utils::Vector2i(1, 1),
+
+      false,
+      nullptr
     }),
 
     onGenerationComputed(),

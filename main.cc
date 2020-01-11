@@ -19,6 +19,7 @@
 # include "ColonyRenderer.hh"
 # include "RulesetSelector.hh"
 # include "RenderingProperties.hh"
+# include "BrushSelector.hh"
 
 // TODO: Add brushes.
 // TODO: Cannot generate the colony sometimes.
@@ -81,6 +82,9 @@ int main(int /*argc*/, char** /*argv*/) {
     cellulator::RenderingProperties* props = new cellulator::RenderingProperties();
     app->addDockWidget(props, sdl::app::DockWidgetArea::RightArea, std::string("Display"));
 
+    cellulator::BrushSelector* brushes = new cellulator::BrushSelector();
+    app->addDockWidget(brushes, sdl::app::DockWidgetArea::RightArea, std::string("Brushes"));
+
     // Connect the simulation's control button to the options panel slots.
     status->getFitToContentButton().onClick.connect_member<cellulator::ColonyRenderer>(
       renderer,
@@ -116,6 +120,11 @@ int main(int /*argc*/, char** /*argv*/) {
     props->onPaletteChanged.connect_member<cellulator::ColonyRenderer>(
       renderer,
       &cellulator::ColonyRenderer::onPaletteChanded
+    );
+
+    brushes->onBrushChanged.connect_member<cellulator::ColonyRenderer>(
+      renderer,
+      &cellulator::ColonyRenderer::onBrushChanged
     );
 
     bar->onGridDisplayChanged.connect_member<cellulator::ColonyRenderer>(

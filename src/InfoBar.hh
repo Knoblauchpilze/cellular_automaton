@@ -192,11 +192,15 @@ namespace cellulator {
        * @brief - Connected to the internal toggle button allowing to switch the grid
        *          display on and off. We basically transmit the input parameter to a
        *          more meaningful signal proposed by this class.
+       * @param dummy - the name of the button which emitted the signal. In our case
+       *                it obviously comes from the `Grid` button as it's the only one
+       *                connected to this slot.
        * @param toggled - `true` if the grid display button is now toggled and `false`
        *                  otherwise.
        */
       void
-      onGridToggled(bool toggled);
+      onGridToggled(std::string dummy,
+                    bool toggled);
 
     public:
 

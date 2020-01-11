@@ -129,6 +129,28 @@ namespace cellulator {
   }
 
   inline
+  void
+  ColonyRenderer::onBrushChanged(CellBrushShPtr brush) {
+    // Protect from concurrent accesses.
+    Guard guard(m_propsLocker);
+
+    // Assign the new brush.
+    m_display.brush = brush;
+
+    if (m_display.brush == nullptr) {
+      log("No more active brush");
+    }
+    else {
+      log("New active brush is \"" + brush->getName() + "\"");
+    }
+
+    // Request a repaint if the brush is displayed.
+    if (m_display.visible) {
+      setColonyChanged();
+    }
+  }
+
+  inline
   bool
   ColonyRenderer::mouseMoveEvent(const sdl::core::engine::MouseEvent& e) {
     // Protect from concurrent accesses.
