@@ -116,6 +116,12 @@ namespace cellulator {
     layout->addItem(generation);
     layout->addItem(aliveCells);
     layout->addItem(gridDisplay);
+
+    // Connect the toggle grid signal to the local slot.
+    gridDisplay->onButtonToggled.connect_member<InfoBar>(
+      this,
+      &InfoBar::onGridToggled
+    );
   }
 
 }

@@ -43,8 +43,13 @@ namespace cellulator {
       utils::Level::Verbose
     );
 
-    // Assign the new rendering area and request a repaint.
+    // Assign the new rendering area.
     m_settings.area = area;
+
+    // Update the grid resolution.
+    updateGridResolution();
+
+    // Request a repaint.
     setColonyChanged();
   }
 
@@ -153,6 +158,23 @@ namespace cellulator {
   float
   ColonyRenderer::getArrowKeyMotion() noexcept {
     return 30.0f;
+  }
+
+  inline
+  int
+  ColonyRenderer::getGridRoundup() noexcept {
+    return 5;
+  }
+
+  inline
+  int
+  ColonyRenderer::getMinGridLines() noexcept {
+    return 5u;
+  }
+
+  int
+  ColonyRenderer::getMaxGridLines() noexcept {
+    return 15;
   }
 
   inline
@@ -273,6 +295,85 @@ namespace cellulator {
 
     // Assign it to the internal area.
     m_settings.area = newArea;
+
+    // Update grid resolution.
+    updateGridResolution();
+  }
+
+  inline
+  bool
+  ColonyRenderer::updateGridResolution() {
+    // We want to keep a number of grid lines between the values returned by the
+    // `getMinGridLines` and `getMaxGridLines` method. For that we will adjust
+    // the step of the grid lines and still guarantee some sort of consistency
+    // by using the `getGridRoundup` method to still keep the grid indicating a
+    // common value: it's better to always keep the grid displaying multiple of
+    // say `5` than having the grid's step ranging from `3` and then `7`, etc.
+    int avg = (getMinGridLines() + getMaxGridLines()) / 2;
+    int gru = getGridRoundup();
+
+    // Compute the current number of grid lines displayed in the grid.
+    utils::Vector2f cur(
+      m_settings.area.w() / m_display.resolution.x(),
+      m_settings.area.h() / m_display.resolution.y()
+    );
+
+    // Adjust the resolution of the grid along each axis if needed.
+    utils::Vector2i res = m_display.resolution;
+    bool changed = false;
+
+    if (cur.x() < getMinGridLines() || cur.x() > getMaxGridLines()) {
+      // Choose a new resolution allowing to display the average number of lines
+      // requested from the minimum and max.
+      float expected = m_settings.area.w() / avg;
+
+      // Round it up to get a consistent step. Consider that we can't have less
+      // than a step of `1`.
+      res.x() = std::max(static_cast<int>(std::floor(expected)), 1);
+      if (res.x() != 1) {
+        int overshoot = (gru - res.x() % gru) % gru;
+        res.x() += overshoot;
+      }
+
+      // The resolution has been changed.
+      changed = true;
+    }
+
+    if (cur.y() < getMinGridLines() || cur.y() > getMaxGridLines()) {
+      // Choose a new resolution allowing to display the average number of lines
+      // requested from the minimum and max.
+      float expected = m_settings.area.h() / avg;
+
+      // Round it up to get a consistent step. Consider that we can't have less
+      // than a step of `1`.
+      res.y() = std::max(static_cast<int>(std::floor(expected)), 1);
+      if (res.y() != 1) {
+        int overshoot = (gru - res.y() % gru) % gru;
+        res.y() += overshoot;
+      }
+
+      // The resolution has been changed.
+      changed = true;
+    }
+
+    utils::Vector2f ne(
+      m_settings.area.w() / res.x(),
+      m_settings.area.h() / res.y()
+    );
+
+    log(
+      "Grid resolution was " + m_display.resolution.toString() + " leading to " +
+      cur.toString() + " line(s) in viewport, correcting to " +
+      res.toString() + " leading to " + ne.toString(),
+      utils::Level::Verbose
+    );
+
+    // Assign the grid resolution if needed.
+    if (changed) {
+      m_display.resolution = res;
+    }
+
+    return changed;
   }
 
   inline
