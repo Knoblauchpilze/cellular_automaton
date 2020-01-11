@@ -536,6 +536,13 @@ namespace cellulator {
       std::vector<int> m_ages;
 
       /**
+       * @brief - Holds a count of the number of active blocks currently registered in the
+       *          object. When this value drops to `0` it means that there are no remaining
+       *          live cells anywhere in the colony.
+       */
+      unsigned m_liveBlocks;
+
+      /**
        * @brief - The list of registered cells blocks so far. This list is the heart of the
        *          classification system as it allows to interpret the raw data contained in
        *          all the above vectors.

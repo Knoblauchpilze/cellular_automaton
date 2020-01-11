@@ -26,6 +26,18 @@ namespace cellulator {
     utils::Sizef env = LayoutItem::getRenderingArea().toSize();
     utils::Boxf cArea = m_colony->getArea();
 
+    // Check for invalid area returned by the colony (for example when
+    // there's nothing to display): in this case we don't want to do
+    // anything.
+    if (!cArea.valid()) {
+      log(
+        std::string("Could not fit to content, colony does not have a valid live area"),
+        utils::Level::Warning
+      );
+
+      return;
+    }
+
     // Determine the dimension of a cell in pixel's coordinate frame for
     // each axis.
     float cW = env.w() / cArea.w();

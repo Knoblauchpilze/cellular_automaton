@@ -36,6 +36,7 @@ namespace cellulator {
     m_adjacencyLocker(),
     m_ages(),
 
+    m_liveBlocks(0u),
     m_blocks(),
     m_freeBlocks(),
     m_blocksIndex(),
@@ -81,6 +82,12 @@ namespace cellulator {
 
     // We want to randomize only currently active blocks.
     unsigned count = 0u;
+
+    // In case there are no active blocks, reallocate the
+    // colony as it was at the beginning.
+    if (m_liveBlocks == 0u) {
+      allocate(m_totalArea);
+    }
 
     // We want to generate data on all currently registered
     // nodes. In order to allow for the simulation to happen
@@ -448,6 +455,7 @@ namespace cellulator {
     }
 
     m_blocksIndex[key] = block.id;
+    ++m_liveBlocks;
 
     // Attach this node to its neighbors.
     attach(block.id);
@@ -500,6 +508,8 @@ namespace cellulator {
       else {
         m_blocksIndex.erase(it);
       }
+
+      --m_liveBlocks;
 
       // Detach the block from neighbors.
       detach(blockID);
