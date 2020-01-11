@@ -29,7 +29,8 @@ namespace cellulator {
       std::make_shared<ColorPalette>(),
 
       false,
-      sdl::core::engine::Color::NamedColor::White
+      sdl::core::engine::Color::NamedColor::White,
+      utils::Vector2i(1, 1)
     }),
 
     onGenerationComputed(),
@@ -82,7 +83,10 @@ namespace cellulator {
 
     log("Moving from " + m_settings.area.toString() + " to " + newArea.toString() + " (motion: " + motion.toString() + ", real: " + realWorldMotion.toString() + ")", utils::Level::Verbose);
 
-    // Update the rendering area.
+    // Update the rendering area. We don't need to update the grid resolution as
+    // we're not yet handling scrolling and zooming at the same time. So the old
+    // resolution should be just fine with the new area which is just translated
+    // from the old one.
     m_settings.area = newArea;
 
     // Update the position and age of the cell pointed at by the mouse.
@@ -224,6 +228,8 @@ namespace cellulator {
 
     // Assign the rendering window: by default we consider that the whole area is visible.
     m_settings.area = getDefaultRenderingArea();
+
+    updateGridResolution();
   }
 
   void
@@ -312,6 +318,10 @@ namespace cellulator {
         float rX = x / cellsDims.w();
         float rY = y / cellsDims.h();
 
+        // Invert the `y` axis because the surface that will be created from the
+        // raw pixels will be assumed to represent a top down image.
+        int off = (iEnv.h() - 1 - y) * iEnv.w() + x;
+
         // Compute the cell coordinate from the floating point coords.
         int cX = static_cast<int>(std::floor(m_settings.area.getLeftBound() + rX));
         int cY = static_cast<int>(std::floor(m_settings.area.getBottomBound() + rY));
@@ -334,14 +344,82 @@ namespace cellulator {
             break;
         }
 
-        // Invert the `y` axis because the surface that will be created from the raw pixels
-        // will be assumed to represent a top down image.
-        int off = (iEnv.h() - 1 - y) * iEnv.w() + x;
+        // Register the color.
         colors[off] = co;
       }
     }
 
-    // TODO: Handle grid.
+    // Displayt grid if needed.
+    if (m_display.grid) {
+      // We need to overlay the grid based on the current desired resolution. This
+      // include traversing the area and draw each line.
+
+      // Compute integer coordinate of the left and right bound of the rendering
+      // area: this will help determining the lines that we should display.
+      int sX = static_cast<int>(std::floor(m_settings.area.getLeftBound()));
+      int eX = static_cast<int>(std::ceil(m_settings.area.getRightBound()));
+
+      int sY = static_cast<int>(std::floor(m_settings.area.getBottomBound()));
+      int eY = static_cast<int>(std::ceil(m_settings.area.getTopBound()));
+
+      // Account for the resolution: we only want to display grid lines for some
+      // integer coordinates but not all.
+      utils::Vector2i res = m_display.resolution;
+      utils::Boxf a = m_settings.area;
+
+      int xMin = sX - sX % res.x();
+      int yMin = sY - sY % res.y();
+
+      int xMax = eX + (res.x() - eX % res.x()) % res.x();
+      int yMax = eY + (res.y() - eY % res.y()) % res.y();
+
+      // Iterate over the lines to display.
+      for (int x = xMin ; x <= xMax ; x += res.x()) {
+        // Discard elements which are not visible in the rendering area.
+        if (x < sX || x > eX) {
+          continue;
+        }
+
+        // Compute the closest pixel coordinate for this line.
+        float fpix = 1.0f * (x - a.getLeftBound()) / a.w() * iEnv.w();
+        int pix = static_cast<int>(std::round(fpix));
+
+        // Check whether this pixel is within the admissible range.
+        if (pix < 0 || pix >= iEnv.w()) {
+          continue;
+        }
+
+        // Fill this line (along the `y` axis) with grid color. Just like
+        // for cells rendering we need to flip the `y` axis because the
+        // underlying API expects a top-down image.
+        for (int y = 0 ; y < iEnv.h() ; ++y) {
+          colors[(iEnv.h() - 1 - y) * iEnv.w() + pix] = m_display.gColor;
+        }
+      }
+
+      for (int y = yMin ; y <= yMax ; y += res.y()) {
+        // Discard elements which are not visible in the rendering area.
+        if (y < sY || y > eY) {
+          continue;
+        }
+
+        // Compute the closest pixel coordinate for this line.
+        float fpix = 1.0f * (y - a.getBottomBound()) / a.h() * iEnv.h();
+        int pix = static_cast<int>(std::round(fpix));
+
+        // Check whether this pixel is within the admissible range.
+        if (pix < 0 || pix >= iEnv.h()) {
+          continue;
+        }
+
+        // Fill this line (along the `x` axis) with grid color. Just like
+        // for cells rendering we need to flip the `y` axis because the
+        // underlying API expects a top-down image.
+        for (int x = 0 ; x < iEnv.w() ; ++x) {
+          colors[(iEnv.h() - 1 - pix) * iEnv.w() + x] = m_display.gColor;
+        }
+      }
+    }
 
     // Create the brush and return it.
     sdl::core::engine::BrushShPtr brush = std::make_shared<sdl::core::engine::Brush>(

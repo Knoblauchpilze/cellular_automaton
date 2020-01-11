@@ -214,6 +214,39 @@ namespace cellulator {
       getArrowKeyMotion() noexcept;
 
       /**
+       * @brief - Return an integer allowing to determine the closest value to which a
+       *          given gfrid resolution is rounded. This is to avoid having potentially
+       *          any interval possible for a grid pattern.
+       *          Basically imagine the case where the size of the rendering area leads
+       *          to displaying a grid every `3` cells, this pattern will make it change
+       *          so that it stays for example `1` until we reach the specified roundup.
+       * @return - a ruondup pattern which is used to clamp the resolution of the grid.
+       */
+      static
+      int
+      getGridRoundup() noexcept;
+
+      /**
+       * @brief - Retrieve the minimum number of lines that should be visible when the
+       *          grid is displayed. This allows to guarantee that the step value for
+       *          the grid does help with coordinates determination.
+       * @return - a vaue representing the minimum number of grid lines visible at any
+       *           time.
+       */
+      static
+      int
+      getMinGridLines() noexcept;
+
+      /**
+       * @brief - Similar purpose to `getMinGridLines` but for the maximum number of
+       *          grid lines visible in the viewport.
+       * @return - the maximum number of lines visible in the viewport.
+       */
+      static
+      int
+      getMaxGridLines() noexcept;
+
+      /**
        * @brief - Return a default viewing area for the colony. This value may or may
        *          not be suited to view very small or very large colony but given that
        *          one can zoom in or out it is not much of a problem.
@@ -323,6 +356,19 @@ namespace cellulator {
            float factor = 2.0f);
 
       /**
+       * @brief - SHould be called whenever the internal rendering area is changed so that
+       *          the resolution of the grid is updated to always be usable: this means
+       *          that we will try to display a reasonable amount of lines so that it is
+       *          useful to help figure the coordinates of cells but not too much so that
+       *          it does not make the major part of the rendering.
+       *          This method does not post any repaint event from updating the grid res.
+       *          It is up to the caller to do so if needed.
+       * @return - `true` if the grid resolution has been changed.
+       */
+      bool
+      updateGridResolution();
+
+      /**
        * @brief - Used to perform the notification of the cell's data pointed at assuming
        *          the mouse is at `pos` coordinates. The position can either be expressed
        *          in local or global coordinate frame as specified by the `global` input
@@ -360,6 +406,7 @@ namespace cellulator {
 
         bool grid;
         sdl::core::engine::Color gColor;
+        utils::Vector2i resolution;
       };
 
       /**

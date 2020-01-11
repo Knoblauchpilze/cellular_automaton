@@ -21,9 +21,9 @@
 # include "RenderingProperties.hh"
 
 // TODO: Add brushes.
-// TODO: Add grid.
 // TODO: Cannot generate the colony sometimes.
 // TODO: Weird crash with bad_alloc sometimes.
+// TODO: Add control like space to start/stop simulation.
 
 int main(int /*argc*/, char** /*argv*/) {
   // Create the logger.
