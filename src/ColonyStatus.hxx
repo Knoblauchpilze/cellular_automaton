@@ -20,8 +20,14 @@ namespace cellulator {
   inline
   void
   ColonyStatus::onSimulationToggled(bool running) {
+    // Protect from concurrent accesses.
+    Guard guard(m_propsLocker);
+
     // Untoggle the start simulation button based on the input state.
     getStartSimulationButton().toggle(running);
+
+    // Also set the `m_started` boolean to a consistent value.
+    m_started = running;
   }
 
   inline

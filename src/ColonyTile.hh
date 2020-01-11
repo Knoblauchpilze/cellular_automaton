@@ -26,6 +26,19 @@ namespace cellulator {
       ColonyTile(unsigned blockID,
                  CellsBlocks* cells);
 
+      /**
+       * @brief - Unlike the other constructor this tile creates a dummy job
+       *          which won't perform any computations but which can be used
+       *          to signal that there are no other outstanding jobs to be
+       *          processed by the colony.
+       *          Whoever receives such a job should stop trying to create
+       *          new jobs as it means that the colony has reached a steady
+       *          state where nothing will change anymore: this can either
+       *          mean that all cells have died or that the colony is only
+       *          composed of still life forms.
+       */
+      ColonyTile();
+
       ~ColonyTile() = default;
 
       /**
@@ -35,6 +48,15 @@ namespace cellulator {
        */
       void
       compute() override;
+
+      /**
+       * @brief - Used to determine whether this job is a closure job, indicating
+       *          that no more changes can be sustained in the colony.
+       * @return - `true` in case there's no need to start again some processing
+       *           on the colony unless cells are added.
+       */
+      bool
+      closure();
 
     private:
 
