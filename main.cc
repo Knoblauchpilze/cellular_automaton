@@ -24,6 +24,7 @@
 // TODO: Cannot generate the colony sometimes.
 // TODO: Weird crash with bad_alloc sometimes.
 // TODO: Add control like space to start/stop simulation.
+// TODO: Check why the start button sometimes does not work.
 
 int main(int /*argc*/, char** /*argv*/) {
   // Create the logger.
