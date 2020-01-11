@@ -32,7 +32,7 @@ namespace cellulator {
     }
 
     // Modulate the age with the maximum age.
-    float p = 1.0f * std::min(age, m_maxAge) / m_maxAge;
+    float p = 1.0f * std::min(age - 1u, m_maxAge) / m_maxAge;
 
     // Use the gradient to retrieve the corresponding color.
     return m_gradient->getColorAt(p);
