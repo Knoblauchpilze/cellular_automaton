@@ -141,7 +141,8 @@ namespace cellulator {
 
   inline
   void
-  InfoBar::onGridToggled(bool toggled) {
+  InfoBar::onGridToggled(std::string /*dummy*/,
+                         bool toggled) {
     // Fire this class' signal.
     onGridDisplayChanged.safeEmit(
       std::string("onGridDisplayChanged(") + std::to_string(toggled) + ")",

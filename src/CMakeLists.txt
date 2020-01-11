@@ -14,6 +14,8 @@ set (SOURCES
   CellsBlocks.cc
   RulesetSelector.cc
   RenderingProperties.cc
+  BrushSelector.cc
+  CellBrush.cc
   )
 
 add_library (cellular_automaton_lib SHARED
