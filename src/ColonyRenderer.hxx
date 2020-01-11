@@ -103,6 +103,9 @@ namespace cellulator {
 
     // Assign the palette.
     m_palette = palette;
+
+    // Request a repaint in order to display the colony with its new color.
+    setColonyChanged();
   }
 
   inline
