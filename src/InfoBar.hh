@@ -189,9 +189,23 @@ namespace cellulator {
     private:
 
       /**
-       * @brief - A mutex to protect the internal properties of this widget.
+       * @brief - Connected to the internal toggle button allowing to switch the grid
+       *          display on and off. We basically transmit the input parameter to a
+       *          more meaningful signal proposed by this class.
+       * @param toggled - `true` if the grid display button is now toggled and `false`
+       *                  otherwise.
        */
-      mutable std::mutex m_propsLocker;
+      void
+      onGridToggled(bool toggled);
+
+    public:
+
+      /**
+       * @brief - Signal used to notify external listeners that the grid display has
+       *          been changed. The parameter tells whether the grid should be made
+       *          visible or hidden.
+       */
+      utils::Signal<bool> onGridDisplayChanged;
   };
 
 }

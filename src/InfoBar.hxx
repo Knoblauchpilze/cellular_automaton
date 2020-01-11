@@ -8,9 +8,6 @@ namespace cellulator {
   inline
   void
   InfoBar::onGenerationComputed(unsigned generation) {
-    // Protect from concurrent accesses.
-    Guard guard(m_propsLocker);
-
     sdl::graphic::LabelWidget* gen = getGenerationLabel();
     if (gen == nullptr) {
       log(
@@ -29,10 +26,6 @@ namespace cellulator {
   InfoBar::onSelectedCellChanged(utils::Vector2i coords,
                                  int age)
   {
-    // Protect from concurrent accesses.
-    Guard guard(m_propsLocker);
-
-
     std::string ageStr;
     if (age < 0) {
       ageStr += "(dead)";
@@ -61,9 +54,6 @@ namespace cellulator {
 
   void
   InfoBar::onAliveCellsChanged(unsigned count) {
-    // Protect from concurrent accesses.
-    Guard guard(m_propsLocker);
-
     sdl::graphic::LabelWidget* ac = getAliveCellsLabel();
     if (ac == nullptr) {
       log(
@@ -143,9 +133,20 @@ namespace cellulator {
     return getChildAs<sdl::graphic::LabelWidget>(getGenerationLabelName());
   }
 
+  inline
   sdl::graphic::LabelWidget*
   InfoBar::getAliveCellsLabel() {
     return getChildAs<sdl::graphic::LabelWidget>(getAliveCellsLabelName());
+  }
+
+  inline
+  void
+  InfoBar::onGridToggled(bool toggled) {
+    // Fire this class' signal.
+    onGridDisplayChanged.safeEmit(
+      std::string("onGridDisplayChanged(") + std::to_string(toggled) + ")",
+      toggled
+    );
   }
 
 }

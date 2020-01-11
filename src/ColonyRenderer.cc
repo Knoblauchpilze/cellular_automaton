@@ -24,7 +24,13 @@ namespace cellulator {
 
     m_lastKnownMousePos(),
 
-    m_palette(std::make_shared<ColorPalette>()),
+    m_display(Display{
+      sdl::core::engine::Color::NamedColor::Black,
+      std::make_shared<ColorPalette>(),
+
+      false,
+      sdl::core::engine::Color::NamedColor::White
+    }),
 
     onGenerationComputed(),
     onCoordChanged()
@@ -320,11 +326,11 @@ namespace cellulator {
         sdl::core::engine::Color co = sdl::core::engine::Color::NamedColor::Pink;
         switch (ce.first) {
           case State::Alive:
-            co = m_palette->colorize(ce.second);
+            co = m_display.cells->colorize(ce.second);
             break;
           case State::Dead:
           default:
-            co = sdl::core::engine::Color::NamedColor::Black;
+            co = m_display.bgColor;
             break;
         }
 
@@ -334,6 +340,8 @@ namespace cellulator {
         colors[off] = co;
       }
     }
+
+    // TODO: Handle grid.
 
     // Create the brush and return it.
     sdl::core::engine::BrushShPtr brush = std::make_shared<sdl::core::engine::Brush>(

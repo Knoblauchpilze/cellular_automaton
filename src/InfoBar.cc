@@ -10,7 +10,7 @@ namespace cellulator {
                          hint,
                          parent),
 
-    m_propsLocker()
+    onGridDisplayChanged()
   {
     build();
   }

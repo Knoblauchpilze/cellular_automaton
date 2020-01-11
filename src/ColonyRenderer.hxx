@@ -102,10 +102,25 @@ namespace cellulator {
     Guard guard(m_propsLocker);
 
     // Assign the palette.
-    m_palette = palette;
+    m_display.cells = palette;
 
     // Request a repaint in order to display the colony with its new color.
     setColonyChanged();
+  }
+
+  inline
+  void
+  ColonyRenderer::onGridDisplayToggled(bool toggled) {
+    // Protect from concurrent accesses.
+    Guard guard(m_propsLocker);
+
+    // Update the grid display status and request a repaint if needed.
+    bool changed = toggled != m_display.grid;
+    m_display.grid = toggled;
+
+    if (changed) {
+      setColonyChanged();
+    }
   }
 
   inline
