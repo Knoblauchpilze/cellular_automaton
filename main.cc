@@ -22,7 +22,6 @@
 # include "BrushSelector.hh"
 
 // TODO: Add brushes.
-// TODO: Cannot generate the colony sometimes.
 // TODO: Weird crash with bad_alloc sometimes.
 
 int main(int /*argc*/, char** /*argv*/) {
