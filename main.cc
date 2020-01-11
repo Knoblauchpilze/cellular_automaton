@@ -117,6 +117,11 @@ int main(int /*argc*/, char** /*argv*/) {
       &cellulator::ColonyRenderer::onPaletteChanded
     );
 
+    bar->onGridDisplayChanged.connect_member<cellulator::ColonyRenderer>(
+      renderer,
+      &cellulator::ColonyRenderer::onGridDisplayToggled
+    );
+
     // Connect changes in the colony to the status display.
     renderer->onCoordChanged.connect_member<cellulator::InfoBar>(
       bar,

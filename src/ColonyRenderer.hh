@@ -102,6 +102,20 @@ namespace cellulator {
       void
       onPaletteChanded(ColorPaletteShPtr palette);
 
+      /**
+       * @brief - Local slot connected to producers which allow to keep track of the
+       *          grid display status. The grid helps having a feeling for which cells
+       *          are in which area of the discrete grid used to evolve the colony.
+       *          It will be represented as an overlay to the actual cells.
+       *          Note that we have some sort of adaptative tiling for the grid so
+       *          that even at low zoom level the grid still displays something that
+       *          can be useful.
+       *          The grid will be visible on the next repaint.
+       * @param toggled - `true` if the grid should be displayed.
+       */
+      void
+      onGridDisplayToggled(bool toggled);
+
     protected:
 
       /**
@@ -336,6 +350,19 @@ namespace cellulator {
       };
 
       /**
+       * @brief - Convenience structure grouping all the properties needed to display
+       *          the colony: this includes both the settings to represent cells but
+       *          also additional info like the grid.
+       */
+      struct Display {
+        sdl::core::engine::Color bgColor;
+        ColorPaletteShPtr cells;
+
+        bool grid;
+        sdl::core::engine::Color gColor;
+      };
+
+      /**
        * @brief - A mutex allowing to protect this widget from concurrent accesses.
        */
       mutable std::mutex m_propsLocker;
@@ -395,10 +422,11 @@ namespace cellulator {
       utils::Vector2f m_lastKnownMousePos;
 
       /**
-       * @brief - The palette to use to assign colors to the cells. This allows to provide a
-       *          coloring based on the age of the cell and its state.
+       * @brief - Groups all the information needed to handle the display of the colony. This
+       *          includes the color to represent the cells but also the information about the
+       *          grid (color and resoution).
        */
-      ColorPaletteShPtr m_palette;
+      Display m_display;
 
     public:
 
