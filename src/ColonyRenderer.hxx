@@ -164,6 +164,23 @@ namespace cellulator {
 
   inline
   bool
+  ColonyRenderer::mouseDragEvent(const sdl::core::engine::MouseEvent& e) {
+    // Very similar in behavior to what happens in the case of a mouse move
+    // event: we want to keep track of the last known position of the mouse.
+    // Protect from concurrent accesses.
+    {
+      Guard guard(m_propsLocker);
+
+      // Notify listeners through the dedicated handler.
+      notifyCoordinatePointedTo(e.getMousePosition(), true);
+    }
+
+    // Use the base handler to provide a return value.
+    return sdl::graphic::ScrollableWidget::mouseDragEvent(e);
+  }
+
+  inline
+  bool
   ColonyRenderer::mouseMoveEvent(const sdl::core::engine::MouseEvent& e) {
     // Protect from concurrent accesses.
     Guard guard(m_propsLocker);
@@ -198,6 +215,18 @@ namespace cellulator {
   sdl::core::engine::RawKey
   ColonyRenderer::getSimulationStateToggleKey() noexcept {
     return sdl::core::engine::RawKey::Space;
+  }
+
+  inline
+  sdl::core::engine::RawKey
+  ColonyRenderer::getToggleBrushOverlayKey() noexcept {
+    return sdl::core::engine::RawKey::O;
+  }
+
+  inline
+  sdl::core::engine::mouse::Button
+  ColonyRenderer::getBrushPaintButton() noexcept {
+    return sdl::core::engine::mouse::Button::Right;
   }
 
   inline
