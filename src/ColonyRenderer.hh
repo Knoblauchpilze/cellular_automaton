@@ -490,11 +490,12 @@ namespace cellulator {
         sdl::core::engine::Color bgColor;
         ColorPaletteShPtr cells;
 
-        bool grid;
+        bool gDisplay;
         sdl::core::engine::Color gColor;
-        utils::Vector2i resolution;
+        utils::Vector2i gRes;
 
-        bool visible;
+        bool bDisplay;
+        sdl::core::engine::Color bColor;
         CellBrushShPtr brush;
       };
 

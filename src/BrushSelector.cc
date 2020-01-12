@@ -85,57 +85,39 @@ namespace cellulator {
     }
 
     if (name == "Gosper glider gun") {
-      return std::make_shared<CellBrush>(
-        "data/brushes/golgun.brush"
-      );
+      return CellBrush::fromFile("data/brushes/golgun.brush");
     }
 
     if (name == "Backrake") {
-      return std::make_shared<CellBrush>(
-        "data/brushes/backRake.brush"
-      );
+      return CellBrush::fromFile("data/brushes/backRake.brush");
     }
 
     if (name == "Backrake2") {
-      return std::make_shared<CellBrush>(
-        "data/brushes/backRake2.brush"
-      );
+      return CellBrush::fromFile("data/brushes/backRake2.brush");
     }
 
     if (name == "Ecologist") {
-      return std::make_shared<CellBrush>(
-        "data/brushes/ecologist.brush"
-      );
+      return CellBrush::fromFile("data/brushes/ecologist.brush");
     }
 
     if (name == "Halfmax") {
-      return std::make_shared<CellBrush>(
-        "data/brushes/halfmax.brush"
-      );
+      return CellBrush::fromFile("data/brushes/halfmax.brush");
     }
 
     if (name == "LWSW") {
-      return std::make_shared<CellBrush>(
-        "data/brushes/LWSW.brush"
-      );
+      return CellBrush::fromFile("data/brushes/LWSW.brush");
     }
 
     if (name == "Puffer") {
-      return std::make_shared<CellBrush>(
-        "data/brushes/puffer2.brush"
-      );
+      return CellBrush::fromFile("data/brushes/puffer2.brush");
     }
 
     if (name == "Spacerake") {
-      return std::make_shared<CellBrush>(
-        "data/brushes/spaceRake.brush"
-      );
+      return CellBrush::fromFile("data/brushes/spaceRake.brush");
     }
 
     if (name == "Shick engine") {
-      return std::make_shared<CellBrush>(
-        "data/brushes/shickEngine.brush"
-      );
+      return CellBrush::fromFile("data/brushes/shickEngine.brush");
     }
 
     // Unknown brush.

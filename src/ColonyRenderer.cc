@@ -33,7 +33,8 @@ namespace cellulator {
       utils::Vector2i(1, 1),
 
       false,
-      nullptr
+      sdl::core::engine::Color::NamedColor::Yellow,
+      std::make_shared<CellBrush>(utils::Sizei(1, 1), State::Alive)
     }),
 
     onGenerationComputed(),
@@ -165,7 +166,7 @@ namespace cellulator {
     if (e.getRawKey() == getToggleBrushOverlayKey()) {
       Guard guard(m_propsLocker);
 
-      m_display.visible = !m_display.visible;
+      m_display.bDisplay = !m_display.bDisplay;
 
       // Request a repaint: not that we can save some time if the display
       // does not include any active brush: in this case it is obvious that
@@ -393,7 +394,7 @@ namespace cellulator {
     }
 
     // Displayt grid if needed.
-    if (m_display.grid) {
+    if (m_display.gDisplay) {
       // We need to overlay the grid based on the current desired resolution. This
       // include traversing the area and draw each line.
 
@@ -407,7 +408,7 @@ namespace cellulator {
 
       // Account for the resolution: we only want to display grid lines for some
       // integer coordinates but not all.
-      utils::Vector2i res = m_display.resolution;
+      utils::Vector2i res = m_display.gRes;
       utils::Boxf a = m_settings.area;
 
       int xMin = sX - sX % res.x();
@@ -465,9 +466,89 @@ namespace cellulator {
     }
 
     // Display brush overlay if needed.
-    if (m_display.visible && m_display.brush != nullptr) {
-      // TODO: Implementation of overlay.
-      log("Should display brush \"" + m_display.brush->getName() + "\" overlay", utils::Level::Warning);
+    if (m_display.bDisplay && m_display.brush != nullptr && m_display.brush->valid()) {
+      log("Displaying brush");
+      CellBrush& b = *m_display.brush;
+      utils::Sizei size = b.getSize();
+
+      // Compute the coordinate of the mouse in cell's reference frame.
+      utils::Vector2f mCoords = convertPosToRealWorld(m_lastKnownMousePos, true);
+
+      // Round it to obtain integer coordinates.
+      utils::Vector2i mICoords(
+        static_cast<int>(std::floor(mCoords.x())),
+        static_cast<int>(std::floor(mCoords.y()))
+      );
+
+      // Compute the extremum reached by the brush. In case the size of the brush
+      // is not even in any dimensions we need to offset the top right corner so
+      // that it accounts for this otherwise there is a risk that we won't display
+      // all the brush' content.
+      utils::Vector2i bBL(mICoords.x() - size.w() / 2, mICoords.y() - size.h() / 2);
+      utils::Vector2i bTR(
+        mICoords.x() + (size.w() + size.w() % 2) / 2,
+        mICoords.y() + (size.h() + size.h() % 2) / 2
+      );
+
+      // Compute the pixels related to the area covered by the brush.
+      utils::Vector2i areaLocalBL(
+        static_cast<int>(std::floor((bBL.x() - m_settings.area.getLeftBound()) * cellsDims.w())),
+        static_cast<int>(std::floor((bBL.y() - m_settings.area.getBottomBound()) * cellsDims.h()))
+      );
+      utils::Vector2i areaLocalTR(
+        static_cast<int>(std::floor((bTR.x() - m_settings.area.getLeftBound()) * cellsDims.w())),
+        static_cast<int>(std::floor((bTR.y() - m_settings.area.getBottomBound()) * cellsDims.h()))
+      );
+
+      // Traverse all the pixels covered by the brush.
+      int pixW = areaLocalTR.x() - areaLocalBL.x();
+      int pixH = areaLocalTR.y() - areaLocalBL.y();
+
+      log("BL is " + bBL.toString() + ", TR is " + bTR.toString());
+      log("pixBL is " + areaLocalBL.toString() + ", pixTR is " + areaLocalTR.toString());
+      log("Pixel dims are " + std::to_string(pixW) + "x" + std::to_string(pixH) + " (init: " + size.toString());
+
+      for (int y = 0 ; y < pixH ; ++y) {
+        int gY = y + areaLocalBL.y() + 1;
+
+        // Discard elements outside of the canvas.
+        if (gY < 0 || gY >= iEnv.h()) {
+          continue;
+        }
+
+        for (int x = 0 ; x < pixW ; ++x) {
+          int gX = x + areaLocalBL.x() + 1;
+
+          // Discard elements which do not fit in the general canvas.
+          if (gX < 0 || gX >= iEnv.w()) {
+            continue;
+          }
+
+          // Compute the cell related to this pixel coordinate.
+          int cX = static_cast<int>(std::floor(x / cellsDims.w()));
+          int cY = static_cast<int>(std::floor(y / cellsDims.h()));
+
+          // Invert the `y` axis because the surface that will be created from the
+          // raw pixels will be assumed to represent a top down image.
+          int off = (iEnv.h() - 1 - gY) * iEnv.w() + gX;
+
+          if (cX < 0 || cY < 0 || cX >= size.w() || cY >= size.h()) {
+            log(
+              "Could not fecth cell from pixel " + std::to_string(x) + "x" + std::to_string(y) +
+              " (transformed into cell " + std::to_string(cX) + "x" + std::to_string(cY) + ") from " +
+              "bottom left: " + bBL.toString() + ", top right: " + bTR.toString() +
+              " pixBL: " + areaLocalBL.toString() + ", pixTR: " + areaLocalTR.toString() +
+              " size: " + size.toString()
+            );
+          }
+
+          // Fetch the state of the cell in the brush and assign the overlay color
+          // if the cell is alive.
+          if (b.getStateAt(cX, cY) == State::Alive) {
+            colors[off] = m_display.bColor;
+          }
+        }
+      }
     }
 
     // Create the brush and return it.
@@ -485,6 +566,7 @@ namespace cellulator {
   ColonyRenderer::paintBrush() {
     // Check whether we have an active brush: if this is not the case there's
     // nothing to paint so we can return early.
+
     if (m_display.brush == nullptr) {
       return;
     }
