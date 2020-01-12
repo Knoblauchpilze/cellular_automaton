@@ -132,8 +132,8 @@ namespace cellulator {
     Guard guard(m_propsLocker);
 
     // Update the grid display status and request a repaint if needed.
-    bool changed = toggled != m_display.grid;
-    m_display.grid = toggled;
+    bool changed = (toggled != m_display.gDisplay);
+    m_display.gDisplay = toggled;
 
     if (changed) {
       setColonyChanged();
@@ -157,7 +157,7 @@ namespace cellulator {
     }
 
     // Request a repaint if the brush is displayed.
-    if (m_display.visible) {
+    if (m_display.gDisplay) {
       setColonyChanged();
     }
   }
@@ -173,6 +173,12 @@ namespace cellulator {
 
       // Notify listeners through the dedicated handler.
       notifyCoordinatePointedTo(e.getMousePosition(), true);
+
+      // In case the brush overlay is displayed we need to repaint the colony
+      // as we need to update the overlay.
+      if (m_display.bDisplay && m_display.brush != nullptr) {
+        setColonyChanged();
+      }
     }
 
     // Use the base handler to provide a return value.
@@ -187,6 +193,12 @@ namespace cellulator {
 
     // Notify listeners through the dedicated handler.
     notifyCoordinatePointedTo(e.getMousePosition(), true);
+
+    // In case the brush overlay is displayed we need to repaint the colony
+    // as we need to update the overlay.
+    if (m_display.bDisplay && m_display.brush != nullptr) {
+      setColonyChanged();
+    }
 
     // Use the base handler to provide a return value.
     return sdl::graphic::ScrollableWidget::mouseMoveEvent(e);
@@ -383,12 +395,12 @@ namespace cellulator {
 
     // Compute the current number of grid lines displayed in the grid.
     utils::Vector2f cur(
-      m_settings.area.w() / m_display.resolution.x(),
-      m_settings.area.h() / m_display.resolution.y()
+      m_settings.area.w() / m_display.gRes.x(),
+      m_settings.area.h() / m_display.gRes.y()
     );
 
     // Adjust the resolution of the grid along each axis if needed.
-    utils::Vector2i res = m_display.resolution;
+    utils::Vector2i res = m_display.gRes;
     bool changed = false;
 
     if (cur.x() < getMinGridLines() || cur.x() > getMaxGridLines()) {
@@ -431,7 +443,7 @@ namespace cellulator {
     );
 
     log(
-      "Grid resolution was " + m_display.resolution.toString() + " leading to " +
+      "Grid resolution was " + m_display.gRes.toString() + " leading to " +
       cur.toString() + " line(s) in viewport, correcting to " +
       res.toString() + " leading to " + ne.toString(),
       utils::Level::Verbose
@@ -439,7 +451,7 @@ namespace cellulator {
 
     // Assign the grid resolution if needed.
     if (changed) {
-      m_display.resolution = res;
+      m_display.gRes = res;
     }
 
     return changed;
