@@ -187,6 +187,9 @@ namespace cellulator {
       Guard guard(m_propsLocker);
 
       paintBrush();
+
+      // Schedule a repaint.
+      setColonyChanged();
     }
 
     return sdl::graphic::ScrollableWidget::mouseButtonReleaseEvent(e);
