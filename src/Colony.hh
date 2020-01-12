@@ -10,6 +10,7 @@
 # include "ColonyTile.hh"
 # include "CellsBlocks.hh"
 # include "CellEvolver.hh"
+# include "CellBrush.hh"
 
 namespace cellulator {
 
@@ -139,6 +140,19 @@ namespace cellulator {
        */
       void
       setRuleset(CellEvolverShPtr ruleset);
+
+      /**
+       * @brief - Used to perform the creation of cells as described by the input brush
+       *          at the coordinates in input. The needed blocks will be created to be
+       *          able to accomodate for the new data.
+       *          Nothing happens if the brush is not valid.
+       * @param brush - the brush to paint on this colony.
+       * @param coord - the coordinate at which the brush should be painted. This info
+       *                corresponds to the center of the brush.
+       */
+      void
+      paint(const CellBrush& brush,
+            const utils::Vector2i& coord);
 
     private:
 

@@ -10,6 +10,7 @@
 # include <core_utils/ThreadPool.hh>
 # include "Colony.hh"
 # include "CellEvolver.hh"
+# include "CellBrush.hh"
 
 namespace cellulator {
 
@@ -79,6 +80,20 @@ namespace cellulator {
        */
       void
       onRulesetChanged(CellEvolverShPtr ruleset);
+
+      /**
+       * @brief - Used to perform the creation of cells as described by the input brush
+       *          at the coordinates in input. The simulation should be stopped before
+       *          using this method (which will be ensured upon calling it). The request
+       *          is transmitted to the underlying colony if this is the case.
+       *          Nothing happens if the brush is not valid.
+       * @param brush - the brush to paint on this colony.
+       * @param coord - the coordinate at which the brush should be painted. This info
+       *                corresponds to the center of the brush.
+       */
+      void
+      paint(const CellBrush& brush,
+            const utils::Vector2i& coord);
 
     private:
 
