@@ -166,6 +166,8 @@ namespace cellulator {
        *          to accomodate with the brush they are.
        *          The brush is not checked for validity so failure to guarantee that may cause some
        *          undefined behavior.
+       *          Note that the modifications are applied to the current state of the colony so that
+       *          it can be directly used when computing the next generation of cells.
        * @param brush - the brush to repaint.
        * @param coord - the position at which the brush should be repainted.
        */
@@ -352,12 +354,14 @@ namespace cellulator {
        *          neighboring blocks are scanned and updated but are not created if
        *          they do not exist.
        * @param block - the block related to the coordinate.
-       * @param coord - the coordinate within the block to update. The coordinate arez
+       * @param coord - the coordinate within the block to update. The coordinate area
        *                assumed to lie in the range `[0, w[x[0, h[`.
+       * @param makeCurrent - `true` if the current adjacency should be updated.
        */
       void
       updateAdjacency(const BlockDesc& block,
-                      const utils::Vector2i& coord);
+                      const utils::Vector2i& coord,
+                      bool makeCurrent);
 
       /**
        * @brief - Used to randomize the content of the block described in input. The
@@ -431,6 +435,24 @@ namespace cellulator {
       bool
       find(const utils::Boxi& area,
            int& id);
+
+      /**
+       * @brief - Used to retrieve the block containing the input coordinate. There's at most one
+       *          block that can contain it as blocks do not overlap. In case the corresponding
+       *          block is not allocated yet the return value should be ignored. This is indicated
+       *          by the `found` boolean being `false`.
+       *          Note that the locker is assumed to already be acquired. The input `coord` should
+       *          be expressed in local coordinate frame.
+       * @param coord - the coordinate that should be included in a block: should be expressed in
+       *                real world coordinate frame.
+       * @param found - output boolean indicating whether the return value is relevant (i.e. if
+       *                the block has been found).
+       * @return - the index of the block containing the input coordinate. Should be ignored if the
+       *           `found` boolean is `false`.
+       */
+      unsigned
+      findBlock(const utils::Vector2i& coord,
+                bool& found);
 
       /**
        * @brief - Used to perform the necessary modification to the internal blocks so
