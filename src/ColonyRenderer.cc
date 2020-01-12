@@ -34,7 +34,7 @@ namespace cellulator {
 
       false,
       sdl::core::engine::Color::NamedColor::Yellow,
-      std::make_shared<CellBrush>(utils::Sizei(1, 1), State::Alive)
+      std::make_shared<CellBrush>(utils::Sizei(2, 3), State::Alive)
     }),
 
     onGenerationComputed(),
@@ -61,7 +61,7 @@ namespace cellulator {
 
   bool
   ColonyRenderer::handleContentScrolling(const utils::Vector2f& /*posToFix*/,
-                                         const utils::Vector2f& whereTo,
+                                         const utils::Vector2f& /*whereTo*/,
                                          const utils::Vector2f& motion,
                                          bool /*notify*/)
   {
@@ -69,7 +69,6 @@ namespace cellulator {
     // underlying support area. In order to do that we need to convert the
     // motion into a real world coordinate frame.
     Guard guard(m_propsLocker);
-
 
     // Note: we need to invert the motion's direction for some reasons.
     utils::Sizef cellsDims = getCellsDims();
@@ -95,7 +94,7 @@ namespace cellulator {
 
     // Update the position and age of the cell pointed at by the mouse.
     if (isMouseInside()) {
-      notifyCoordinatePointedTo(whereTo, true);
+      notifyCoordinatePointedTo(m_lastKnownMousePos, true);
     }
 
     // Request a repaint operation.
@@ -467,7 +466,6 @@ namespace cellulator {
 
     // Display brush overlay if needed.
     if (m_display.bDisplay && m_display.brush != nullptr && m_display.brush->valid()) {
-      log("Displaying brush");
       CellBrush& b = *m_display.brush;
       utils::Sizei size = b.getSize();
 
@@ -504,10 +502,6 @@ namespace cellulator {
       int pixW = areaLocalTR.x() - areaLocalBL.x();
       int pixH = areaLocalTR.y() - areaLocalBL.y();
 
-      log("BL is " + bBL.toString() + ", TR is " + bTR.toString());
-      log("pixBL is " + areaLocalBL.toString() + ", pixTR is " + areaLocalTR.toString());
-      log("Pixel dims are " + std::to_string(pixW) + "x" + std::to_string(pixH) + " (init: " + size.toString());
-
       for (int y = 0 ; y < pixH ; ++y) {
         int gY = y + areaLocalBL.y() + 1;
 
@@ -531,16 +525,6 @@ namespace cellulator {
           // Invert the `y` axis because the surface that will be created from the
           // raw pixels will be assumed to represent a top down image.
           int off = (iEnv.h() - 1 - gY) * iEnv.w() + gX;
-
-          if (cX < 0 || cY < 0 || cX >= size.w() || cY >= size.h()) {
-            log(
-              "Could not fecth cell from pixel " + std::to_string(x) + "x" + std::to_string(y) +
-              " (transformed into cell " + std::to_string(cX) + "x" + std::to_string(cY) + ") from " +
-              "bottom left: " + bBL.toString() + ", top right: " + bTR.toString() +
-              " pixBL: " + areaLocalBL.toString() + ", pixTR: " + areaLocalTR.toString() +
-              " size: " + size.toString()
-            );
-          }
 
           // Fetch the state of the cell in the brush and assign the overlay color
           // if the cell is alive.
