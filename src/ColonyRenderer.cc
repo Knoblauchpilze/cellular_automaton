@@ -160,6 +160,38 @@ namespace cellulator {
   }
 
   bool
+  ColonyRenderer::keyReleaseEvent(const sdl::core::engine::KeyEvent& e) {
+    // Check for toggle brush overlay.
+    if (e.getRawKey() == getToggleBrushOverlayKey()) {
+      Guard guard(m_propsLocker);
+
+      m_display.visible = !m_display.visible;
+
+      // Request a repaint: not that we can save some time if the display
+      // does not include any active brush: in this case it is obvious that
+      // the overlay will not change a thing.
+      if (m_display.brush != nullptr) {
+        setColonyChanged();
+      }
+    }
+
+    return sdl::graphic::ScrollableWidget::keyReleaseEvent(e);
+  }
+
+  bool
+  ColonyRenderer::mouseButtonReleaseEvent(const sdl::core::engine::MouseEvent& e) {
+    // Detect whether the event concerns the button to use to perform
+    // the paint of the active brush.
+    if (e.getButton() == getBrushPaintButton()) {
+      Guard guard(m_propsLocker);
+
+      paintBrush();
+    }
+
+    return sdl::graphic::ScrollableWidget::mouseButtonReleaseEvent(e);
+  }
+
+  bool
   ColonyRenderer::mouseWheelEvent(const sdl::core::engine::MouseEvent& e) {
     // We want to trigger zooming operations only when the mouse is inside
     // this widget.
@@ -432,6 +464,12 @@ namespace cellulator {
       }
     }
 
+    // Display brush overlay if needed.
+    if (m_display.visible && m_display.brush != nullptr) {
+      // TODO: Implementation of overlay.
+      log("Should display brush \"" + m_display.brush->getName() + "\" overlay", utils::Level::Warning);
+    }
+
     // Create the brush and return it.
     sdl::core::engine::BrushShPtr brush = std::make_shared<sdl::core::engine::Brush>(
       std::string("brush_for_") + getName(),
@@ -441,6 +479,18 @@ namespace cellulator {
     brush->createFromRaw(iEnv, colors);
 
     return brush;
+  }
+
+  void
+  ColonyRenderer::paintBrush() {
+    // Check whether we have an active brush: if this is not the case there's
+    // nothing to paint so we can return early.
+    if (m_display.brush == nullptr) {
+      return;
+    }
+
+    // TODO: Implementation of paint.
+    log("Should paint brush \"" + m_display.brush->getName() + "\"", utils::Level::Warning);
   }
 
 }

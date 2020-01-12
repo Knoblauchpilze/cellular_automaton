@@ -154,14 +154,46 @@ namespace cellulator {
                              bool notify = true) override;
 
       /**
-       * @brief - Reimplementation of the base class method to detect whenever the
-       *          reset key is pressed, allowing to scroll the rendering area on
-       *          the colony and thus display non visible parts yet.
+       * @brief - Reimplementation of the base class method to detect whenever a
+       *          key is pressed: this allows to bind some commands to keyboard
+       *          actions such as scrolling or brush overlay.
        * @param e - the event to be interpreted.
        * @return - `true` if the event was recognized and `false` otherwise.
        */
       bool
       keyPressEvent(const sdl::core::engine::KeyEvent& e) override;
+
+      /**
+       * @brief - Reimplementation of the base class method to detect whenever
+       *          some specific keys are released to execute the corresponding
+       *          command.
+       * @param e - the event to be interpreted.
+       * @return - `true` if the event was recognized and `false` otherwise.
+       */
+      bool
+      keyReleaseEvent(const sdl::core::engine::KeyEvent& e) override;
+
+      /**
+       * @brief - Reimplementation of the base class method in order to update
+       *          the position of the mouse and thus the position of the brush
+       *          overlay. This is used as a substitute for the `mouseMoveEvent`
+       *          in case a button is pressed.
+       * @param e - the event to be interpreted.
+       * @return - `true` if the event was recognized and `false` otherwise.
+       */
+      bool
+      mouseDragEvent(const sdl::core::engine::MouseEvent& e) override;
+
+      /**
+       * @brief - Reimplementation of the base class method to detect whenever
+       *          the active brush should be painted at the current mouse coords.
+       *          This will request the colony to add the cells describing the
+       *          brush.
+       * @param e - the event to be interpreted.
+       * @return - `true` if the event was recognized, `false` otherwise.
+       */
+      bool
+      mouseButtonReleaseEvent(const sdl::core::engine::MouseEvent& e) override;
 
       /**
        * @brief - Reimplementation of the base class method to detect whenever the
@@ -233,6 +265,27 @@ namespace cellulator {
       static
       sdl::core::engine::RawKey
       getSimulationStateToggleKey() noexcept;
+
+      /**
+       * @brief - Used to represent the key which is able to toggle the overlay visual
+       *          representation of the brush. Hitting (and maintaining) this key will
+       *          tell the renderer that the current brush should be displayed at the
+       *          coordinates pointed at by the mouse as an overlay: this allows to
+       *          figure the effect of applying the brush at this position.
+       *  @return - a key representing the toggle brush overlay command.
+       */
+      static
+      sdl::core::engine::RawKey
+      getToggleBrushOverlayKey() noexcept;
+
+      /**
+       * @brief - Return a mouse button that can be used to detect whenever the brush
+       *          should be painted at the current mouse coordinates in the colony.
+       * @return - the button to use to paint the brush.
+       */
+      static
+      sdl::core::engine::mouse::Button
+      getBrushPaintButton() noexcept;
 
       /**
        * @brief - Return an integer allowing to determine the closest value to which a
@@ -404,6 +457,18 @@ namespace cellulator {
       void
       notifyCoordinatePointedTo(const utils::Vector2f& pos,
                                 bool global);
+
+      /**
+       * @brief - Used to perform the needed operations to paint the active brush at the
+       *          current coordinates of the mouse in the colony.
+       *          This method will convert the coordinates of the mouse into the colony's
+       *          coordinate frame and request to paint the brush at this location. It will
+       *          use the internal `m_lastKnownMousePos` attribute to determine at which
+       *          position the brush should be painted.
+       *          Note that the internal locker is assumed to be locked.
+       */
+      void
+      paintBrush();
 
     private:
 
