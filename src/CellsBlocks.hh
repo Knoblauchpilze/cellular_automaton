@@ -10,6 +10,7 @@
 # include <maths_utils/Size.hh>
 # include <maths_utils/Vector2.hh>
 # include "CellEvolver.hh"
+# include "CellBrush.hh"
 
 namespace cellulator {
 
@@ -25,6 +26,10 @@ namespace cellulator {
   // right away.
   class ColonyTile;
   using ColonyTileShPtr = std::shared_ptr<ColonyTile>;
+
+  // Forward declaration of the `CellBrush` class as it also includes this
+  // file for the `State` declaration.
+  class CellBrush;
 
   class CellsBlocks: public utils::CoreObject {
     public:
@@ -154,6 +159,19 @@ namespace cellulator {
        */
       void
       setRuleset(CellEvolverShPtr ruleset);
+
+      /**
+       * @brief - Used to paint the input `brush` on this blocks of cells. The area covered by the
+       *          brush is scanned in order to add the required cells. If blocks need to be created
+       *          to accomodate with the brush they are.
+       *          The brush is not checked for validity so failure to guarantee that may cause some
+       *          undefined behavior.
+       * @param brush - the brush to repaint.
+       * @param coord - the position at which the brush should be repainted.
+       */
+      void
+      paint(const CellBrush& brush,
+            const utils::Vector2i& coord);
 
     private:
 

@@ -67,6 +67,14 @@ namespace cellulator {
   }
 
   inline
+  void
+  Colony::paint(const CellBrush& brush,
+                const utils::Vector2i& coord)
+  {
+    m_cells->paint(brush, coord);
+  }
+
+  inline
   utils::Sizei
   Colony::getCellBlockDims() noexcept {
     // return utils::Sizei(256, 256);

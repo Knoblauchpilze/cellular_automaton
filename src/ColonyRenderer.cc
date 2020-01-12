@@ -551,13 +551,21 @@ namespace cellulator {
   ColonyRenderer::paintBrush() {
     // Check whether we have an active brush: if this is not the case there's
     // nothing to paint so we can return early.
-
-    if (m_display.brush == nullptr) {
+    if (m_display.brush == nullptr || !m_display.brush->valid()) {
       return;
     }
 
-    // TODO: Implementation of paint.
-    log("Should paint brush \"" + m_display.brush->getName() + "\"", utils::Level::Warning);
+    // Convert the mouse position into a cell's coordinate frame.
+    utils::Vector2f fCell = convertPosToRealWorld(m_lastKnownMousePos, true);
+
+    // Convert this into integer coordinates.
+    utils::Vector2i cell(
+      static_cast<int>(std::floor(fCell.x())),
+      static_cast<int>(std::floor(fCell.y()))
+    );
+
+    // Paint the brush at this coordinates.
+    m_scheduler->paint(*m_display.brush, cell);
   }
 
 }

@@ -326,6 +326,14 @@ namespace cellulator {
   }
 
   void
+  CellsBlocks::paint(const CellBrush& brush,
+                     const utils::Vector2i& coord)
+  {
+    // TODO: Implementation of paint.
+    log("Should paint brush \"" + brush.getName() + "\" at " + coord.toString(), utils::Level::Warning);
+  }
+
+  void
   CellsBlocks::allocate(const utils::Boxi& area) {
     // Compute the number of blocks to allocate.
     unsigned bcW = static_cast<unsigned>(std::ceil(1.0f * area.w() / m_nodesDims.w()));

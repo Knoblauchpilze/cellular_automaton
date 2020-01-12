@@ -10,8 +10,11 @@ namespace cellulator {
   // Forward declaration of a brush to be able to use `CellBrushShPtr`
   // right away.
   class CellBrush;
-
   using CellBrushShPtr = std::shared_ptr<CellBrush>;
+
+  // Forward declaration of a cell state as this file is also needed
+  // in the `CellsBlocks` class where the `State` is defined.
+  enum class State;
 
   class CellBrush: public utils::CoreObject {
     public:
