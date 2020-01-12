@@ -176,7 +176,7 @@ namespace cellulator {
         m_nextStates[id] = m_states[id];
 
         if (m_nextStates[id] == State::Alive) {
-          updateAdjacency(b, coordFromIndex(b, id, false));
+          updateAdjacency(b, coordFromIndex(b, id, false), false);
         }
       }
 
@@ -206,7 +206,7 @@ namespace cellulator {
 
       if (n == State::Alive) {
         ++b.nAlive;
-        updateAdjacency(b, coordFromIndex(b, id, false));
+        updateAdjacency(b, coordFromIndex(b, id, false), false);
       }
     }
   }
@@ -224,35 +224,22 @@ namespace cellulator {
       return out;
     }
 
-    // Traverse the list of blocks and find the one spanning the input
-    // coordinate. If none can be found (or at least none active) the
-    // default value will be returned.
+    // Find the relevant block containing the coordinate.
     unsigned id = 0u;
     bool found = false;
 
-    while (id < m_blocks.size() && !found) {
-      // Discard inactive blocks and only react when the block contains
-      // the coordinate. Note however that as we're managing bottom left
-      // based coordinates, the `m_blocks[id].area.getRightBound()` is
-      // actually not considered to be in the area. So we can't use the
-      // base `contains` method and instead focus on our method.
-      // Similar reasoning apply to the top bound.
-      if (m_blocks[id].active) {
-        if (m_blocks[id].area.contains(coord) &&
-            coord.x() < m_blocks[id].area.getRightBound() &&
-            coord.y() < m_blocks[id].area.getTopBound())
-        {
-          int dataID = indexFromCoord(m_blocks[id], coord, true);
+    id = findBlock(coord, found);
 
-          out.first = m_states[dataID];
-          out.second = m_ages[dataID];
-
-          found = true;
-        }
-      }
-
-      ++id;
+    if (!found) {
+      // Return the default state for a cell.
+      return out;
     }
+
+    // Return the corresponding cell.
+    int dataID = indexFromCoord(m_blocks[id], coord, true);
+
+    out.first = m_states[dataID];
+    out.second = m_ages[dataID];
 
     return out;
   }
@@ -329,8 +316,156 @@ namespace cellulator {
   CellsBlocks::paint(const CellBrush& brush,
                      const utils::Vector2i& coord)
   {
-    // TODO: Implementation of paint.
-    log("Should paint brush \"" + brush.getName() + "\" at " + coord.toString(), utils::Level::Warning);
+    // Protection against invalid blocks.
+    if (!brush.valid()) {
+      log(
+        std::string("Could not paint brush \"") + brush.getName() + "\", invalid brush",
+        utils::Level::Error
+      );
+
+      return;
+    }
+
+    log("Painting brush \"" + brush.getName() + "\" at " + coord.toString(), utils::Level::Warning);
+
+    // Protect from concurrent accesses.
+    Guard guard(m_propsLocker);
+
+    // We need to paint the brush at the specified coordinates.
+    // To do so we will traverse each cell of the brush and paint
+    // each one in the required block. If the block does not exist
+    // yet we should create it.
+    utils::Sizei size = brush.getSize();
+
+    int offX = size.w() / 2;
+    int offY = size.h() / 2;
+
+    for (int y = 0 ; y < size.h() ; ++y) {
+      for (int x = 0 ; x < size.w() ; ++x) {
+        // Retrieve the state of the cell in the brush at the current
+        // coordinates: we will check it against the current state of
+        // the cell and make modifications if needed.
+        State s = brush.getStateAt(x, y);
+
+        // Compute the absolute coordinates of the cell so that we can
+        // check against local data.
+        utils::Vector2i c(coord.x() - offX + x, coord.y() - offY + y);
+
+        // Search the cell among the registered blocks.
+        unsigned id = 0u;
+        bool found = false;
+
+        id = findBlock(c, found);
+
+        // In case the block is not found, we need to allocate the
+        // block so that we can register the cell.
+        if (!found) {
+          // In order to allocate the block we need to compute its area.
+          // This can be computed by fetching any active block and using
+          // it as a reference frame to get information on the lattice
+          // on which blocks' centers are aligned.
+          if (m_liveBlocks == 0u) {
+            allocate(m_totalArea);
+          }
+
+          BlockDesc b = m_blocks[0u];
+          unsigned id = 0u;
+          while (id < m_blocks.size() && !found) {
+            if (m_blocks[id].active) {
+              b = m_blocks[id];
+              found = true;
+            }
+            
+            ++id;
+          }
+
+          if (!b.active) {
+            log(
+              std::string("Could not set cell ") + std::to_string(x) + "x" + std::to_string(y) + " for brush \"" +
+              brush.getName() + "\", no valid block to register the cell",
+              utils::Level::Error
+            );
+
+            continue;
+          }
+
+          // Determine what would be the area of the block containing the
+          // current cell using the center of an existing block.
+          utils::Boxi area = b.area;
+
+          int offX = static_cast<int>(std::floor(1.0f * (x - area.x()) / area.w()));
+          int offY = static_cast<int>(std::floor(1.0f * (y - area.y()) / area.h()));
+
+          area.x() = area.x() + offX * area.w();
+          area.y() = area.y() + offY * area.h();
+
+          // Allocate the block.
+          b = registerNewBlock(area);
+          id = b.id;
+        }
+
+        // Allocate boundaries for this block so that we are sure that we
+        // can update the adjacency. If the blocks are not needed we will
+        // perform a cleanup pass afterwards anyways.
+        allocateBoundary(id, true);
+
+        BlockDesc& b = m_blocks[id];
+
+        // Update the status of the cell: we want to create the cell
+        // and update the adjacency if the brush defines a `Alive`
+        // cell at this coordinate and kill any existing cell in the
+        // case of a `Dead` cell defined in the brush.
+        // In case the cell is already of the required state we don't
+        // do anything.
+        int dataID = indexFromCoord(b, c, true);
+
+        log("Setting cell " + c.toString() + " (center: " + coord.toString() + ") to " + std::to_string(static_cast<int>(s)) + " (current: " + std::to_string(static_cast<int>(m_states[dataID])) + ")");
+
+        // Only make modifications if the current state of the cell
+        // is not what it should be.
+        if (m_states[dataID] != s) {
+          // Update the state.
+          m_states[dataID] = s;
+
+          // Update age of the cell.
+          m_ages[dataID] = (s == State::Alive ? 1 : 0);
+
+          // Update the adjacency.
+          utils::Vector2i lCoord(c.x() - b.area.getLeftBound(), c.y() - b.area.getBottomBound());
+          log("Updating " + lCoord.toString() + " from " + c.toString());
+          updateAdjacency(b, lCoord, true);
+
+          // One more cell has changed and we need to keep the number
+          // of alive cells for this block consistent.
+          if (s == State::Alive) {
+            ++b.alive;
+          }
+          else {
+            --b.alive;
+          }
+        }
+      }
+    }
+
+    // Make a pass to verify that no blocks are left in an invalid state.
+    for (unsigned id = 0u ; id < m_blocks.size() ; ++id) {
+      // Discard inactive blocks.
+      if (!m_blocks[id].active) {
+        continue;
+      }
+
+      // Destroy the block if needed, that is if it does not contain any
+      // cells and no neighbors are registered.
+      unsigned neighbors = std::accumulate(
+        m_adjacency.begin() + m_blocks[id].start,
+        m_adjacency.begin() + m_blocks[id].end,
+        0u
+      );
+
+      if (m_blocks[id].alive == 0u && neighbors == 0u) {
+        destroyBlock(m_blocks[id].id);
+      }
+    }
   }
 
   void
@@ -416,7 +551,7 @@ namespace cellulator {
     log(
       "Created block " + std::to_string(id) + " for " + area.toString() +
       " (range: " + std::to_string(block.start) + " - " + std::to_string(block.end) + ")",
-      utils::Level::Verbose
+      utils::Level::Debug
     );
 
     // Allocate cells data if needed and reset the existing data.
@@ -488,7 +623,7 @@ namespace cellulator {
       "Destroying block " + std::to_string(blockID) +
       " (internal: " + std::to_string(m_blocks[blockID].id) + ") spanning " +
       m_blocks[blockID].area.toString(),
-      utils::Level::Verbose
+      utils::Level::Debug
     );
 
     bool save = m_blocks[blockID].active;
@@ -528,7 +663,8 @@ namespace cellulator {
 
   void
   CellsBlocks::updateAdjacency(const BlockDesc& block,
-                               const utils::Vector2i& coord)
+                               const utils::Vector2i& coord,
+                               bool makeCurrent)
   {
     // Check whether the input coordinate corresponds to a cell
     // on the boundary of the node.
@@ -554,7 +690,12 @@ namespace cellulator {
           cell.x() = x;
           cell.y() = y;
 
-          ++m_nextAdjacency[indexFromCoord(block, cell, false)];
+          if (makeCurrent) {
+            ++m_adjacency[indexFromCoord(block, cell, false)];
+          }
+          else {
+            ++m_nextAdjacency[indexFromCoord(block, cell, false)];
+          }
         }
       }
 
@@ -651,7 +792,12 @@ namespace cellulator {
           continue;
         }
 
-        ++m_nextAdjacency[indexFromCoord(*toUse, cell, false)];
+        if (makeCurrent) {
+          ++m_adjacency[indexFromCoord(*toUse, cell, false)];
+        }
+        else {
+          ++m_nextAdjacency[indexFromCoord(*toUse, cell, false)];
+        }
       }
     }
   }
@@ -692,7 +838,7 @@ namespace cellulator {
       bool alive = (m_nextStates[id] == State::Alive);
 
       if (alive) {
-        updateAdjacency(desc, coord);
+        updateAdjacency(desc, coord, false);
       }
     }
   }
@@ -826,6 +972,32 @@ namespace cellulator {
     desc = it->second;
 
     return true;
+  }
+
+  unsigned
+  CellsBlocks::findBlock(const utils::Vector2i& coord,
+                         bool& found)
+  {
+    // Search the input coordinate among the registered blocks.
+    unsigned id = 0u;
+    found = false;
+
+    while (id < m_blocks.size() && !found) {
+      if (m_blocks[id].active) {
+        if (m_blocks[id].area.contains(coord) &&
+            coord.x() < m_blocks[id].area.getRightBound() &&
+            coord.y() < m_blocks[id].area.getTopBound())
+        {
+          found = true;
+        }
+      }
+
+      if (!found) {
+        ++id;
+      }
+    }
+
+    return id;
   }
 
   void
