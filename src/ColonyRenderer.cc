@@ -34,6 +34,7 @@ namespace cellulator {
 
       false,
       sdl::core::engine::Color::NamedColor::Yellow,
+      0.5f,
       std::make_shared<CellBrush>(utils::Sizei(2, 3), State::Alive)
     }),
 
@@ -529,7 +530,7 @@ namespace cellulator {
           // Fetch the state of the cell in the brush and assign the overlay color
           // if the cell is alive.
           if (b.getStateAt(cX, cY) == State::Alive) {
-            colors[off] = m_display.bColor;
+            colors[off] = colors[off].blend(m_display.bColor, m_display.bBlend);
           }
         }
       }

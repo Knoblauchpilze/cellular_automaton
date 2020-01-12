@@ -496,6 +496,7 @@ namespace cellulator {
 
         bool bDisplay;
         sdl::core::engine::Color bColor;
+        float bBlend;
         CellBrushShPtr brush;
       };
 
