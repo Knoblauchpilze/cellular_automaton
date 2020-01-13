@@ -21,9 +21,6 @@
 # include "RenderingProperties.hh"
 # include "BrushSelector.hh"
 
-// TODO: Add brushes.
-// TODO: Weird crash with bad_alloc sometimes.
-
 int main(int /*argc*/, char** /*argv*/) {
   // Create the logger.
   utils::StdLogger logger;
