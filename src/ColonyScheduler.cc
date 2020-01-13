@@ -106,7 +106,11 @@ namespace cellulator {
 
     // Scheduler a rendering if needed.
     if (changed) {
-      scheduleRendering();
+      // We only want to schedule a new rendering if we need to start
+      // the simulation.
+      if (m_simulationState == SimulationState::Running) {
+        scheduleRendering();
+      }
 
       // Notify external listeners.
       onSimulationToggled.safeEmit(
