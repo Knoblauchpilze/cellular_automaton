@@ -39,6 +39,12 @@ namespace cellulator {
   }
 
   inline
+  float
+  CellsBlocks::getThresholdForBlockSearch() noexcept {
+    return 0.01f;
+  }
+
+  inline
   void
   CellsBlocks::clear() {
     m_states.clear();

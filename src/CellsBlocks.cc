@@ -326,8 +326,6 @@ namespace cellulator {
       return;
     }
 
-    log("Painting brush \"" + brush.getName() + "\" at " + coord.toString(), utils::Level::Warning);
-
     // Protect from concurrent accesses.
     Guard guard(m_propsLocker);
 
@@ -391,13 +389,37 @@ namespace cellulator {
 
           // Determine what would be the area of the block containing the
           // current cell using the center of an existing block.
+          // We need to consolidate the compute center: indeed in the situation
+          // where for example `area.w() = 8`, `area.x() = 0` and `c.x() = -4`,
+          // we can get `offX = int(round((-4 - 0) / 8)) = int(round(-0.5)) = -1`
+          // while in fact the coordinate `-4` belongs to the cell `0`.
+          // To do so we introduce a threshold which offset slightly the pos
+          // we consider and allows to find the right coordinate.
+          // Typically in the example, the offset will be computed as below:
+          // `offX = int(round((-4 - 0 + 0.01) / 8)) = int(round(-0.49) = 0`.
+          // On the other hand, we also have:
+          // `offX = int(round((4 - 0 + 0.01) / 8)) = int(round(0.501)) = 1`.
           utils::Boxi area = b.area;
 
-          int offX = static_cast<int>(std::floor(1.0f * (x - area.x()) / area.w()));
-          int offY = static_cast<int>(std::floor(1.0f * (y - area.y()) / area.h()));
+          int offX = static_cast<int>(std::round(1.0f * (c.x() - area.x() + getThresholdForBlockSearch()) / area.w()));
+          int offY = static_cast<int>(std::round(1.0f * (c.y() - area.y() + getThresholdForBlockSearch()) / area.h()));
 
           area.x() = area.x() + offX * area.w();
           area.y() = area.y() + offY * area.h();
+
+          // Consistency check.
+          if (!area.contains(c) ||
+              c.x() >= area.getRightBound() ||
+              c.y() >= area.getTopBound())
+          {
+            log(
+              std::string("Could not determine area containing ") + c.toString() + ", candidate " + area.toString() + " does not contain it",
+              utils::Level::Error
+            );
+
+            // Discard this cell, better not correctly create the brush than crashing.
+            continue;
+          }
 
           // Allocate the block.
           b = registerNewBlock(area);
@@ -419,8 +441,6 @@ namespace cellulator {
         // do anything.
         int dataID = indexFromCoord(b, c, true);
 
-        log("Setting cell " + c.toString() + " (center: " + coord.toString() + ") to " + std::to_string(static_cast<int>(s)) + " (current: " + std::to_string(static_cast<int>(m_states[dataID])) + ")");
-
         // Only make modifications if the current state of the cell
         // is not what it should be.
         if (m_states[dataID] != s) {
@@ -432,7 +452,6 @@ namespace cellulator {
 
           // Update the adjacency.
           utils::Vector2i lCoord(c.x() - b.area.getLeftBound(), c.y() - b.area.getBottomBound());
-          log("Updating " + lCoord.toString() + " from " + c.toString());
           updateAdjacency(b, lCoord, true);
 
           // One more cell has changed and we need to keep the number
@@ -551,7 +570,7 @@ namespace cellulator {
     log(
       "Created block " + std::to_string(id) + " for " + area.toString() +
       " (range: " + std::to_string(block.start) + " - " + std::to_string(block.end) + ")",
-      utils::Level::Debug
+      utils::Level::Verbose
     );
 
     // Allocate cells data if needed and reset the existing data.
@@ -623,7 +642,7 @@ namespace cellulator {
       "Destroying block " + std::to_string(blockID) +
       " (internal: " + std::to_string(m_blocks[blockID].id) + ") spanning " +
       m_blocks[blockID].area.toString(),
-      utils::Level::Debug
+      utils::Level::Verbose
     );
 
     bool save = m_blocks[blockID].active;
@@ -664,7 +683,8 @@ namespace cellulator {
   void
   CellsBlocks::updateAdjacency(const BlockDesc& block,
                                const utils::Vector2i& coord,
-                               bool makeCurrent)
+                               bool makeCurrent,
+                               bool erase)
   {
     // Check whether the input coordinate corresponds to a cell
     // on the boundary of the node.
@@ -691,10 +711,20 @@ namespace cellulator {
           cell.y() = y;
 
           if (makeCurrent) {
-            ++m_adjacency[indexFromCoord(block, cell, false)];
+            if (erase) {
+              --m_adjacency[indexFromCoord(block, cell, false)];
+            }
+            else {
+              ++m_adjacency[indexFromCoord(block, cell, false)];
+            }
           }
           else {
-            ++m_nextAdjacency[indexFromCoord(block, cell, false)];
+            if (erase) {
+              --m_nextAdjacency[indexFromCoord(block, cell, false)];
+            }
+            else {
+              ++m_nextAdjacency[indexFromCoord(block, cell, false)];
+            }
           }
         }
       }
@@ -729,6 +759,15 @@ namespace cellulator {
 
     int uBW = block.area.w();
     int uBH = block.area.h();
+
+    if (uBW == 0 || uBH == 0) {
+      log(
+        std::string("Invalid dimensions for block ") + std::to_string(block.id) + " with area " + block.area.toString(),
+        utils::Level::Error
+      );
+
+      return;
+    }
 
     for (int y = yMin ; y <= yMax ; ++y) {
       for (int x = xMin ; x <= xMax ; ++x) {
@@ -793,10 +832,20 @@ namespace cellulator {
         }
 
         if (makeCurrent) {
-          ++m_adjacency[indexFromCoord(*toUse, cell, false)];
+          if (erase) {
+            --m_adjacency[indexFromCoord(*toUse, cell, false)];
+          }
+          else {
+            ++m_adjacency[indexFromCoord(*toUse, cell, false)];
+          }
         }
         else {
-          ++m_nextAdjacency[indexFromCoord(*toUse, cell, false)];
+          if (erase) {
+            --m_nextAdjacency[indexFromCoord(*toUse, cell, false)];
+          }
+          else {
+            ++m_nextAdjacency[indexFromCoord(*toUse, cell, false)];
+          }
         }
       }
     }

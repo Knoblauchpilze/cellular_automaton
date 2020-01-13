@@ -226,6 +226,17 @@ namespace cellulator {
       getDeadCellProbability() noexcept;
 
       /**
+       * @brief - A threshold to use when computing the center of a block from an existing
+       *          block given a coordinate to reach. As we have this `bottom left` semantic
+       *          for blocks' area we need a slight offset to make sure that the block is
+       *          correctly computed.
+       * @return - the value to use as a threshold.
+       */
+      static
+      float
+      getThresholdForBlockSearch() noexcept;
+
+      /**
        * @brief - Perform the allocation of the internal buffer arrays to match the input
        *          dimensions and assign a `Dead` state to each created cell. Note that the
        *          input area is assumed to be a perfect multiple of the internal nodes size
@@ -353,15 +364,27 @@ namespace cellulator {
        *          In case the coordinate are located on the boundary of the block the
        *          neighboring blocks are scanned and updated but are not created if
        *          they do not exist.
+       *          Normally this method will consider that the cell for which adjacency
+       *          should be updated is live: indeed as it's mostly used when the colony
+       *          is evolved, we start from a blank adjacency canvas and only need to
+       *          update with live cells.
+       *          This behavior can be changed through the `erase` boolean which will
+       *          indicate that the adjacency at the specified coordinate should be
+       *          decreased by one as for a cell removal. This use case is mostly used
+       *          when a brush is painted on the colony which lead to cases where the
+       *          cells can be erased (and thus their adjacency count decreased).
        * @param block - the block related to the coordinate.
        * @param coord - the coordinate within the block to update. The coordinate area
        *                assumed to lie in the range `[0, w[x[0, h[`.
        * @param makeCurrent - `true` if the current adjacency should be updated.
+       * @param erase - `true` if the adjacency should be decreased for neighbors and
+       *                `false` otherwise (default case).
        */
       void
       updateAdjacency(const BlockDesc& block,
                       const utils::Vector2i& coord,
-                      bool makeCurrent);
+                      bool makeCurrent,
+                      bool erase = false);
 
       /**
        * @brief - Used to randomize the content of the block described in input. The
