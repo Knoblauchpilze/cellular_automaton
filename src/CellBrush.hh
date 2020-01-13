@@ -104,6 +104,23 @@ namespace cellulator {
     private:
 
       /**
+       * @brief - Return the value of the character to use in a brush file to
+       *          represent a `Dead` cell.
+       * @return - a character representing a `Dead` cell.
+       */
+      static
+      constexpr char
+      getDeadCellCharacter() noexcept;
+
+      /**
+       * @brief - Similar to `getDeadCellCharacter` but for live cells.
+       * @return - a character representing a `Live` cell.
+       */
+      static
+      constexpr char
+      getLiveCellCharacter() noexcept;
+
+      /**
        * @brief - Default constructor creating a one by one `Alive` cell. This is
        *          used as a default initializer for other constructors but is only
        *          allowed to be called internally.

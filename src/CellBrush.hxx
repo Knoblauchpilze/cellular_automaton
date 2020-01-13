@@ -10,7 +10,7 @@ namespace cellulator {
   CellBrush::fromFile(const std::string& file) {
     // Assume no inversion of the `y` axis.
     return std::make_shared<CellBrush>(
-      file, false
+      file, true
     );
   }
 
@@ -31,6 +31,18 @@ namespace cellulator {
   CellBrush::getStateAt(const utils::Vector2i& coord) const noexcept {
     // Use the dedicated handler.
     return getStateAt(coord.x(), coord.y());
+  }
+
+  inline
+  constexpr char
+  CellBrush::getDeadCellCharacter() noexcept {
+    return '0';
+  }
+
+  inline
+  constexpr char
+  CellBrush::getLiveCellCharacter() noexcept {
+    return '2';
   }
 
   inline

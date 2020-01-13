@@ -1,5 +1,45 @@
 
 # include "CellBrush.hh"
+# include <fstream>
+# include <sstream>
+# include <algorithm>
+
+namespace {
+
+  inline
+  void
+  ltrim(std::string& s) {
+    s.erase(
+      s.begin(),
+      std::find_if(s.begin(), s.end(),
+        [](int ch) {
+          return !std::isspace(ch);
+        }
+      )
+    );
+  }
+
+  inline
+  void
+  rtrim(std::string& s) {
+    s.erase(
+      std::find_if(s.rbegin(), s.rend(),
+        [](int ch) {
+          return !std::isspace(ch);
+        }
+      ).base(),
+      s.end()
+    );
+  }
+
+  inline
+  void
+  trim(std::string& s) {
+    rtrim(s);
+    ltrim(s);
+  }
+
+}
 
 namespace cellulator {
 
@@ -71,10 +111,139 @@ namespace cellulator {
 
   void
   CellBrush::loadFromFile(const std::string& file,
-                          bool /*invertY*/)
+                          bool invertY)
   {
-    // TODO: Implementation.
-    log("Should load brush from data file \"" + file + "\"", utils::Level::Warning);
+    // Open the file associated to the brush' data.
+    std::ifstream in(file.c_str());
+
+    if (!in.good()) {
+      error(
+        std::string("Could not perform loading of brush from \"") + file + "\"",
+        std::string("Cannot open file")
+      );
+    }
+
+    // The first line should describe the dimensions of the brush.
+    std::string dims;
+    std::getline(in, dims);
+
+    trim(dims);
+
+    // The dimensions should be separated by a 'x' character. We
+    // will use a string stream to separate both dimension.
+    std::stringstream dss(dims);
+
+    std::string wAsStr;
+    std::getline(dss, wAsStr, 'x');
+
+    std::string hAsStr;
+    std::getline(dss, hAsStr, 'x');
+
+    if (wAsStr.empty() || hAsStr.empty()) {
+      error(
+        std::string("Could not perform loading of brush from \"") + file + "\"",
+        std::string("Cannot interpret invalid dimensions \"") + dims + "\""
+      );
+    }
+
+    unsigned w;
+    std::istringstream converter(wAsStr);
+    converter >> w;
+
+    unsigned h;
+    converter.clear();
+    converter.str(hAsStr);
+    converter >> h;
+
+    if (w == 0u || h == 0u) {
+      error(
+        std::string("Could not perform loading of brush from \"") + file + "\"",
+        std::string("Interpreted invalid dimensions ") + std::to_string(w) + "x" + std::to_string(h)
+      );
+    }
+
+    // Now that we know the dimensions of the brush we can start parsing the rest
+    // of the data. It should be lined up in consecutive lines each one having
+    // exactly `w` characters.
+    // We don't consider empty lines as an error. Also in case a character does
+    // not represent neither a live nor dead cell we don't interpret it but still
+    // continue the process. This will most likely result in a corrupted brush
+    // but it's up to the user to provide correct data.
+    std::vector<State> brush(w * h, State::Dead);
+    std::string line;
+
+    unsigned curW = 0u, curH = 0u, offset = 0u, l = 0u, id = 0u;
+
+    while (!in.eof() && curH < h) {
+      // Retrieve the line of data.
+      std::getline(in, line);
+
+      // Trim spaces if any.
+      trim(line);
+
+      ++l;
+
+      // If the line is empty, move on to the next.
+      if (line.empty()) {
+        log(
+          std::string("Detected empty line in file \"") + file + "\"",
+          utils::Level::Warning
+        );
+
+        continue;
+      }
+
+      // In any other case, try to interpret each line
+      offset = (invertY ? (h - 1u - curH) * w : curH * w);
+      id = 0u;
+      curW = 0u;
+
+      while (id < w && curW < line.size()) {
+        // Interpret this character.
+        switch (line[id]) {
+          case getDeadCellCharacter():
+            // The `brush` is already filled with `Dead` cells, do nothing.
+            ++curW;
+            break;
+          case getLiveCellCharacter():
+            brush[offset + curW] = State::Alive;
+            ++curW;
+            break;
+          default:
+            log(
+              std::string("Detected invalid character '") + line[id] + "' in file \"" + file + "\"",
+              utils::Level::Warning
+            );
+            break;
+        }
+
+        ++id;
+      }
+
+      // Check whether we could fill all the cells for this line.
+      if (curW < w) {
+        log(
+          std::string("Could only parse ") + std::to_string(curW) + " / " + std::to_string(w) +
+          " character(s) in line " + std::to_string(curH) + " in file \"" + file + "\"",
+          utils::Level::Warning
+        );
+      }
+
+      ++curH;
+    }
+
+    if (curH < h) {
+      log(
+        std::string("Could only parse ") + std::to_string(curH) + " / " + std::to_string(h) +
+        " line(s) in file \"" + file + "\"",
+        utils::Level::Warning
+      );
+    }
+
+    // Assign the parsed data.
+    m_size = utils::Sizei(w, h);
+    m_data.swap(brush);
+    m_monotonic = false;
   }
 
 }
