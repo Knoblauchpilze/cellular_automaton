@@ -367,14 +367,16 @@ namespace cellulator {
           }
 
           BlockDesc b = m_blocks[0u];
-          unsigned id = 0u;
+          id = 0u;
           while (id < m_blocks.size() && !found) {
             if (m_blocks[id].active) {
               b = m_blocks[id];
               found = true;
             }
             
-            ++id;
+            if (!found) {
+              ++id;
+            }
           }
 
           if (!b.active) {
@@ -399,6 +401,12 @@ namespace cellulator {
           // `offX = int(round((-4 - 0 + 0.01) / 8)) = int(round(-0.49) = 0`.
           // On the other hand, we also have:
           // `offX = int(round((4 - 0 + 0.01) / 8)) = int(round(0.501)) = 1`.
+          // Note finally that in the case there were no valid blocks at all
+          // in the colony, we performed a `allocate` operation which has created
+          // some new blocks (the ones representing the `m_totalArea`): this can
+          // lead to creating some blocks that might contain the input `c` cell.
+          // If this is the case we shouldn't try to contain the block. Hence the
+          // test before creating the cell.
           utils::Boxi area = b.area;
 
           int offX = static_cast<int>(std::round(1.0f * (c.x() - area.x() + getThresholdForBlockSearch()) / area.w()));
@@ -421,9 +429,13 @@ namespace cellulator {
             continue;
           }
 
-          // Allocate the block.
-          b = registerNewBlock(area);
-          id = b.id;
+          // Allocate the block if needed. Indeed in case we `allocate`d the block to
+          // cover the `m_totalArea` we could have recreated a block containing the
+          // cell `c` in which case we don't want to create it again.
+          if (area != b.area) {
+            b = registerNewBlock(area);
+            id = b.id;
+          }
         }
 
         // Allocate boundaries for this block so that we are sure that we
@@ -762,7 +774,8 @@ namespace cellulator {
 
     if (uBW == 0 || uBH == 0) {
       log(
-        std::string("Invalid dimensions for block ") + std::to_string(block.id) + " with area " + block.area.toString(),
+        std::string("Invalid dimensions for block ") + std::to_string(block.id) + " with area " + block.area.toString() +
+        " when updating adjacency for " + cell.toString() + " (on behalf of " + coord.toString() + ")",
         utils::Level::Error
       );
 
