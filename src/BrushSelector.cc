@@ -14,6 +14,11 @@ namespace cellulator {
     m_propsLocker(),
 
     m_brushes(),
+    m_currentBrush(BrushDesc{
+      false,
+      "",
+      0
+    }),
 
     onBrushChanged()
   {
@@ -35,6 +40,37 @@ namespace cellulator {
 
     // Assign the layout to this widget.
     setLayout(layout);
+
+    // Create the brush' size selector.
+    sdl::graphic::Slider* size = new sdl::graphic::Slider(
+      getBrushSizeSliderName(),
+      3.0f,
+      utils::Vector2f(1.0f, 10.0f),
+      9u,
+      0u,
+      getGeneralTextFont(),
+      15u,
+      this
+    );
+    if (size == nullptr) {
+      error(
+        std::string("Could not create brush selection panel"),
+        std::string("Could not create brush size slider")
+      );
+    }
+
+    size->onValueChanged.connect_member<BrushSelector>(
+      this,
+      &BrushSelector::onBrushSizeChanged
+    );
+
+    layout->setMaxSize(
+      utils::Sizef(
+        std::numeric_limits<float>::max(),
+        getBrushSelectMaxHeight()
+      )
+    );
+    layout->addItem(size);
 
     // Create each brush.
     sdl::graphic::Button* b = nullptr;
@@ -74,14 +110,16 @@ namespace cellulator {
   }
 
   CellBrushShPtr
-  BrushSelector::createBrushFromName(const std::string& name) {
+  BrushSelector::createBrushFromName(const std::string& name,
+                                     const utils::Sizei& size)
+  {
     // Detect known brush names and perform the creation of each one.
     if (name == "Standard") {
-      return std::make_shared<CellBrush>(utils::Sizei(1, 1), State::Alive);
+      return std::make_shared<CellBrush>(size, State::Alive);
     }
 
     if (name == "Eraser") {
-      return std::make_shared<CellBrush>(utils::Sizei(1, 1), State::Dead);
+      return std::make_shared<CellBrush>(size, State::Dead);
     }
 
     if (name == "Gosper glider gun") {
@@ -151,25 +189,76 @@ namespace cellulator {
       }
     }
 
-    // Create the brush to provide to external listeners if any.
-    CellBrushShPtr nb = nullptr;
+    // Check whether we should deactivate the brush or create it.
+    if (!toggled) {
+      // Deactivate the current brush.
+      log("Deactivating brush " + m_currentBrush.name);
+      m_currentBrush.valid = false;
 
-    if (toggled) {
-      BrushesTable::const_iterator name = m_brushes.find(brushName);
-      if (name == m_brushes.cend()) {
-        log(
-          std::string("Could not find data for brush \"") + brushName + "\" in local data",
-          utils::Level::Error
-        );
-      }
-      else {
-        nb = createBrushFromName(name->second);
-      }
+      // Notify listeners right here.
+      onBrushChanged.safeEmit(
+        std::string("onBrushChanged(deactivation)"),
+        nullptr
+      );
+
+      return;
     }
+
+    // Try to find the corresponding brush in the internal list.
+    BrushesTable::const_iterator name = m_brushes.find(brushName);
+    if (name == m_brushes.cend()) {
+      log(
+        std::string("Could not find data for brush \"") + brushName + "\" in local data",
+        utils::Level::Error
+      );
+
+      return;
+    }
+
+    // Retrieve the size to assign to the brush.
+    sdl::graphic::Slider& s = getBrushSizeSlize();
+    int dim = s.getValue();
+
+    notifyBrushChanged(name->second, dim);
+  }
+
+  void
+  BrushSelector::onBrushSizeChanged(float size) {
+    // Protect from concurrent accesses.
+    Guard guard(m_propsLocker);
+
+    // Convert the input size to an integer and compare it to the
+    // last emitted brush.
+    int iSize = static_cast<int>(std::round(size));
+
+    if (!m_currentBrush.valid || m_currentBrush.dim == iSize) {
+      // The current brush is either not valid or has the same size
+      // as the one we received: no need to notify anyone.
+      return;
+    }
+
+    notifyBrushChanged(m_currentBrush.name, iSize);
+  }
+
+  void
+  BrushSelector::notifyBrushChanged(const std::string& brushName,
+                                    int brushSize)
+  {
+    // Create dimensions from the input brush size.
+    utils::Sizei size(brushSize, brushSize);
+
+    CellBrushShPtr nb = createBrushFromName(brushName, size);
+
+    // Register this brush with the new info.
+    m_currentBrush = BrushDesc{
+      true,
+      brushName,
+      brushSize
+    };
 
     // Notify external listeners.
     onBrushChanged.safeEmit(
-      std::string("onBrushChanged(") + brushName + ", " + std::to_string(toggled) + ")",
+      std::string("onBrushChanged(") + brushName + ")",
       nb
     );
   }

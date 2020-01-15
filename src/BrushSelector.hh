@@ -6,6 +6,7 @@
 # include <sdl_core/SdlWidget.hh>
 # include <sdl_graphic/Button.hh>
 # include <core_utils/Signal.hh>
+# include <sdl_graphic/Slider.hh>
 # include "CellBrush.hh"
 
 namespace cellulator {
@@ -47,6 +48,10 @@ namespace cellulator {
       sdl::core::engine::Color
       getDefaultColor() noexcept;
 
+      static
+      const char*
+      getBrushSizeSliderName() noexcept;
+
       /**
        * @brief - Used to build the content of this widget so that it can be
        *          readily displayed.
@@ -57,15 +62,22 @@ namespace cellulator {
       sdl::graphic::Button*
       getBrushButtonFromName(const std::string& name);
 
+      sdl::graphic::Slider&
+      getBrushSizeSlize();
+
       /**
        * @brief - Create a brush from the input name. The name will be scanned
        *          against matching patterns to allow the creation of the brush
        *          either from a file or from any other mean necessary.
        * @param name - the name of the brush to create.
+       * @param size - the size of the brush. Note that this parameter is used
+       *               mostly for monotonic brushes and not ones loaded from
+       *               a file (as the file obviously describes everything).
        * @return - the created brush or `null` if the brush cannot be created.
        */
       CellBrushShPtr
-      createBrushFromName(const std::string& name);
+      createBrushFromName(const std::string& name,
+                          const utils::Sizei& size);
 
       /**
        * @brief - Used to create the button representing the input brush. The
@@ -97,6 +109,26 @@ namespace cellulator {
       onBrushSelected(std::string brushName,
                       bool toggled);
 
+      /**
+       * @brief - Local slot connected to the slider's value changed signal.
+       *          This will trigger a new signal emitted to propagate the new
+       *          brush.
+       * @param size - the new brush' size.
+       */
+      void
+      onBrushSizeChanged(float size);
+
+      /**
+       * @brief - Used internally to perform the creation and update of the internal
+       *          properties to notify that the new active brush is described by the
+       *          input attributes.
+       * @param brushName - the name of the brush that should be made active.
+       * @param brushSize - the size of the brush to create.
+       */
+      void
+      notifyBrushChanged(const std::string& brushName,
+                         int brushSize);
+
     private:
 
       /**
@@ -104,6 +136,15 @@ namespace cellulator {
        *          a brush and its button name.
        */
       using BrushesTable = std::unordered_map<std::string, std::string>;
+
+      /**
+       * @brief - Convenience structure holding the properties to describe a brush.
+       */
+      struct BrushDesc {
+        bool valid;
+        std::string name;
+        int dim;
+      };
 
       /**
        * @brief - Protects this object from concurrent accesses.
@@ -118,6 +159,11 @@ namespace cellulator {
        *          name.
        */
       BrushesTable m_brushes;
+
+      /**
+       * @brief - Information about the last brush notified through the local signal.
+       */
+      BrushDesc m_currentBrush;
 
     public:
 
