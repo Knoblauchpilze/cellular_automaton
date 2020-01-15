@@ -36,9 +36,21 @@ namespace cellulator {
   }
 
   inline
+  const char*
+  BrushSelector::getBrushSizeSliderName() noexcept {
+    return "brush_size_slider";
+  }
+
+  inline
   sdl::graphic::Button*
   BrushSelector::getBrushButtonFromName(const std::string& name) {
     return getChildAs<sdl::graphic::Button>(name);
+  }
+
+  inline
+  sdl::graphic::Slider&
+  BrushSelector::getBrushSizeSlize() {
+    return *getChildAs<sdl::graphic::Slider>(getBrushSizeSliderName());
   }
 
   inline
