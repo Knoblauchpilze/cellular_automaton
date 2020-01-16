@@ -495,8 +495,10 @@ namespace cellulator {
         utils::Vector2i gRes;
 
         bool bDisplay;
-        sdl::core::engine::Color bColor;
-        float bBlend;
+        sdl::core::engine::Color bAColor;
+        sdl::core::engine::Color bDColor;
+        float bABlend;
+        float bDBlend;
         CellBrushShPtr brush;
       };
 

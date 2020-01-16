@@ -170,8 +170,9 @@ namespace cellulator {
        *          it can be directly used when computing the next generation of cells.
        * @param brush - the brush to repaint.
        * @param coord - the position at which the brush should be repainted.
+       * @return - the number of alive cells in the colony after the paint operation.
        */
-      void
+      unsigned
       paint(const CellBrush& brush,
             const utils::Vector2i& coord);
 
