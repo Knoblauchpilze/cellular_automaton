@@ -464,7 +464,7 @@ namespace cellulator {
 
           // Update the adjacency.
           utils::Vector2i lCoord(c.x() - b.area.getLeftBound(), c.y() - b.area.getBottomBound());
-          updateAdjacency(b, lCoord, true);
+          updateAdjacency(b, lCoord, true, s == State::Dead);
 
           // One more cell has changed and we need to keep the number
           // of alive cells for this block consistent.
