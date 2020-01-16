@@ -44,7 +44,7 @@ namespace cellulator {
     // Create the brush' size selector.
     sdl::graphic::Slider* size = new sdl::graphic::Slider(
       getBrushSizeSliderName(),
-      3.0f,
+      1.0f,
       utils::Vector2f(1.0f, 10.0f),
       9u,
       0u,
