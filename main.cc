@@ -6,7 +6,7 @@
  *          life.
  *          Implemented from:
  *            - 28/09/2019 - 03/10/2019
- *            - 17/12/2019 - ??/??/2020
+ *            - 17/12/2019 - 16/01/2020
  */
 
 # include <core_utils/StdLogger.hh>
@@ -20,27 +20,6 @@
 # include "RulesetSelector.hh"
 # include "RenderingProperties.hh"
 # include "BrushSelector.hh"
-
-// TODO: Problem when painting brush. APparently when drawing a pattern like
-// below in the center of the block:
-//
-//    A
-//  A A A
-//    A
-//
-// Then evolving the cells and then when it finally converges to:
-//
-//          D
-//        A A A
-//          D
-//    A     D     A
-//  D A D D D D D A D
-//    A     D     A
-//          D
-//        A A A
-//          D
-//
-// Add the same pattern again and some problems arise.
 
 int main(int /*argc*/, char** /*argv*/) {
   // Create the logger.
