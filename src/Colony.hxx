@@ -82,8 +82,7 @@ namespace cellulator {
   inline
   utils::Sizei
   Colony::getCellBlockDims() noexcept {
-    // return utils::Sizei(256, 256);
-    return utils::Sizei(8, 8);
+    return utils::Sizei(256, 256);
   }
 
   inline

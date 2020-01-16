@@ -15,9 +15,9 @@ namespace cellulator {
 
     m_brushes(),
     m_currentBrush(BrushDesc{
-      false,
-      "",
-      0
+      true,
+      "Standard",
+      1
     }),
 
     onBrushChanged()
@@ -76,6 +76,7 @@ namespace cellulator {
     sdl::graphic::Button* b = nullptr;
 
     b = createButtonFromBrushName("Standard", "");
+    b->toggle(true);
     layout->addItem(b);
 
     b = createButtonFromBrushName("Eraser", "");
