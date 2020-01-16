@@ -90,8 +90,9 @@ namespace cellulator {
        * @param brush - the brush to paint on this colony.
        * @param coord - the coordinate at which the brush should be painted. This info
        *                corresponds to the center of the brush.
+       * @return - the number of live cells in the colony after the paint operation.
        */
-      void
+      unsigned
       paint(const CellBrush& brush,
             const utils::Vector2i& coord);
 

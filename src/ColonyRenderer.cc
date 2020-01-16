@@ -34,8 +34,10 @@ namespace cellulator {
 
       false,
       sdl::core::engine::Color::NamedColor::Yellow,
+      sdl::core::engine::Color::NamedColor::Gray,
       0.5f,
-      std::make_shared<CellBrush>(utils::Sizei(2, 3), State::Alive)
+      0.25f,
+      std::make_shared<CellBrush>(utils::Sizei(1, 1), State::Alive)
     }),
 
     onGenerationComputed(),
@@ -532,9 +534,15 @@ namespace cellulator {
 
           // Fetch the state of the cell in the brush and assign the overlay color
           // if the cell is alive.
-          if (b.getStateAt(cX, cY) == State::Alive) {
-            colors[off] = colors[off].blend(m_display.bColor, m_display.bBlend);
+          sdl::core::engine::Color c = m_display.bAColor;
+          float bl = m_display.bABlend;
+
+          if (b.getStateAt(cX, cY) == State::Dead) {
+            c = m_display.bDColor;
+            bl = m_display.bDBlend;
           }
+
+          colors[off] = colors[off].blend(c, bl);
         }
       }
     }
@@ -568,7 +576,13 @@ namespace cellulator {
     );
 
     // Paint the brush at this coordinates.
-    m_scheduler->paint(*m_display.brush, cell);
+    unsigned liveCells = m_scheduler->paint(*m_display.brush, cell);
+
+    // Notify of the new live cells count.
+    onAliveCellsChanged.safeEmit(
+      std::string("onAliveCellsChanged(") + std::to_string(liveCells) + ")",
+      liveCells
+    );
   }
 
 }

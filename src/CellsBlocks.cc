@@ -312,20 +312,10 @@ namespace cellulator {
     }
   }
 
-  void
+  unsigned
   CellsBlocks::paint(const CellBrush& brush,
                      const utils::Vector2i& coord)
   {
-    // Protection against invalid blocks.
-    if (!brush.valid()) {
-      log(
-        std::string("Could not paint brush \"") + brush.getName() + "\", invalid brush",
-        utils::Level::Error
-      );
-
-      return;
-    }
-
     // Protect from concurrent accesses.
     Guard guard(m_propsLocker);
 
@@ -486,6 +476,8 @@ namespace cellulator {
       }
     }
 
+    unsigned alive = 0u;
+
     // Make a pass to verify that no blocks are left in an invalid state.
     for (unsigned id = 0u ; id < m_blocks.size() ; ++id) {
       // Discard inactive blocks.
@@ -501,10 +493,15 @@ namespace cellulator {
         0u
       );
 
+      alive += m_blocks[id].alive;
+
       if (m_blocks[id].alive == 0u && neighbors == 0u) {
         destroyBlock(m_blocks[id].id);
       }
     }
+
+    // Update live area.
+    updateLiveArea();
 
     // One last step is to allocate the missing boundaries that might have
     // been destroyed by the previous cleaning operation. Indeed we might
@@ -531,6 +528,8 @@ namespace cellulator {
     for (unsigned id = 0u ; id < m_blocks.size() ; ++id) {
       allocateBoundary(id, false);
     }
+
+    return alive;
   }
 
   void

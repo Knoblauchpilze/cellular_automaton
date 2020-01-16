@@ -67,11 +67,16 @@ namespace cellulator {
   }
 
   inline
-  void
+  unsigned
   Colony::paint(const CellBrush& brush,
                 const utils::Vector2i& coord)
   {
-    m_cells->paint(brush, coord);
+    // Protect from concurrent accesses.
+    Guard guard(m_propsLocker);
+
+    m_liveCells = m_cells->paint(brush, coord);
+
+    return m_liveCells;
   }
 
   inline

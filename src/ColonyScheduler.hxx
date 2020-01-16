@@ -12,7 +12,7 @@ namespace cellulator {
   }
 
   inline
-  void
+  unsigned
   ColonyScheduler::paint(const CellBrush& brush,
                          const utils::Vector2i& coord)
   {
@@ -26,11 +26,11 @@ namespace cellulator {
         utils::Level::Warning
       );
 
-      return;
+      return m_colony->getLiveCellsCount();
     }
 
     // Call the dedicated method on the scheduler.
-    m_colony->paint(brush, coord);
+    return m_colony->paint(brush, coord);
   }
 
   inline
