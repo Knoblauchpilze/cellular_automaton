@@ -474,6 +474,14 @@ namespace cellulator {
           else {
             --b.alive;
           }
+
+          // One more cell has changed in the block. Note that this might
+          // count some cells twice (in the case the block already existed
+          // and a previous step of the colony already changed this cell)
+          // but it's not a problem: indeed the change count is mostly a
+          // way to detect still blocks to speed up the processing so we
+          // can get away with a bit more change than really needed.
+          ++b.changed;
         }
       }
     }
@@ -496,6 +504,32 @@ namespace cellulator {
       if (m_blocks[id].alive == 0u && neighbors == 0u) {
         destroyBlock(m_blocks[id].id);
       }
+    }
+
+    // One last step is to allocate the missing boundaries that might have
+    // been destroyed by the previous cleaning operation. Indeed we might
+    // have some block which was a boundary but did not contain any live
+    // cell nor any neighbors but will still be needed in the next iteration.
+    // This comes from the fact that upon calling the `stepPrivate` function
+    // the boundaries are allocated anyways.
+    // Figure the situation below:
+    //
+    //     _______________
+    // ---|___|___|___|___|
+    // ---|___|___|___|___|
+    // ---|___|___|_A_|___|  Deleted
+    // ---|___|___|_A_|_C_|  boundary
+    // ---|___|___|_A_|___|
+    // ---|___|___|___|___|
+    //
+    // The `deleted boundary` will be suppressed by the previous process but
+    // it will be needed in the next iteration because the cell `C` will be
+    // live and thus will need to update the adjacency in the deleted block.
+    // Usually this operation is performed at the end of the `stepPrivate`
+    // method which allows to prepare precisely for such cases.
+    // As we destroyed the boundary in here we should do the same.
+    for (unsigned id = 0u ; id < m_blocks.size() ; ++id) {
+      allocateBoundary(id, false);
     }
   }
 
@@ -566,7 +600,7 @@ namespace cellulator {
       true,
       0u,
       0u,
-      sizeOfBlock(),
+      0u,
 
       -1,
       -1,
@@ -1252,6 +1286,7 @@ namespace cellulator {
           ++m_blocks[id].changed;
         }
       }
+
     }
 
     // Swap the adjacencies now that we're done checking for differences.
