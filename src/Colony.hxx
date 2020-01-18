@@ -16,7 +16,7 @@ namespace cellulator {
   Colony::getGeneration() noexcept {
     // Protect from concurrent accesses.
     Guard guard(m_propsLocker);
-    
+
     return m_generation;
   }
 

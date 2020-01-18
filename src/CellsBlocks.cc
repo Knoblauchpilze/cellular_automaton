@@ -363,7 +363,7 @@ namespace cellulator {
               b = m_blocks[id];
               found = true;
             }
-            
+
             if (!found) {
               ++id;
             }
