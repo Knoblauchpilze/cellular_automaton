@@ -19,26 +19,6 @@ namespace cellulator {
   }
 
   inline
-  unsigned
-  RenderingProperties::convertToUnsigned(const std::string& text,
-                                         unsigned def,
-                                         bool& converted) noexcept
-  {
-    // Use the dedicated handler to handle the conversion.
-    bool valid = false;
-
-    int conv = sdl::graphic::convertToInt(text, &valid);
-
-    if (!valid || conv < 0) {
-      converted = false;
-      return def;
-    }
-
-    converted = true;
-    return static_cast<unsigned>(conv);
-  }
-
-  inline
   sdl::core::engine::Color
   RenderingProperties::getDefaultColor() noexcept {
     return sdl::core::engine::Color::fromRGB(0.1255f, 0.4196f, 0.7961f);

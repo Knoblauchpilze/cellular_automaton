@@ -202,7 +202,7 @@ namespace cellulator {
     );
 
     bool success = false;
-    unsigned maxAge = convertToUnsigned(v, getDefaultMaxAge(), success);
+    unsigned maxAge = utils::convert(v, getDefaultMaxAge(), success);
 
     if (!success) {
       log(
