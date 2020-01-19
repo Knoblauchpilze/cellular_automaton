@@ -76,8 +76,6 @@ namespace cellulator {
 
     // Request the simulation to stop.
     m_simulationState = SimulationState::Stopped;
-
-    scheduleRendering();
   }
 
   void
