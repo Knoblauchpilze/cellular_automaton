@@ -301,7 +301,7 @@ namespace cellulator {
     // Create the colors needed for the brush.
     sdl::core::engine::BrushShPtr brush = createBrushFromCells(cells, out);
 
-    // check consistency.
+    // Check consistency.
     if (brush == nullptr) {
       error(
         std::string("Could not create texture to represent colony"),
