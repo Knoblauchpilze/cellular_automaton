@@ -9,7 +9,13 @@ Contains an implementation of a cellular automaton. Not very original but that's
 # Installation
 
 - Clone the repo: `git clone git@github.com:Knoblauchpilze/cellular_automaton.git`.
-- Clone dependencies (that is `core_utils`, `maths_utils`, `sdl_engine`, `sdl_core`, `sdl_graphic` and `sdl_app_core`).
+- Clone dependencies:
+    * [core_utils](https://github.com/Knoblauchpilze/core_utils)
+    * [maths_utils](https://github.com/Knoblauchpilze/maths_utils)
+    * [sdl_engine](https://github.com/Knoblauchpilze/sdl_engine)
+    * [sdl_core](https://github.com/Knoblauchpilze/sdl_core)
+    * [sdl_graphic](https://github.com/Knoblauchpilze/sdl_graphic)
+    * [sdl_app_core](https://github.com/Knoblauchpilze/sdl_app_core)
 - Go to the project's directory `cd ~/path/to/the/repo`.
 - Compile: `make r`.
 - Install: `make install`.
