@@ -56,7 +56,7 @@ int main(int /*argc*/, char** /*argv*/) {
     );
 
     // Create the layout of the window: the main tab is a scrollable widget
-    // allowing the display of the colony. The rigth dock widget allows to
+    // allowing the display of the colony. The right dock widget allows to
     // control the computation parameters and the status bar displays some
     // general information about the colony.
     cellulator::ColonyRenderer* renderer = new cellulator::ColonyRenderer(colony);
