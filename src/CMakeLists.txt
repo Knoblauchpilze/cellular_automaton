@@ -22,7 +22,7 @@ add_library (cellular_automaton_lib SHARED
   ${SOURCES}
   )
 
-set(CELLULAR_AUTOMATON_LIB_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}" PARENT_SCOPE)
+set (CELLULAR_AUTOMATON_LIB_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}" PARENT_SCOPE)
 
 target_link_libraries(cellular_automaton_lib
   sdl_core
