@@ -58,7 +58,7 @@ namespace cellulator {
   utils::Boxi
   CellsBlocks::allocateTo(const utils::Sizei& dims) {
     // Protect from concurrent accesses.
-    Guard guard(m_propsLocker);
+    const std::lock_guard guard(m_propsLocker);
 
     // Round the dimensions so that they fit perfectly the expected nodes size.
     // At least get a whole multiple of said dimensions.
@@ -78,7 +78,7 @@ namespace cellulator {
   unsigned
   CellsBlocks::randomize() {
     // Protect from concurrent accesses.
-    Guard guard(m_propsLocker);
+    const std::lock_guard guard(m_propsLocker);
 
     // We want to randomize only currently active blocks.
     unsigned count = 0u;
@@ -134,7 +134,7 @@ namespace cellulator {
   void
   CellsBlocks::generateSchedule(std::vector<ColonyTileShPtr>& tiles) {
     // Protect from concurrent accesses.
-    Guard guard(m_propsLocker);
+    const std::lock_guard guard(m_propsLocker);
 
     // Clear exsiting jobs.
     tiles.clear();
@@ -214,7 +214,7 @@ namespace cellulator {
   std::pair<State, int>
   CellsBlocks::getCellStatus(const utils::Vector2i& coord) {
     // Protect from concurrent access.
-    Guard guard(m_propsLocker);
+    const std::lock_guard guard(m_propsLocker);
 
     std::pair<State, int> out = std::make_pair(State::Dead, -1);
 
@@ -252,7 +252,7 @@ namespace cellulator {
     std::fill(cells.begin(), cells.end(), std::make_pair(State::Dead, 0u));
 
     // Protect from concurrent accesses.
-    Guard guard(m_propsLocker);
+    const std::lock_guard guard(m_propsLocker);
 
     // Traverse the blocks and fill in any element requested from
     // the input area.
@@ -317,7 +317,7 @@ namespace cellulator {
                      const utils::Vector2i& coord)
   {
     // Protect from concurrent accesses.
-    Guard guard(m_propsLocker);
+    const std::lock_guard guard(m_propsLocker);
 
     // We need to paint the brush at the specified coordinates.
     // To do so we will traverse each cell of the brush and paint
@@ -370,10 +370,9 @@ namespace cellulator {
           }
 
           if (!b.active) {
-            log(
-              std::string("Could not set cell ") + std::to_string(x) + "x" + std::to_string(y) + " for brush \"" +
-              brush.getName() + "\", no valid block to register the cell",
-              utils::Level::Error
+            warn(
+              "Could not set cell " + std::to_string(x) + "x" + std::to_string(y) + " for brush \"" +
+              brush.getName() + "\", no valid block to register the cell"
             );
 
             continue;
@@ -410,10 +409,7 @@ namespace cellulator {
               c.x() >= area.getRightBound() ||
               c.y() >= area.getTopBound())
           {
-            log(
-              std::string("Could not determine area containing ") + c.toString() + ", candidate " + area.toString() + " does not contain it",
-              utils::Level::Error
-            );
+            warn("Could not determine area containing " + c.toString() + ", candidate " + area.toString() + " does not contain it");
 
             // Discard this cell, better not correctly create the brush than crashing.
             continue;
@@ -539,10 +535,9 @@ namespace cellulator {
     unsigned bcH = static_cast<unsigned>(std::ceil(1.0f * area.h() / m_nodesDims.h()));
 
     if (area.w() % m_nodesDims.w() != 0 || area.h() % m_nodesDims.h()) {
-      log(
-        std::string("Trying to allocate colony with dimensions ") + area.toString() +
-        " not fitting internal node dimensions of " + m_nodesDims.toString(),
-        utils::Level::Error
+      warn(
+        "Trying to allocate colony with dimensions " + area.toString() +
+        " not fitting internal node dimensions of " + m_nodesDims.toString()
       );
     }
 
@@ -612,10 +607,9 @@ namespace cellulator {
       -1
     };
 
-    log(
+    verbose(
       "Created block " + std::to_string(id) + " for " + area.toString() +
-      " (range: " + std::to_string(block.start) + " - " + std::to_string(block.end) + ")",
-      utils::Level::Verbose
+      " (range: " + std::to_string(block.start) + " - " + std::to_string(block.end) + ")"
     );
 
     // Allocate cells data if needed and reset the existing data.
@@ -654,10 +648,9 @@ namespace cellulator {
     AreaToBlockIndex::const_iterator it = m_blocksIndex.find(key);
 
     if (it != m_blocksIndex.cend()) {
-      log(
-        std::string("Overriding key ") + std::to_string(key) + " (associated to " + m_blocks[it->second].area.toString() +
-        " with " + area.toString(),
-        utils::Level::Error
+      warn(
+        "Overriding key " + std::to_string(key) + " (associated to " + m_blocks[it->second].area.toString() +
+        " with " + area.toString()
       );
     }
 
@@ -675,19 +668,14 @@ namespace cellulator {
   CellsBlocks::destroyBlock(unsigned blockID) {
     // Check whether the speciifed block exists.
     if (blockID >= m_blocks.size()) {
-      log(
-        std::string("Could not destroy block ") + std::to_string(blockID) + ", only " + std::to_string(m_blocks.size()) + " registered",
-        utils::Level::Error
-      );
-
+      warn("Could not destroy block " + std::to_string(blockID) + ", only " + std::to_string(m_blocks.size()) + " registered");
       return false;
     }
 
-    log(
+    verbose(
       "Destroying block " + std::to_string(blockID) +
       " (internal: " + std::to_string(m_blocks[blockID].id) + ") spanning " +
-      m_blocks[blockID].area.toString(),
-      utils::Level::Verbose
+      m_blocks[blockID].area.toString()
     );
 
     bool save = m_blocks[blockID].active;
@@ -707,10 +695,7 @@ namespace cellulator {
       AreaToBlockIndex::const_iterator it = m_blocksIndex.find(key);
 
       if (it == m_blocksIndex.cend()) {
-        log(
-          std::string("Could not remove block ") + m_blocks[blockID].area.toString() + " from association table",
-          utils::Level::Error
-        );
+        warn("Could not remove block " + m_blocks[blockID].area.toString() + " from association table");
       }
       else {
         m_blocksIndex.erase(it);
@@ -779,7 +764,7 @@ namespace cellulator {
     }
 
     // Acquire the lock on the mutex protecting adjacency arrays.
-    Guard guard(m_adjacencyLocker);
+    const std::lock_guard guard(m_adjacencyLocker);
 
     // We will follow a standard process, the only thing is that we
     // need to find the correct block based on whether the adjacency
@@ -806,10 +791,9 @@ namespace cellulator {
     int uBH = block.area.h();
 
     if (uBW == 0 || uBH == 0) {
-      log(
+      warn(
         std::string("Invalid dimensions for block ") + std::to_string(block.id) + " with area " + block.area.toString() +
-        " when updating adjacency for " + cell.toString() + " (on behalf of " + coord.toString() + ")",
-        utils::Level::Error
+        " when updating adjacency for " + cell.toString() + " (on behalf of " + coord.toString() + ")"
       );
 
       return;
@@ -869,11 +853,7 @@ namespace cellulator {
         }
 
         if (toUse == nullptr) {
-          log(
-            std::string("Could not update adjacency for " + cell.toString() + " (on behalf of " + coord.toString() + ", local: " + std::to_string(x) + "x" + std::to_string(y) + ") from block " + block.area.toString()),
-            utils::Level::Error
-          );
-
+          warn("Could not update adjacency for " + cell.toString() + " (on behalf of " + coord.toString() + ", local: " + std::to_string(x) + "x" + std::to_string(y) + ") from block " + block.area.toString());
           continue;
         }
 
@@ -1051,10 +1031,9 @@ namespace cellulator {
     // The block exists, let's perform some consistency checks and return its
     // description if we can.
     if (it->second >= m_blocks.size()) {
-      log(
+      warn(
         std::string("Found block ") + area.toString() + " at " + std::to_string(it->second) + " but only " +
-        std::to_string(m_blocks.size()) + " block(s) available",
-        utils::Level::Error
+        std::to_string(m_blocks.size()) + " block(s) available"
       );
 
       // Remove this faulty entry.
@@ -1115,7 +1094,7 @@ namespace cellulator {
 
     bool f = find(area, o);
     if (f) {
-      log("Linking " + m_blocks[o].area.toString() + " to north east of " + b.area.toString(), utils::Level::Verbose);
+      verbose("Linking " + m_blocks[o].area.toString() + " to north east of " + b.area.toString());
       b.ne = m_blocks[o].id;
       m_blocks[o].sw = b.id;
     }
@@ -1126,7 +1105,7 @@ namespace cellulator {
 
     f = find(area, o);
     if (f) {
-      log("Linking " + m_blocks[o].area.toString() + " to north of " + b.area.toString(), utils::Level::Verbose);
+      verbose("Linking " + m_blocks[o].area.toString() + " to north of " + b.area.toString());
       b.north = m_blocks[o].id;
       m_blocks[o].south = b.id;
     }
@@ -1137,7 +1116,7 @@ namespace cellulator {
 
     f = find(area, o);
     if (f) {
-      log("Linking " + m_blocks[o].area.toString() + " to north west of " + b.area.toString(), utils::Level::Verbose);
+      verbose("Linking " + m_blocks[o].area.toString() + " to north west of " + b.area.toString());
       b.nw = m_blocks[o].id;
       m_blocks[o].se = b.id;
     }
@@ -1148,7 +1127,7 @@ namespace cellulator {
 
     f = find(area, o);
     if (f) {
-      log("Linking " + m_blocks[o].area.toString() + " to west of " + b.area.toString(), utils::Level::Verbose);
+      verbose("Linking " + m_blocks[o].area.toString() + " to west of " + b.area.toString());
       b.west = m_blocks[o].id;
       m_blocks[o].east = b.id;
     }
@@ -1159,7 +1138,7 @@ namespace cellulator {
 
     f = find(area, o);
     if (f) {
-      log("Linking " + m_blocks[o].area.toString() + " to south west of " + b.area.toString(), utils::Level::Verbose);
+      verbose("Linking " + m_blocks[o].area.toString() + " to south west of " + b.area.toString());
       b.sw = m_blocks[o].id;
       m_blocks[o].ne = b.id;
     }
@@ -1170,7 +1149,7 @@ namespace cellulator {
 
     f = find(area, o);
     if (f) {
-      log("Linking " + m_blocks[o].area.toString() + " to south of " + b.area.toString(), utils::Level::Verbose);
+      verbose("Linking " + m_blocks[o].area.toString() + " to south of " + b.area.toString());
       b.south = m_blocks[o].id;
       m_blocks[o].north = b.id;
     }
@@ -1181,7 +1160,7 @@ namespace cellulator {
 
     f = find(area, o);
     if (f) {
-      log("Linking " + m_blocks[o].area.toString() + " to south east of " + b.area.toString(), utils::Level::Verbose);
+      verbose("Linking " + m_blocks[o].area.toString() + " to south east of " + b.area.toString());
       b.se = m_blocks[o].id;
       m_blocks[o].nw = b.id;
     }
@@ -1192,7 +1171,7 @@ namespace cellulator {
 
     f = find(area, o);
     if (f) {
-      log("Linking " + m_blocks[o].area.toString() + " to east of " + b.area.toString(), utils::Level::Verbose);
+      verbose("Linking " + m_blocks[o].area.toString() + " to east of " + b.area.toString());
       b.east = m_blocks[o].id;
       m_blocks[o].west = b.id;
     }
@@ -1207,56 +1186,56 @@ namespace cellulator {
 
     // North east.
     if (b.ne >= 0) {
-      log("Unlinking " + m_blocks[b.ne].area.toString() + " at north east from " + b.area.toString(), utils::Level::Verbose);
+      verbose("Unlinking " + m_blocks[b.ne].area.toString() + " at north east from " + b.area.toString());
       m_blocks[b.ne].sw = -1;
       b.ne = -1;
     }
 
     // North.
     if (b.north >= 0) {
-      log("Unlinking " + m_blocks[b.ne].area.toString() + " at north from " + b.area.toString(), utils::Level::Verbose);
+      verbose("Unlinking " + m_blocks[b.ne].area.toString() + " at north from " + b.area.toString());
       m_blocks[b.north].south = -1;
       b.north = -1;
     }
 
     // North west.
     if (b.nw >= 0) {
-      log("Unlinking " + m_blocks[b.nw].area.toString() + " at north west from " + b.area.toString(), utils::Level::Verbose);
+      verbose("Unlinking " + m_blocks[b.nw].area.toString() + " at north west from " + b.area.toString());
       m_blocks[b.nw].se = -1;
       b.nw = -1;
     }
 
     // West.
     if (b.west >= 0) {
-      log("Unlinking " + m_blocks[b.west].area.toString() + " at west from " + b.area.toString(), utils::Level::Verbose);
+      verbose("Unlinking " + m_blocks[b.west].area.toString() + " at west from " + b.area.toString());
       m_blocks[b.west].east = -1;
       b.west = -1;
     }
 
     // South west.
     if (b.sw >= 0) {
-      log("Unlinking " + m_blocks[b.sw].area.toString() + " at south west from " + b.area.toString(), utils::Level::Verbose);
+      verbose("Unlinking " + m_blocks[b.sw].area.toString() + " at south west from " + b.area.toString());
       m_blocks[b.sw].ne = -1;
       b.sw = -1;
     }
 
     // South.
     if (b.south >= 0) {
-      log("Unlinking " + m_blocks[b.south].area.toString() + " at south from " + b.area.toString(), utils::Level::Verbose);
+      verbose("Unlinking " + m_blocks[b.south].area.toString() + " at south from " + b.area.toString());
       m_blocks[b.south].north = -1;
       b.south = -1;
     }
 
     // South east.
     if (b.se >= 0) {
-      log("Unlinking " + m_blocks[b.se].area.toString() + " at south east from " + b.area.toString(), utils::Level::Verbose);
+      verbose("Unlinking " + m_blocks[b.se].area.toString() + " at south east from " + b.area.toString());
       m_blocks[b.se].nw = -1;
       b.se = -1;
     }
 
     // East.
     if (b.east >= 0) {
-      log("Unlinking " + m_blocks[b.east].area.toString() + " at east from " + b.area.toString(), utils::Level::Verbose);
+      verbose("Unlinking " + m_blocks[b.east].area.toString() + " at east from " + b.area.toString());
       m_blocks[b.east].west = -1;
       b.east = -1;
     }

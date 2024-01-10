@@ -194,7 +194,7 @@ namespace cellulator {
   void
   RulesetSelector::onApplyButtonClicked(const std::string& /*dummy*/) {
     // Protect from concurrent accesses.
-    Guard guard(m_propsLocker);
+    const std::lock_guard guard(m_propsLocker);
 
     // Create a new ruleset.
     CellEvolverShPtr evolver = std::make_shared<CellEvolver>();
@@ -209,11 +209,7 @@ namespace cellulator {
       cb = getCheckboxFromName(name);
 
       if (cb == nullptr) {
-        log(
-          std::string("Could not fetch information for checkbox of ") + std::to_string(count) + " live neighbor(s)",
-          utils::Level::Error
-        );
-
+        warn("Could not fetch information for checkbox of " + std::to_string(count) + " live neighbor(s)");
         continue;
       }
 
@@ -227,11 +223,7 @@ namespace cellulator {
       cb = getCheckboxFromName(name);
 
       if (cb == nullptr) {
-        log(
-          std::string("Could not fetch information for checkbox of ") + std::to_string(count) + " dead neighbor(s)",
-          utils::Level::Error
-        );
-
+        warn("Could not fetch information for checkbox of " + std::to_string(count) + " dead neighbor(s)");
         continue;
       }
 

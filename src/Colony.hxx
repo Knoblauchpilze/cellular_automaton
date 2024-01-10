@@ -15,7 +15,7 @@ namespace cellulator {
   unsigned
   Colony::getGeneration() noexcept {
     // Protect from concurrent accesses.
-    Guard guard(m_propsLocker);
+    const std::lock_guard guard(m_propsLocker);
 
     return m_generation;
   }
@@ -24,7 +24,7 @@ namespace cellulator {
   unsigned
   Colony::getLiveCellsCount() noexcept {
     // Protect from concurrent accesses.
-    Guard guard(m_propsLocker);
+    const std::lock_guard guard(m_propsLocker);
 
     return m_liveCells;
   }
@@ -35,7 +35,7 @@ namespace cellulator {
                      const utils::Boxf& area)
   {
     // Protect from concurrent accesses.
-    Guard guard(m_propsLocker);
+    const std::lock_guard guard(m_propsLocker);
 
     // Clamp the area to get only relevant cells.
     utils::Boxi evenized = fromFPCoordinates(area);
@@ -72,7 +72,7 @@ namespace cellulator {
                 const utils::Vector2i& coord)
   {
     // Protect from concurrent accesses.
-    Guard guard(m_propsLocker);
+    const std::lock_guard guard(m_propsLocker);
 
     m_liveCells = m_cells->paint(brush, coord);
 

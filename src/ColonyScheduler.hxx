@@ -17,14 +17,11 @@ namespace cellulator {
                          const utils::Vector2i& coord)
   {
     // Protect from concurrent accesses.
-    Guard guard(m_propsLocker);
+    const std::lock_guard guard(m_propsLocker);
 
     // In case the simulation is not stopped, we can't paint the brush.
     if (m_simulationState != SimulationState::Stopped) {
-      log(
-        std::string("Could not paint brush ") + brush.getName() + " at " + coord.toString() + ", simulation is running",
-        utils::Level::Warning
-      );
+      warn("Could not paint brush " + brush.getName() + " at " + coord.toString() + ", simulation is running");
 
       return m_colony->getLiveCellsCount();
     }

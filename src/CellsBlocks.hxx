@@ -9,7 +9,7 @@ namespace cellulator {
   unsigned
   CellsBlocks::step() {
     // Protect from concurrent accesses.
-    Guard guard(m_propsLocker);
+    const std::lock_guard guard(m_propsLocker);
 
     return stepPrivate();
   }
@@ -18,7 +18,7 @@ namespace cellulator {
   utils::Boxf
   CellsBlocks::getLiveArea() noexcept {
     // Protect from concurrent access.
-    Guard guard(m_propsLocker);
+    const std::lock_guard guard(m_propsLocker);
 
     return m_liveArea;
   }
@@ -27,7 +27,7 @@ namespace cellulator {
   void
   CellsBlocks::setRuleset(CellEvolverShPtr ruleset) {
     // Protect from concurrnet access.
-    Guard guard(m_propsLocker);
+    const std::lock_guard guard(m_propsLocker);
 
     m_ruleset = ruleset;
   }
@@ -158,8 +158,7 @@ namespace cellulator {
     // Account for cases when there's no active block left and
     // thus the live area can only be meaningless.
     if (cnt == 0u) {
-      log("No active block registered in the colony, keeping old live area of " + m_liveArea.toString(), utils::Level::Verbose);
-
+      verbose("No active block registered in the colony, keeping old live area of " + m_liveArea.toString());
       return;
     }
 
@@ -174,7 +173,7 @@ namespace cellulator {
       1.0f * (yMax + 1 - yMin)
     );
 
-    log("Live area is now " + m_liveArea.toString(), utils::Level::Verbose);
+    verbose("Live area is now " + m_liveArea.toString());
   }
 
 }

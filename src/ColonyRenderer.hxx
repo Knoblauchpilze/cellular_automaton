@@ -10,7 +10,7 @@ namespace cellulator {
     m_scheduler.reset();
 
     // Protect from concurrent accesses
-    Guard guard(m_propsLocker);
+    const std::lock_guard guard(m_propsLocker);
 
     clearColony();
   }
@@ -19,7 +19,7 @@ namespace cellulator {
   void
   ColonyRenderer::fitToContent(const std::string& /*dummy*/) {
     // Protect from concurrent accesses
-    Guard guard(m_propsLocker);
+    const std::lock_guard guard(m_propsLocker);
 
     // We want the entire colony to fit inside the screen. We also want to
     // keep the best aspect ratio given the colony's size.
@@ -30,11 +30,7 @@ namespace cellulator {
     // there's nothing to display): in this case we don't want to do
     // anything.
     if (!cArea.valid()) {
-      log(
-        std::string("Could not fit to content, colony does not have a valid live area"),
-        utils::Level::Warning
-      );
-
+      warn("Could not fit to content, colony does not have a valid live area");
       return;
     }
 
@@ -49,10 +45,9 @@ namespace cellulator {
     float ratio = std::min(cW, cH);
     utils::Boxf area(cArea.x(), cArea.y(), env.w() / ratio, env.h() / ratio);
 
-    log(
+    verbose(
       "Changing rendering area from " + m_settings.area.toString() + " to " + area.toString() + " (colony is " +
-      cArea.toSize().toString() + ")",
-      utils::Level::Verbose
+      cArea.toSize().toString() + ")"
     );
 
     // Assign the new rendering area.
@@ -90,7 +85,7 @@ namespace cellulator {
     m_scheduler->generate();
 
     // Protect from concurrent accesses.
-    Guard guard(m_propsLocker);
+    const std::lock_guard guard(m_propsLocker);
 
     // Indicate that the colony changed so that we can repaint it.
     setColonyChanged();
@@ -107,16 +102,12 @@ namespace cellulator {
   ColonyRenderer::onPaletteChanded(ColorPaletteShPtr palette) {
     // Discard invalid palette.
     if (palette == nullptr) {
-      log(
-        std::string("Discarding palette operation with invalid null palette"),
-        utils::Level::Error
-      );
-
+      warn("Discarding palette operation with invalid null palette");
       return;
     }
 
     // Protect from concurrent accesses.
-    Guard guard(m_propsLocker);
+    const std::lock_guard guard(m_propsLocker);
 
     // Assign the palette.
     m_display.cells = palette;
@@ -129,7 +120,7 @@ namespace cellulator {
   void
   ColonyRenderer::onGridDisplayToggled(bool toggled) {
     // Protect from concurrent accesses.
-    Guard guard(m_propsLocker);
+    const std::lock_guard guard(m_propsLocker);
 
     // Update the grid display status and request a repaint if needed.
     bool changed = (toggled != m_display.gDisplay);
@@ -144,16 +135,16 @@ namespace cellulator {
   void
   ColonyRenderer::onBrushChanged(CellBrushShPtr brush) {
     // Protect from concurrent accesses.
-    Guard guard(m_propsLocker);
+    const std::lock_guard guard(m_propsLocker);
 
     // Assign the new brush.
     m_display.brush = brush;
 
     if (m_display.brush == nullptr) {
-      log("No more active brush");
+      debug("No more active brush");
     }
     else {
-      log("New active brush is \"" + brush->getName() + "\"");
+      debug("New active brush is \"" + brush->getName() + "\"");
     }
 
     // Request a repaint if the brush is displayed.
@@ -169,7 +160,7 @@ namespace cellulator {
     // event: we want to keep track of the last known position of the mouse.
     // Protect from concurrent accesses.
     {
-      Guard guard(m_propsLocker);
+      const std::lock_guard guard(m_propsLocker);
 
       // Notify listeners through the dedicated handler.
       notifyCoordinatePointedTo(e.getMousePosition(), true);
@@ -189,7 +180,7 @@ namespace cellulator {
   bool
   ColonyRenderer::mouseMoveEvent(const sdl::core::engine::MouseEvent& e) {
     // Protect from concurrent accesses.
-    Guard guard(m_propsLocker);
+    const std::lock_guard guard(m_propsLocker);
 
     // Notify listeners through the dedicated handler.
     notifyCoordinatePointedTo(e.getMousePosition(), true);
@@ -368,10 +359,9 @@ namespace cellulator {
       maxY - minY
     );
 
-    log(
+    verbose(
       "Changed area from " + area.toString() + " to " + newArea.toString() +
-      " (center: " + center.toString() + ", f: " + std::to_string(factor) + ")",
-      utils::Level::Verbose
+      " (center: " + center.toString() + ", f: " + std::to_string(factor) + ")"
     );
 
     // Assign it to the internal area.
@@ -442,11 +432,10 @@ namespace cellulator {
       m_settings.area.h() / res.y()
     );
 
-    log(
+    verbose(
       "Grid resolution was " + m_display.gRes.toString() + " leading to " +
       cur.toString() + " line(s) in viewport, correcting to " +
-      res.toString() + " leading to " + ne.toString(),
-      utils::Level::Verbose
+      res.toString() + " leading to " + ne.toString()
     );
 
     // Assign the grid resolution if needed.

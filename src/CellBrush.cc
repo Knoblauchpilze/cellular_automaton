@@ -185,11 +185,7 @@ namespace cellulator {
 
       // If the line is empty, move on to the next.
       if (line.empty()) {
-        log(
-          std::string("Detected empty line in file \"") + file + "\"",
-          utils::Level::Warning
-        );
-
+        warn("Detected empty line in file \"" + file + "\"");
         continue;
       }
 
@@ -210,10 +206,7 @@ namespace cellulator {
             ++curW;
             break;
           default:
-            log(
-              std::string("Detected invalid character '") + line[id] + "' in file \"" + file + "\"",
-              utils::Level::Warning
-            );
+            warn(std::string("Detected invalid character '") + line[id] + "' in file \"" + file + "\"");
             break;
         }
 
@@ -222,10 +215,9 @@ namespace cellulator {
 
       // Check whether we could fill all the cells for this line.
       if (curW < w) {
-        log(
-          std::string("Could only parse ") + std::to_string(curW) + " / " + std::to_string(w) +
-          " character(s) in line " + std::to_string(curH) + " in file \"" + file + "\"",
-          utils::Level::Warning
+        warn(
+          "Could only parse " + std::to_string(curW) + " / " + std::to_string(w) +
+          " character(s) in line " + std::to_string(curH) + " in file \"" + file + "\""
         );
       }
 
@@ -233,10 +225,9 @@ namespace cellulator {
     }
 
     if (curH < h) {
-      log(
-        std::string("Could only parse ") + std::to_string(curH) + " / " + std::to_string(h) +
-        " line(s) in file \"" + file + "\"",
-        utils::Level::Warning
+      warn(
+        "Could only parse " + std::to_string(curH) + " / " + std::to_string(h) +
+        " line(s) in file \"" + file + "\""
       );
     }
 

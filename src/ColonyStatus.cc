@@ -167,7 +167,7 @@ namespace cellulator {
   void
   ColonyStatus::onButtonClicked(const std::string& buttonName) {
     // Protect from concurrent accesses.
-    Guard guard(m_propsLocker);
+    const std::lock_guard guard(m_propsLocker);
 
     // Check which button has been clicked among the possible values.
     bool handled = false;
@@ -216,10 +216,7 @@ namespace cellulator {
     }
 
     if (!handled) {
-      log(
-        std::string("Could not interpret signal coming from \"") + buttonName + "\" in status",
-        utils::Level::Warning
-      );
+      warn("Could not interpret signal coming from \"" + buttonName + "\" in status");
     }
   }
 
