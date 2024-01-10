@@ -10,11 +10,7 @@ namespace cellulator {
   InfoBar::onGenerationComputed(unsigned generation) {
     sdl::graphic::LabelWidget* gen = getGenerationLabel();
     if (gen == nullptr) {
-      log(
-        std::string("Could not find label to update generation to ") + std::to_string(generation),
-        utils::Level::Error
-      );
-
+      warn("Could not find label to update generation to " + std::to_string(generation));
       return;
     }
 
@@ -36,11 +32,7 @@ namespace cellulator {
 
     sdl::graphic::LabelWidget* mc = getMouseCoordsLabel();
     if (mc == nullptr) {
-      log(
-        std::string("Could not find label to update coordinates to ") + coords.toString(),
-        utils::Level::Error
-      );
-
+      warn("Could not find label to update coordinates to " + coords.toString());
       return;
     }
     else {
@@ -56,11 +48,7 @@ namespace cellulator {
   InfoBar::onAliveCellsChanged(unsigned count) {
     sdl::graphic::LabelWidget* ac = getAliveCellsLabel();
     if (ac == nullptr) {
-      log(
-        std::string("Could not find label to update alive cells count to ") + std::to_string(count),
-        utils::Level::Error
-      );
-
+      warn("Could not find label to update alive cells count to " + std::to_string(count));
       return;
     }
 

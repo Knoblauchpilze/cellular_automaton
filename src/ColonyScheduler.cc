@@ -35,7 +35,7 @@ namespace cellulator {
   void
   ColonyScheduler::start() {
     // Protect from concurrent accesses.
-    Guard guard(m_propsLocker);
+    const std::lock_guard guard(m_propsLocker);
 
     // Check whether the simulation is already started.
     if (m_simulationState == SimulationState::Running) {
@@ -51,7 +51,7 @@ namespace cellulator {
   void
   ColonyScheduler::step() {
     // Protect from concurrent accesses.
-    Guard guard(m_propsLocker);
+    const std::lock_guard guard(m_propsLocker);
 
     // Check whether the simulation is already computing a next step.
     if (m_simulationState != SimulationState::Stopped) {
@@ -67,7 +67,7 @@ namespace cellulator {
   void
   ColonyScheduler::stop() {
     // Protect from concurrent accesses.
-    Guard guard(m_propsLocker);
+    const std::lock_guard guard(m_propsLocker);
 
     // Check whether the simulation is already stopped.
     if (m_simulationState == SimulationState::Stopped) {
@@ -81,7 +81,7 @@ namespace cellulator {
   void
   ColonyScheduler::toggle() {
     // Protect from concurrent accesses.
-    Guard guard(m_propsLocker);
+    const std::lock_guard guard(m_propsLocker);
 
     // Toggle the simulation state.
     bool changed = true;
@@ -121,15 +121,11 @@ namespace cellulator {
   void
   ColonyScheduler::generate() {
     // Protect from concurrent accesses.
-    Guard guard(m_propsLocker);
+    const std::lock_guard guard(m_propsLocker);
 
     // Check whether the simulation is stopped.
     if (m_simulationState != SimulationState::Stopped) {
-      log(
-        std::string("Could not generate new colony while current one is running"),
-        utils::Level::Warning
-      );
-
+      warn("Could not generate new colony while current one is running");
       return;
     }
 
@@ -147,15 +143,11 @@ namespace cellulator {
   void
   ColonyScheduler::onRulesetChanged(CellEvolverShPtr ruleset) {
     // Protect from concurrent accesses.
-    Guard guard(m_propsLocker);
+    const std::lock_guard guard(m_propsLocker);
 
     // Check whether the simulation is stopped.
     if (m_simulationState != SimulationState::Stopped) {
-      log(
-        std::string("Could not change ruleset, simulation is running"),
-        utils::Level::Warning
-      );
-
+      warn("Could not change ruleset, simulation is running");
       return;
     }
 
@@ -171,7 +163,7 @@ namespace cellulator {
     );
 
     // Disable logging for the scheduler.
-    m_scheduler->allowLog(false);
+    m_scheduler->setAllowLog(false);
   }
 
   void
@@ -202,11 +194,7 @@ namespace cellulator {
       // Reset the internal simulation state.
       m_simulationState = SimulationState::Stopped;
 
-      log(
-        std::string("Scheduled a rendering but no jobs where created, discarding request"),
-        utils::Level::Error
-      );
-
+      warn("Scheduled a rendering but no jobs where created, discarding request");
       return;
     }
 
@@ -223,7 +211,7 @@ namespace cellulator {
   void
   ColonyScheduler::handleTilesComputed(const std::vector<utils::AsynchronousJobShPtr>& tiles) {
     // Protect from concurrent accesses.
-    Guard guard(m_propsLocker);
+    const std::lock_guard guard(m_propsLocker);
 
     // Append the number of tiles to the internal count.
     m_taskProgress += tiles.size();
@@ -242,10 +230,7 @@ namespace cellulator {
 
         // Check consistency.
         if (t == nullptr) {
-          log(
-            std::string("Received completion for unknown job type \"") + tiles[id]->getName() + "\"",
-            utils::Level::Error
-          );
+          warn("Received completion for unknown job type \"" + tiles[id]->getName() + "\"");
 
           continue;
         }

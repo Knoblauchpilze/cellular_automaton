@@ -44,7 +44,7 @@ namespace cellulator {
 
     layout->setRowsMinimumHeight(getComponentMargins());
 
-    layout->allowLog(false);
+    layout->setAllowLog(false);
 
     // Assign the layout to this widget.
     setLayout(layout);
@@ -188,7 +188,7 @@ namespace cellulator {
   void
   RenderingProperties::onApplyButtonClicked(const std::string& /*dummy*/) {
     // Protect from concurrent accesses.
-    Guard guard(m_propsLocker);
+    const std::lock_guard guard(m_propsLocker);
 
     // Retrieve the maximum age of a cell.
     sdl::graphic::TextBox* tb = getMaxAgeTextbox();
@@ -205,10 +205,7 @@ namespace cellulator {
     unsigned maxAge = utils::convert(v, getDefaultMaxAge(), success);
 
     if (!success) {
-      log(
-        std::string("Could not convert text \"") + v + "\" to valid max age, using " + std::to_string(maxAge) + " instead",
-        utils::Level::Warning
-      );
+      warn("Could not convert text \"" + v + "\" to valid max age, using " + std::to_string(maxAge) + " instead");
     }
 
     // Create a default color palette.
@@ -229,10 +226,9 @@ namespace cellulator {
       unsigned cID = static_cast<unsigned>(sw->getActiveItem());
 
       if (cID >= m_colors.size()) {
-        log(
-          std::string("Could not retrieve invalid color ") + std::to_string(cID) + ", only " +
-          std::to_string(m_colors.size()) + " available",
-          utils::Level::Error
+        warn(
+          "Could not retrieve invalid color " + std::to_string(cID) + ", only " +
+          std::to_string(m_colors.size()) + " available"
         );
 
         continue;
@@ -245,10 +241,7 @@ namespace cellulator {
       palette->setGradient(gradient);
     }
     else {
-      log(
-        std::string("Could not build color gradient to use for palette, using default one"),
-        utils::Level::Warning
-      );
+      warn("Could not build color gradient to use for palette, using default one");
     }
 
     // Notify listeners through the signal.

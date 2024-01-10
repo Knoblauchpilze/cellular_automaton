@@ -36,7 +36,7 @@ namespace cellulator {
       getComponentMargins()
     );
 
-    layout->allowLog(false);
+    layout->setAllowLog(false);
 
     // Assign the layout to this widget.
     setLayout(layout);
@@ -160,10 +160,7 @@ namespace cellulator {
     }
 
     // Unknown brush.
-    log(
-      std::string("Could not create brush from unknown name ") + name,
-      utils::Level::Warning
-    );
+    warn("Could not create brush from unknown name " + name);
 
     return nullptr;
   }
@@ -173,7 +170,7 @@ namespace cellulator {
                                  bool toggled)
   {
     // Protect from concurrent accesses.
-    Guard guard(m_propsLocker);
+    const std::lock_guard guard(m_propsLocker);
 
     // Untoggle any other brush in case this brush has been toggled.
     if (toggled) {
@@ -193,7 +190,7 @@ namespace cellulator {
     // Check whether we should deactivate the brush or create it.
     if (!toggled) {
       // Deactivate the current brush.
-      log("Deactivating brush " + m_currentBrush.name);
+      debug("Deactivating brush " + m_currentBrush.name);
       m_currentBrush.valid = false;
 
       // Notify listeners right here.
@@ -208,10 +205,7 @@ namespace cellulator {
     // Try to find the corresponding brush in the internal list.
     BrushesTable::const_iterator name = m_brushes.find(brushName);
     if (name == m_brushes.cend()) {
-      log(
-        std::string("Could not find data for brush \"") + brushName + "\" in local data",
-        utils::Level::Error
-      );
+      warn("Could not find data for brush \"" + brushName + "\" in local data");
 
       return;
     }
@@ -226,7 +220,7 @@ namespace cellulator {
   void
   BrushSelector::onBrushSizeChanged(float size) {
     // Protect from concurrent accesses.
-    Guard guard(m_propsLocker);
+    const std::lock_guard guard(m_propsLocker);
 
     // Convert the input size to an integer and compare it to the
     // last emitted brush.

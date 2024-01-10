@@ -91,7 +91,7 @@ namespace cellulator {
 
     // Assign properties for the palette.
     palette->setMaxSize(getPaletteMaxSize());
-    palette->allowLog(false);
+    palette->setAllowLog(false);
 
     // Populate internal colors.
     for (unsigned id = 0u ; id < m_colors.size() ; ++id) {
@@ -102,15 +102,11 @@ namespace cellulator {
         m_colors[id]
       );
       if (w == nullptr) {
-        log(
-          std::string("Could not create palette entry ") + m_colors[id].toString() + " for palette " + std::to_string(index),
-          utils::Level::Error
-        );
-
+        warn("Could not create palette entry " + m_colors[id].toString() + " for palette " + std::to_string(index));
         continue;
       }
 
-      w->allowLog(false);
+      w->setAllowLog(false);
       palette->insertWidget(w, id);
     }
 

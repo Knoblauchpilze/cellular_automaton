@@ -21,7 +21,7 @@ namespace cellulator {
   void
   ColonyStatus::onSimulationToggled(bool running) {
     // Protect from concurrent accesses.
-    Guard guard(m_propsLocker);
+    const std::lock_guard guard(m_propsLocker);
 
     // Untoggle the start simulation button based on the input state.
     getStartSimulationButton().toggle(running);

@@ -20,7 +20,7 @@ namespace cellulator {
 
     m_scheduler(std::make_shared<ColonyScheduler>(colony)),
     m_colony(colony),
-    m_generationComputedSignalID(utils::Signal<unsigned>::NoID),
+    m_generationComputedSignalID(utils::Signal<unsigned>::NO_ID),
 
     m_lastKnownMousePos(),
 
@@ -71,7 +71,7 @@ namespace cellulator {
     // We want to apply a motion of `motion` in local coordinate frame to the
     // underlying support area. In order to do that we need to convert the
     // motion into a real world coordinate frame.
-    Guard guard(m_propsLocker);
+    const std::lock_guard guard(m_propsLocker);
 
     // Note: we need to invert the motion's direction for some reasons.
     utils::Sizef cellsDims = getCellsDims();
@@ -87,7 +87,7 @@ namespace cellulator {
       m_settings.area.toSize()
     );
 
-    log("Moving from " + m_settings.area.toString() + " to " + newArea.toString() + " (motion: " + motion.toString() + ", real: " + realWorldMotion.toString() + ")", utils::Level::Verbose);
+    verbose("Moving from " + m_settings.area.toString() + " to " + newArea.toString() + " (motion: " + motion.toString() + ", real: " + realWorldMotion.toString() + ")");
 
     // Update the rendering area. We don't need to update the grid resolution as
     // we're not yet handling scrolling and zooming at the same time. So the old
@@ -142,7 +142,7 @@ namespace cellulator {
     // Schedule a scrolling if some motion has been detected.
     if (move) {
       {
-        Guard guard(m_propsLocker);
+        const std::lock_guard guard(m_propsLocker);
 
         // Convert the motion (which is right now expressed in terms of pixel(s))
         // in a cell coordinates motion. This can be done by computing the size
@@ -166,7 +166,7 @@ namespace cellulator {
   ColonyRenderer::keyReleaseEvent(const sdl::core::engine::KeyEvent& e) {
     // Check for toggle brush overlay.
     if (e.getRawKey() == getToggleBrushOverlayKey()) {
-      Guard guard(m_propsLocker);
+      const std::lock_guard guard(m_propsLocker);
 
       m_display.bDisplay = !m_display.bDisplay;
 
@@ -186,7 +186,7 @@ namespace cellulator {
     // Detect whether the event concerns the button to use to perform
     // the paint of the active brush.
     if (e.getButton() == getBrushPaintButton()) {
-      Guard guard(m_propsLocker);
+      const std::lock_guard guard(m_propsLocker);
 
       paintBrush();
 
@@ -212,7 +212,7 @@ namespace cellulator {
     utils::Vector2i motion = e.getScroll();
 
     // Protect from concurrent accesses.
-    Guard guard(m_propsLocker);
+    const std::lock_guard guard(m_propsLocker);
 
     // Perform the zoom in operation.
     float factor = motion.y() > 0 ? getDefaultZoomInFactor() : getDefaultZoomOutFactor();
@@ -232,7 +232,7 @@ namespace cellulator {
                                      const utils::Boxf& area)
   {
     // Acquire the lock on the attributes of this widget.
-    Guard guard(m_propsLocker);
+    const std::lock_guard guard(m_propsLocker);
 
     // Load the colony: this should happen only if some cells have been
     // rendered since the last draw operation. This status is kept by
@@ -325,7 +325,7 @@ namespace cellulator {
                                            unsigned liveCells)
   {
     // Protect from concurrent accesses.
-    Guard guard(m_propsLocker);
+    const std::lock_guard guard(m_propsLocker);
 
     // The colony need to be rendered again.
     setColonyChanged();

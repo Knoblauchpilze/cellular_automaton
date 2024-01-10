@@ -30,7 +30,7 @@ namespace cellulator {
   unsigned
   Colony::step(unsigned* alive) {
     // Protect from concurrent accesses.
-    Guard guard(m_propsLocker);
+    const std::lock_guard guard(m_propsLocker);
 
     // We need to swap the internal arrays to move on to the next state.
     m_liveCells = m_cells->step();
@@ -49,7 +49,7 @@ namespace cellulator {
   unsigned
   Colony::generate() {
     // Protect from concurrent accesses.
-    Guard guard(m_propsLocker);
+    const std::lock_guard guard(m_propsLocker);
 
     m_liveCells = m_cells->randomize();
 
@@ -70,7 +70,7 @@ namespace cellulator {
     // we still need to move forward of one generation though
     // as it still counts as a time step.
     if (tiles.empty()) {
-      Guard guard(m_propsLocker);
+      const std::lock_guard guard(m_propsLocker);
 
       ++m_generation;
     }

@@ -9,8 +9,9 @@
  *            - 17/12/2019 - 16/01/2020
  */
 
-# include <core_utils/StdLogger.hh>
-# include <core_utils/LoggerLocator.hh>
+# include <core_utils/log/Locator.hh>
+# include <core_utils/log/PrefixedLogger.hh>
+# include <core_utils/log/StdLogger.hh>
 # include <sdl_app_core/SdlApplication.hh>
 # include <core_utils/CoreException.hh>
 # include "InfoBar.hh"
@@ -21,28 +22,25 @@
 # include "RenderingProperties.hh"
 # include "BrushSelector.hh"
 
+namespace {
+constexpr auto APP_NAME = "cellulator";
+constexpr auto APP_TITLE = "Cellular Automaton: Welcome to the Jungle (Old: Cells' game)";
+constexpr auto APP_ICON_PATH = "data/img/icon.bmp";
+}
+
 int main(int /*argc*/, char** /*argv*/) {
   // Create the logger.
-  utils::StdLogger logger;
-  utils::LoggerLocator::provide(&logger);
-
-  const std::string service("automaton");
-  const std::string module("main");
-
-  // Create the application window parameters.
-  const std::string appName = std::string("cellulator");
-  const std::string appTitle = std::string("Cellular Automaton: Welcome to the Jungle (Old: Cells' game)");
-  const std::string appIcon = std::string("data/img/icon.bmp");
-  const utils::Sizei size(800, 600);
-
-  sdl::app::SdlApplicationShPtr app = nullptr;
+  utils::log::StdLogger raw;
+  raw.setLevel(utils::log::Severity::DEBUG);
+  utils::log::PrefixedLogger logger("automaton", "main");
+  utils::log::Locator::provide(&raw);
 
   try {
-    app = std::make_shared<sdl::app::SdlApplication>(
-      appName,
-      appTitle,
-      appIcon,
-      size,
+    auto app = std::make_shared<sdl::app::SdlApplication>(
+      APP_NAME,
+      APP_TITLE,
+      APP_ICON_PATH,
+      utils::Sizei(800, 600),
       true,
       utils::Sizef(0.4f, 0.5f),
       50.0f,
@@ -140,35 +138,21 @@ int main(int /*argc*/, char** /*argv*/) {
 
     // Run it.
     app->run();
+
+    app.reset();
   }
   catch (const utils::CoreException& e) {
-    utils::LoggerLocator::getLogger().logMessage(
-      utils::Level::Critical,
-      std::string("Caught internal exception while setting up application"),
-      module,
-      service,
-      e.what()
-    );
+    logger.error("Caught internal exception while setting up application", e.what());
+    return EXIT_FAILURE;
   }
   catch (const std::exception& e) {
-    utils::LoggerLocator::getLogger().logMessage(
-      utils::Level::Critical,
-      std::string("Caught exception while setting up application"),
-      module,
-      service,
-      e.what()
-    );
+    logger.error("Caught internal exception while setting up application", e.what());
+    return EXIT_FAILURE;
   }
   catch (...) {
-    utils::LoggerLocator::getLogger().logMessage(
-      utils::Level::Critical,
-      std::string("Unexpected error while setting up application"),
-      module,
-      service
-    );
+    logger.error("Unexpected error while setting up application");
+    return EXIT_FAILURE;
   }
-
-  app.reset();
 
   // All is good.
   return EXIT_SUCCESS;
